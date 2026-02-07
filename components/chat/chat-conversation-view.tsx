@@ -109,7 +109,7 @@ export function ChatConversationView({
                     <img
                       src={state.npcFaceImageUrl}
                       alt={state.npcName}
-                      className="h-11 w-11 flex-shrink-0 rounded-full border-2 border-slate-700/60 object-cover"
+                      className="h-11 w-11 flex-shrink-0 rounded-full border-2 border-slate-700/60 object-cover object-top"
                     />
                   )}
                   <div className="min-w-0 flex-1">
@@ -249,7 +249,7 @@ export function ChatConversationView({
                 <img
                   src={state.npcFaceImageUrl}
                   alt={state.npcName}
-                  className="h-20 w-20 flex-shrink-0 rounded-full border-2 border-slate-700/50 object-cover"
+                  className="h-20 w-20 flex-shrink-0 rounded-full border-2 border-slate-700/50 object-cover object-top"
                 />
               )}
               <div
@@ -294,7 +294,7 @@ export function ChatConversationView({
                 <img
                   src={state.npcFaceImageUrl}
                   alt={state.npcName}
-                  className="h-20 w-20 flex-shrink-0 rounded-full border-2 border-slate-700/50 object-cover"
+                  className="h-20 w-20 flex-shrink-0 rounded-full border-2 border-slate-700/50 object-cover object-top"
                 />
               )}
               <div className="rounded-2xl border border-slate-700/50 bg-slate-800/90 px-5 py-4 shadow-lg backdrop-blur-sm">
