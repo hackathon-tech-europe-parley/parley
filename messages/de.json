@@ -130,7 +130,11 @@
     "startRecording": "Aufnahme starten",
     "stopRecording": "Aufnahme stoppen",
     "recording": "Aufnahme... klicken Sie auf das Mikrofon zum Stoppen",
-    "transcribing": "Transkribierung..."
+    "transcribing": "Transkribierung...",
+    "mute": "NPC-Audio stummschalten",
+    "unmute": "NPC-Audio aktivieren",
+    "clickNewScenario": "Klicken, um ein neues Szenario zu starten",
+    "clickForDebrief": "Klicken, um die Nachbesprechung zu sehen"
   },
   "Debrief": {
     "goalAchieved": "Ziel erreicht",
