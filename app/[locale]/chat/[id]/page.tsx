@@ -7,22 +7,37 @@ import { consumeSSE } from "@/lib/sse-client";
 import { Link } from "@/i18n/navigation";
 import { AudioRecorder } from "@/lib/audio-recorder";
 import { TTSPlayer } from "@/lib/tts-player";
-import type { ConversationMessage, Debrief } from "@/lib/types";
+import {
+  conversationCacheSchema,
+  conversationSnapshotSchema,
+  messageStreamCompletePayloadSchema,
+  quitConversationResponseSchema,
+  sttResponseSchema,
+  type ConversationLevel,
+  type ConversationMessage,
+  type Debrief,
+  type GoalProgress,
+  type LanguageCode,
+  type NpcGender,
+  type MessageStreamCompletePayload,
+} from "@/lib/types";
 
 interface ConversationState {
   conversationId: string;
   scenario: string;
   language: string;
-  level: string;
+  level: ConversationLevel;
   goal: string;
   npcName: string;
+  npcGender?: NpcGender;
   mood: string;
+  goalProgress: GoalProgress;
   sceneImageUrl: string;
   npcFaceImageUrl: string;
   history: ConversationMessage[];
   hints: string[];
   scenarioKey?: string;
-  languageCode?: string;
+  languageCode?: LanguageCode;
 }
 
 // Reverse mapping from English language names to codes
@@ -34,11 +49,51 @@ const LANGUAGE_CODE_MAP: Record<string, string> = {
   Portuguese: "pt",
 };
 
+const GOAL_PROGRESS_STEPS: GoalProgress[] = [1, 2, 3, 4, 5];
+
+const GOAL_PROGRESS_COLORS: Record<GoalProgress, string> = {
+  1: "bg-slate-600",
+  2: "bg-blue-500",
+  3: "bg-amber-500",
+  4: "bg-orange-400",
+  5: "bg-green-500",
+};
+
+const GOAL_PROGRESS_COLORS_IMPOSSIBLE: Record<GoalProgress, string> = {
+  1: "bg-red-900",
+  2: "bg-rose-700",
+  3: "bg-red-600",
+  4: "bg-red-500",
+  5: "bg-red-400",
+};
+
 interface DebriefState {
   debrief: Debrief;
   sceneImageUrl: string;
   npcName: string;
   goalStatus: string;
+}
+
+function fromCachedConversation(
+  cached: ReturnType<typeof conversationCacheSchema.parse>,
+): ConversationState {
+  return {
+    conversationId: cached.conversationId,
+    scenario: cached.scenario,
+    language: cached.language,
+    level: cached.level,
+    goal: cached.goal,
+    npcName: cached.npcName,
+    npcGender: cached.npcGender,
+    mood: cached.npcOpeningMood,
+    goalProgress: cached.npcOpeningGoalProgress,
+    sceneImageUrl: cached.sceneImageUrl,
+    npcFaceImageUrl: cached.npcFaceImageUrl,
+    history: [{ role: "npc", text: cached.npcOpeningMessage }],
+    hints: cached.hints,
+    scenarioKey: cached.scenarioKey,
+    languageCode: cached.languageCode,
+  };
 }
 
 export default function ChatPage() {
@@ -67,32 +122,32 @@ export default function ChatPage() {
   useEffect(() => {
     const cached = sessionStorage.getItem(`parley:${id}`);
     if (cached) {
-      const data = JSON.parse(cached);
       sessionStorage.removeItem(`parley:${id}`);
-      setState({
-        conversationId: data.conversationId,
-        scenario: data.scenario,
-        language: data.language,
-        level: data.level,
-        goal: data.goal,
-        npcName: data.npcName,
-        mood: data.npcOpeningMood || "neutral",
-        sceneImageUrl: data.sceneImageUrl,
-        npcFaceImageUrl: data.npcFaceImageUrl || "",
-        history: [{ role: "npc", text: data.npcOpeningMessage }],
-        hints: data.hints || [],
-        scenarioKey: data.scenarioKey,
-        languageCode: data.languageCode,
-      });
-    } else {
-      fetch(`/api/conversation/${id}`)
-        .then((r) => {
-          if (!r.ok) throw new Error("Conversation not found");
-          return r.json();
-        })
-        .then((data) => setState(data))
-        .catch((err) => setError(err.message));
+      try {
+        const parsedRaw = JSON.parse(cached) as unknown;
+        const parsed = conversationCacheSchema.safeParse(parsedRaw);
+        if (parsed.success) {
+          setState(fromCachedConversation(parsed.data));
+          return;
+        }
+      } catch {
+        // Fall through to API hydration.
+      }
     }
+
+    fetch(`/api/conversation/${id}`)
+      .then((r) => {
+        if (!r.ok) throw new Error("Conversation not found");
+        return r.json();
+      })
+      .then((data: unknown) => {
+        const parsed = conversationSnapshotSchema.safeParse(data);
+        if (!parsed.success) {
+          throw new Error("Malformed conversation payload");
+        }
+        setState(parsed.data);
+      })
+      .catch((err) => setError(err.message));
   }, [id]);
 
   useEffect(() => {
@@ -108,10 +163,10 @@ export default function ChatPage() {
     };
   }, []);
 
-  const autoPlayTts = useCallback((text: string, messageIndex: number, langCode?: string) => {
+  const autoPlayTts = useCallback((text: string, messageIndex: number, langCode?: string, gender?: NpcGender) => {
     if (!ttsPlayerRef.current) return;
     setTtsPlaying(messageIndex);
-    ttsPlayerRef.current.play(text, `msg-${messageIndex}`, langCode).then(() => {
+    ttsPlayerRef.current.play(text, `msg-${messageIndex}`, langCode, gender).then(() => {
       setTtsPlaying(null);
     }).catch((err) => {
       console.error("TTS autoplay failed:", err);
@@ -135,7 +190,7 @@ export default function ChatPage() {
       hasAutoPlayed.current = true;
       const firstNpc = state.history[0];
       if (firstNpc?.role === "npc") {
-        autoPlayTts(firstNpc.text, 0, state.languageCode);
+        autoPlayTts(firstNpc.text, 0, state.languageCode, state.npcGender);
         lastProcessedIndex.current = 0;
       }
     }
@@ -152,7 +207,7 @@ export default function ChatPage() {
       for (let i = lastProcessedIndex.current + 1; i <= currentLastIndex; i++) {
         const message = state.history[i];
         if (message?.role === "npc") {
-          autoPlayTts(message.text, i, state.languageCode);
+          autoPlayTts(message.text, i, state.languageCode, state.npcGender);
         }
       }
       // Update after processing all new messages
@@ -169,7 +224,7 @@ export default function ChatPage() {
   }, [pendingTranscription]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleReplay(messageIndex: number, text: string) {
-    autoPlayTts(text, messageIndex, state?.languageCode);
+    autoPlayTts(text, messageIndex, state?.languageCode, state?.npcGender);
   }
 
   async function handleMicToggle() {
@@ -185,9 +240,12 @@ export default function ChatPage() {
           body: JSON.stringify({ audio: audioBase64, languageCode: state?.languageCode }),
         });
         if (!res.ok) throw new Error("Transcription failed");
-        const data = await res.json();
-        if (data.text) {
-          setPendingTranscription(data.text);
+        const data = sttResponseSchema.safeParse(await res.json());
+        if (!data.success) {
+          throw new Error("Malformed transcription payload");
+        }
+        if (data.data.text) {
+          setPendingTranscription(data.data.text);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Transcription failed");
@@ -230,41 +288,45 @@ export default function ChatPage() {
 
       if (!res.ok) throw new Error("Failed to send message");
 
-      await consumeSSE(res, {
-        onToken(text) {
-          setStreamingText((prev) => prev + text);
-        },
-        onComplete(data: Record<string, unknown>) {
-          setStreamingText("");
-          const npcText = data.npcMessage as string;
-          setState((s) => {
-            if (!s) return s;
-            const newHistory = [
-              ...s.history,
-              { role: "npc" as const, text: npcText },
-            ];
-            return {
-              ...s,
-              history: newHistory,
-              mood: data.mood as string,
-              hints: (data.hints as string[]) || [],
-              sceneImageUrl: (data.sceneImageUrl as string) || s.sceneImageUrl,
-              npcFaceImageUrl: (data.npcFaceImageUrl as string) || s.npcFaceImageUrl,
-            };
-          });
-          if (data.debrief) {
-            setDebriefState({
-              debrief: data.debrief as Debrief,
-              sceneImageUrl: data.sceneImageUrl as string,
-              npcName: state.npcName,
-              goalStatus: data.goalStatus as string,
+      await consumeSSE<MessageStreamCompletePayload>(
+        res,
+        {
+          onToken(text) {
+            setStreamingText((prev) => prev + text);
+          },
+          onComplete(data) {
+            setStreamingText("");
+            setState((s) => {
+              if (!s) return s;
+              const newHistory = [
+                ...s.history,
+                { role: "npc" as const, text: data.npcMessage },
+              ];
+              return {
+                ...s,
+                history: newHistory,
+                mood: data.mood,
+                goalProgress: data.goalProgress,
+                hints: data.hints,
+                sceneImageUrl: data.sceneImageUrl,
+                npcFaceImageUrl: data.npcFaceImageUrl || s.npcFaceImageUrl,
+              };
             });
-          }
+            if (data.debrief) {
+              setDebriefState({
+                debrief: data.debrief,
+                sceneImageUrl: data.sceneImageUrl,
+                npcName: state.npcName,
+                goalStatus: data.goalStatus,
+              });
+            }
+          },
+          onError(err) {
+            setError(err);
+          },
         },
-        onError(err) {
-          setError(err);
-        },
-      });
+        messageStreamCompletePayloadSchema,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send message");
     } finally {
@@ -282,7 +344,11 @@ export default function ChatPage() {
         method: "POST",
       });
       if (!res.ok) throw new Error("Failed to quit");
-      const data = await res.json();
+      const parsed = quitConversationResponseSchema.safeParse(await res.json());
+      if (!parsed.success) {
+        throw new Error("Malformed quit payload");
+      }
+      const data = parsed.data;
       setDebriefState({
         debrief: data.debrief,
         sceneImageUrl: data.sceneImageUrl,
@@ -378,6 +444,13 @@ export default function ChatPage() {
   }
 
   // Conversation view
+  const progressPalette =
+    state.level === "impossible"
+      ? GOAL_PROGRESS_COLORS_IMPOSSIBLE
+      : GOAL_PROGRESS_COLORS;
+  const progressTrackColor =
+    state.level === "impossible" ? "bg-red-950/70" : "bg-slate-800/80";
+
   return (
     <main className="flex flex-1 min-h-0 h-screen">
       {/* Left side - Meta Information (30%) */}
@@ -451,6 +524,22 @@ export default function ChatPage() {
                   ? tScenarios(`${state.scenarioKey}_goal_${state.level}`)
                   : state.goal}
               </p>
+              <div
+                role="img"
+                aria-label={`Goal progress ${state.goalProgress} of 5`}
+                className="mt-3 flex gap-1"
+              >
+                {GOAL_PROGRESS_STEPS.map((step) => (
+                  <span
+                    key={step}
+                    className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                      step <= state.goalProgress
+                        ? progressPalette[state.goalProgress]
+                        : progressTrackColor
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
 
