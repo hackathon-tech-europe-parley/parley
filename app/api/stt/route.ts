@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import WebSocket from "ws";
+import { getGradiumApiKey } from "@/lib/env";
 import { sttRequestSchema, sttServerMessageSchema } from "@/lib/types";
 
-const GRADIUM_API_KEY = process.env.GRADIUM_API_KEY!;
 const CHUNK_SAMPLES = 1920;
 const BYTES_PER_SAMPLE = 2;
 const TIMEOUT_MS = 30_000;
@@ -37,9 +37,10 @@ export async function POST(request: Request) {
 }
 
 function transcribeViaWebSocket(pcm: Buffer, languageCode?: string): Promise<string> {
+  const apiKey = getGradiumApiKey();
   return new Promise((resolve, reject) => {
     const ws = new WebSocket("wss://eu.api.gradium.ai/api/speech/asr", {
-      headers: { "x-api-key": GRADIUM_API_KEY },
+      headers: { "x-api-key": apiKey },
     });
 
     let transcript = "";
