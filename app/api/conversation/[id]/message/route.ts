@@ -1,9 +1,6 @@
-import { getConversation, setConversation, setHints } from "@/lib/conversations";
-import { generateSceneImage } from "@/lib/fal";
-import { getNpcFaceAssetUrl } from "@/lib/npc-assets";
-import { generateNpcResponseStream } from "@/lib/openai";
-import { generateDebrief } from "@/lib/openai";
-import { applyNpcPolicy } from "@/lib/npc-policy";
+import { getConversation, setConversation, setHints } from "@/lib/storage";
+import { generateSceneImage, generateNpcResponseStream, generateDebrief } from "@/lib/ai";
+import { getNpcFaceAssetUrl, applyNpcPolicy } from "@/lib/game";
 import {
   idParamSchema,
   messageStreamCompletePayloadSchema,

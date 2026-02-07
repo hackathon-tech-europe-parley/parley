@@ -1,5 +1,5 @@
-import type { Conversation } from "./types";
-import { DATABASE_URL } from "./env";
+import type { Conversation } from "../types";
+import { DATABASE_URL } from "../env";
 
 const usePostgres = Boolean(DATABASE_URL);
 

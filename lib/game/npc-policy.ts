@@ -6,8 +6,8 @@ import type {
   MoodState,
   NpcEvaluation,
   NpcResponse,
-} from "./types";
-import { normalizeToMoodState } from "./types";
+} from "../types";
+import { normalizeToMoodState } from "../types";
 
 interface PolicyProfile {
   failDisengagedStreak: number;

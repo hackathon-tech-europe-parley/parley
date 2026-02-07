@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { synthesizeSpeech } from "@/lib/gradium";
+import { synthesizeSpeech } from "@/lib/audio";
 import { ttsRequestSchema } from "@/lib/types";
 
 export async function POST(request: Request) {

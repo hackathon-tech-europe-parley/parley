@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { customScenarioSchema, generateScenarioSchema } from "@/lib/types";
-import { generateCustomScenario } from "@/lib/openai";
+import { generateCustomScenario } from "@/lib/ai";
 
 export async function POST(request: Request) {
   try {
