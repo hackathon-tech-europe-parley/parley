@@ -1,12 +1,24 @@
 import { NextResponse } from "next/server";
 import { getConversation, getHints } from "@/lib/conversations";
-import type { ConversationSnapshot } from "@/lib/types";
+import {
+  conversationSnapshotSchema,
+  idParamSchema,
+  type ConversationSnapshot,
+} from "@/lib/types";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await params;
+  const rawParams = await params;
+  const parsedParams = idParamSchema.safeParse(rawParams.id);
+  if (!parsedParams.success) {
+    return NextResponse.json(
+      { error: "Invalid conversation id" },
+      { status: 400 },
+    );
+  }
+  const id = parsedParams.data;
   const conversation = getConversation(id);
 
   if (!conversation) {
@@ -33,5 +45,5 @@ export async function GET(
     languageCode: conversation.languageCode,
   };
 
-  return NextResponse.json(snapshot);
+  return NextResponse.json(conversationSnapshotSchema.parse(snapshot));
 }
