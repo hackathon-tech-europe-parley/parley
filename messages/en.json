@@ -130,7 +130,11 @@
     "startRecording": "Start recording",
     "stopRecording": "Stop recording",
     "recording": "Recording... click mic to stop",
-    "transcribing": "Transcribing..."
+    "transcribing": "Transcribing...",
+    "mute": "Mute NPC audio",
+    "unmute": "Unmute NPC audio",
+    "clickNewScenario": "Click to start a new scenario",
+    "clickForDebrief": "Click to see your debrief"
   },
   "Debrief": {
     "goalAchieved": "Goal Achieved",
