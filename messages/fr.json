@@ -16,7 +16,11 @@
     "goalLabel": "Objectif:",
     "showDifferent": "Afficher d'autres scénarios",
     "startRoleplay": "Commencer le jeu de rôle",
-    "settingUp": "Configuration du scénario..."
+    "settingUp": "Configuration du scénario...",
+    "createOwn": "Créez le vôtre",
+    "customPromptPlaceholder": "Décrivez une situation...",
+    "generate": "Générer",
+    "generating": "Génération du scénario..."
   },
   "Levels": {
     "beginner": "Débutant",

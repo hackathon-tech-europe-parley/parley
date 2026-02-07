@@ -18,7 +18,18 @@ interface ConversationState {
   sceneImageUrl: string;
   history: ConversationMessage[];
   hints: string[];
+  scenarioKey?: string;
+  languageCode?: string;
 }
+
+// Reverse mapping from English language names to codes
+const LANGUAGE_CODE_MAP: Record<string, string> = {
+  English: "en",
+  French: "fr",
+  German: "de",
+  Spanish: "es",
+  Portuguese: "pt",
+};
 
 interface DebriefState {
   debrief: Debrief;
@@ -31,6 +42,9 @@ export default function ChatPage() {
   const { id } = useParams<{ id: string }>();
   const t = useTranslations("Chat");
   const tDebrief = useTranslations("Debrief");
+  const tLevels = useTranslations("Levels");
+  const tLangs = useTranslations("Languages");
+  const tScenarios = useTranslations("Scenarios");
   const [state, setState] = useState<ConversationState | null>(null);
   const [debriefState, setDebriefState] = useState<DebriefState | null>(null);
   const [input, setInput] = useState("");
@@ -57,6 +71,8 @@ export default function ChatPage() {
         sceneImageUrl: data.sceneImageUrl,
         history: [{ role: "npc", text: data.npcOpeningMessage }],
         hints: data.hints || [],
+        scenarioKey: data.scenarioKey,
+        languageCode: data.languageCode,
       });
     } else {
       fetch(`/api/conversation/${id}`)
@@ -251,14 +267,14 @@ export default function ChatPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-950" />
         <div className="absolute bottom-3 left-4 flex gap-2">
           <span className="rounded-full bg-slate-900/80 px-3 py-1 text-xs text-slate-300">
-            {state.language}
+            {state.languageCode ? tLangs(state.languageCode) : tLangs(LANGUAGE_CODE_MAP[state.language] ?? "en")}
           </span>
           <span className={`rounded-full px-3 py-1 text-xs ${
             state.level === "impossible"
               ? "bg-red-900/80 text-red-300"
               : "bg-slate-900/80 text-slate-300"
           }`}>
-            {state.level}
+            {tLevels(state.level as "beginner" | "intermediate" | "advanced" | "impossible")}
           </span>
           <span className="rounded-full bg-blue-900/80 px-3 py-1 text-xs text-blue-300">
             {state.mood}
@@ -281,7 +297,9 @@ export default function ChatPage() {
           <span className={
             state.level === "impossible" ? "text-red-300" : "text-slate-300"
           }>
-            {state.goal}
+            {state.scenarioKey
+              ? tScenarios(`${state.scenarioKey}_goal_${state.level}`)
+              : state.goal}
           </span>
         </div>
       </div>
@@ -360,7 +378,7 @@ export default function ChatPage() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={t("messagePlaceholder", { language: state.language })}
+            placeholder={t("messagePlaceholder", { language: state.languageCode ? tLangs(state.languageCode) : tLangs(LANGUAGE_CODE_MAP[state.language] ?? "en") })}
             disabled={sending}
             className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
           />

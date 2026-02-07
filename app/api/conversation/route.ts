@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { scenario, language, level, goal } = parsed.data;
+    const { scenario, language, level, goal, scenarioKey, languageCode } = parsed.data;
     const conversationId = generateId();
 
     const imagePrompt = `Photorealistic scene: ${scenario}. First-person perspective. Cinematic lighting.`;
@@ -37,6 +37,8 @@ export async function POST(request: Request) {
       history: [],
       messagesSinceImageRegen: 0,
       sceneImageUrl,
+      scenarioKey,
+      languageCode,
     };
 
     const opening = await generateNpcOpening(conversation);
