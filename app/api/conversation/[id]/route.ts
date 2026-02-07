@@ -25,6 +25,7 @@ export async function GET(
     npcName: conversation.npcName,
     mood: conversation.mood,
     sceneImageUrl: conversation.sceneImageUrl,
+    npcFaceImageUrl: conversation.npcFaceImageUrl,
     history: conversation.history,
     hints: getHints(id),
     scenarioKey: conversation.scenarioKey,

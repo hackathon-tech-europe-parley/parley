@@ -33,6 +33,7 @@ export interface Conversation {
   history: ConversationMessage[];
   messagesSinceImageRegen: number;
   sceneImageUrl: string;
+  npcFaceImageUrl: string;
   scenarioKey?: string;
   languageCode?: string;
 }
@@ -64,6 +65,7 @@ export interface ConversationSnapshot {
   npcName: string;
   mood: string;
   sceneImageUrl: string;
+  npcFaceImageUrl: string;
   history: ConversationMessage[];
   hints: string[];
   scenarioKey?: string;
