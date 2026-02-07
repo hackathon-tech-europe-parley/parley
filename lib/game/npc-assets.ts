@@ -1,4 +1,4 @@
-import type { NpcGender } from "./types";
+import type { NpcGender } from "../types";
 
 const GENDER_MAP: Record<NpcGender, string> = {
   masculine: "man",

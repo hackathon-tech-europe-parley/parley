@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getConversation, getHints } from "@/lib/conversations";
+import { getConversation, getHints } from "@/lib/storage";
 import {
   conversationSnapshotSchema,
   idParamSchema,

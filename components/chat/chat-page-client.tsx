@@ -6,9 +6,9 @@ import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
-import { AudioRecorder } from "@/lib/audio-recorder";
+import { AudioRecorder } from "@/lib/audio/audio-recorder";
 import { consumeSSE } from "@/lib/sse-client";
-import { TTSPlayer } from "@/lib/tts-player";
+import { TTSPlayer } from "@/lib/audio/tts-player";
 import {
   conversationCacheSchema,
   conversationSnapshotSchema,
