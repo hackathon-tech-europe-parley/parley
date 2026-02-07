@@ -19,6 +19,65 @@ export type ConversationRole = (typeof CONVERSATION_ROLES)[number];
 export type LanguageCode = (typeof LANGUAGE_CODES)[number];
 export type NpcGender = (typeof NPC_GENDERS)[number];
 
+// Define the 8 core mood states
+export type MoodState = 
+  | "happy"      // Joyful, pleased, cheerful
+  | "friendly"   // Warm, welcoming, kind
+  | "neutral"    // Calm, professional, balanced
+  | "skeptical"  // Questioning, doubtful, wary
+  | "annoyed"    // Irritated, frustrated, impatient
+  | "angry"      // Hostile, furious, enraged
+  | "sad"        // Melancholic, disappointed, dejected
+  | "surprised"; // Shocked, amazed, taken aback
+
+// Mood mapping function to normalize any mood string to one of the 8 states
+export function normalizeToMoodState(mood: string): MoodState {
+  const m = mood.toLowerCase();
+  
+  // Happy cluster
+  if (["happy", "joyful", "pleased", "cheerful", "delighted", "ecstatic", "elated", "encouraging", "impressed"].some(k => m.includes(k))) {
+    return "happy";
+  }
+  
+  // Friendly cluster
+  if (["friendly", "warm", "welcoming", "kind", "pleasant", "amiable", "cordial"].some(k => m.includes(k))) {
+    return "friendly";
+  }
+  
+  // Neutral cluster
+  if (["neutral", "calm", "professional", "balanced", "composed", "steady", "focused", "patient", "firm"].some(k => m.includes(k))) {
+    return "neutral";
+  }
+  
+  // Skeptical cluster
+  if (["skeptical", "doubtful", "wary", "suspicious", "distrustful", "guarded", "questioning", "unconvinced"].some(k => m.includes(k))) {
+    return "skeptical";
+  }
+  
+  // Annoyed cluster
+  if (["annoyed", "irritated", "frustrated", "impatient", "exasperated", "bothered", "aggravated"].some(k => m.includes(k))) {
+    return "annoyed";
+  }
+  
+  // Angry cluster
+  if (["angry", "hostile", "furious", "enraged", "aggressive", "livid", "incensed", "cold", "distant"].some(k => m.includes(k))) {
+    return "angry";
+  }
+  
+  // Sad cluster
+  if (["sad", "melancholic", "gloomy", "somber", "dejected", "disappointed", "downcast", "sorrowful"].some(k => m.includes(k))) {
+    return "sad";
+  }
+  
+  // Surprised cluster
+  if (["surprised", "shocked", "amazed", "astonished", "taken aback", "startled", "bewildered"].some(k => m.includes(k))) {
+    return "surprised";
+  }
+  
+  // Default to neutral if no match
+  return "neutral";
+}
+
 export interface ConversationMessage {
   role: ConversationRole;
   text: string;

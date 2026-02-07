@@ -3,9 +3,11 @@ import type {
   ConversationLevel,
   GoalProgress,
   GoalStatus,
+  MoodState,
   NpcEvaluation,
   NpcResponse,
 } from "./types";
+import { normalizeToMoodState } from "./types";
 
 interface PolicyProfile {
   failDisengagedStreak: number;
@@ -200,24 +202,24 @@ function decideMood(args: {
   hostileTurn: boolean;
   disengagedStreak: number;
   llmMood: string;
-}): string {
+}): MoodState {
   if (args.goalStatus === "failed") {
-    return args.level === "beginner" ? "firm" : "cold";
+    return args.level === "beginner" ? "annoyed" : "angry";
   }
   if (args.hostileTurn) {
-    return args.level === "beginner" ? "firm" : "annoyed";
+    return args.level === "beginner" ? "annoyed" : "angry";
   }
   if (args.disengagedStreak >= 2) {
-    return args.level === "impossible" ? "skeptical" : "firm";
+    return args.level === "impossible" ? "skeptical" : "annoyed";
   }
   if (args.adjustedScore >= 0.85) {
-    return args.level === "impossible" ? "impressed" : "encouraging";
+    return args.level === "impossible" ? "surprised" : "happy";
   }
   if (args.adjustedScore >= 0.65) {
-    return "focused";
+    return "neutral";
   }
   if (args.adjustedScore <= 0.35) {
-    return args.level === "beginner" ? "patient" : "skeptical";
+    return args.level === "beginner" ? "neutral" : "skeptical";
   }
   return normalizeMood(args.llmMood);
 }
@@ -243,9 +245,9 @@ function normalizeEvaluation(evaluation: NpcEvaluation): NpcEvaluation {
   };
 }
 
-function normalizeMood(value: string): string {
-  const mood = value.trim().toLowerCase();
-  return mood.length > 0 ? mood : "neutral";
+function normalizeMood(value: string): MoodState {
+  const mood = value.trim();
+  return mood.length > 0 ? normalizeToMoodState(mood) : "neutral";
 }
 
 function clampUnit(value: number): number {

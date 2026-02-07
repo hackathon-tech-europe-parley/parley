@@ -62,15 +62,14 @@ export async function updateNpcFaceImage(
   mood: string,
 ): Promise<string> {
   // Create very specific expression descriptions that only affect the face
+  // All 8 core mood states must be defined
   const moodExpressions: Record<string, string> = {
-    neutral: "neutral facial expression, calm eyes, relaxed mouth",
-    friendly: "warm smile, friendly eyes, welcoming expression",
-    skeptical: "raised eyebrow, questioning look, slightly narrowed eyes",
-    amused: "slight smile, twinkling eyes, amused expression",
-    annoyed: "furrowed brow, slight frown, annoyed expression",
-    convinced: "understanding expression, slight nod, convinced look",
-    furious: "angry expression, tense face, furrowed brow, angry eyes",
     happy: "big smile, joyful eyes, happy expression",
+    friendly: "warm smile, friendly eyes, welcoming expression",
+    neutral: "neutral facial expression, calm eyes, relaxed mouth",
+    skeptical: "raised eyebrow, questioning look, slightly narrowed eyes",
+    annoyed: "furrowed brow, slight frown, annoyed expression",
+    angry: "angry expression, tense face, furrowed brow, angry eyes",
     sad: "downcast eyes, melancholic expression, slight frown",
     surprised: "wide eyes, open mouth, surprised expression",
   };

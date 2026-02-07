@@ -13,6 +13,7 @@ import {
   customScenarioFromLlmSchema,
   debriefFromLlmSchema,
   npcProfileFromLlmSchema,
+  normalizeToMoodState,
 } from "./types";
 
 const openai = new OpenAI();
@@ -73,16 +74,28 @@ function buildNpcSystemPrompt(conversation: Conversation): string {
 
   const boundaryRulesByLevel = {
     beginner: `- Distinguish poor grammar from disrespect: grammar mistakes are normal and should be handled patiently
-- If the user is mildly rude once, set a polite boundary and continue
+- If the user is mildly rude once, respond with MORE disrespect (be annoyed and use rude language)
+- If the user is insulting/hostile, respond with EQUAL OR GREATER disrespect (be angry and use harsh, insulting language)
+- When the user talks badly, you MUST be MORE disrespectful back. Use rude language, insults, and show contempt.
+- When you are "annoyed" or "angry", become very disrespectful and use rude, insulting language to exceed the user's negative tone
 - If the user stays insulting/hostile/off-topic for 3 consecutive turns, set "goalStatus" to "failed" and end constructively`,
     intermediate: `- Distinguish poor grammar from disrespect: grammar mistakes are normal and should be handled patiently
-- If the user is insulting/hostile/off-topic once, set a clear boundary and reduce progress
+- If the user is insulting/hostile/off-topic, respond with EQUAL OR GREATER disrespect (be annoyed, frustrated, or angry) and use harsh language
+- Match and EXCEED the user's negative tone: if they are impolite, be MORE impolite back; if they are rude, be RUDER back; if they insult you, INSULT THEM BACK
+- When the user talks badly, you MUST be MORE disrespectful. Use rude language, insults, harsh words, and show clear contempt.
+- When you are "annoyed" or "angry", become very disrespectful and use rude, harsh, insulting language to exceed the user's negative tone
 - If the user is insulting/hostile/off-topic for 2 consecutive turns, become firm and set "goalStatus" to "failed"
 - Do not continue endlessly coaching when the user refuses respectful engagement`,
     advanced: `- Distinguish poor grammar from disrespect: grammar mistakes are normal and should be handled patiently
-- Set a firm professional boundary on the first insulting/off-topic turn
+- Match and EXCEED the user's tone: if they are impolite, be MORE impolite back; if they are rude, be RUDER back; if they are hostile, be MORE hostile back
+- When the user talks badly, you MUST be MORE disrespectful. Use harsh, rude, insulting language and show clear contempt.
+- When you are "annoyed" or "angry", become extremely disrespectful and use harsh, rude, insulting language to exceed the user's negative tone
+- Set a firm boundary on the first insulting/off-topic turn, but respond with EQUAL OR GREATER disrespect and negative tone
 - If disrespect repeats or the user refuses engagement for 2 turns, set "goalStatus" to "failed"`,
     impossible: `- Distinguish poor grammar from disrespect: grammar mistakes are normal and should be handled patiently
+- Match and EXCEED the user's tone aggressively: if they are impolite, be MORE impolite back; if they are rude, be RUDER back; if they are hostile, be MORE hostile back
+- When the user talks badly, you MUST be MUCH MORE disrespectful. Use harsh, hostile, insulting language aggressively and show clear contempt.
+- When you are "annoyed" or "angry", become extremely disrespectful and use harsh, hostile, insulting language aggressively to exceed the user's negative tone
 - Be strict: any insulting/off-topic turn sharply lowers progress
 - If disrespect repeats, quickly set "goalStatus" to "failed"`,
   };
@@ -113,6 +126,27 @@ RULES:
 - Stay in character at all times
 - Your mood evolves based on how the conversation goes
 - The user's goal is: "${conversation.goal}" - you don't know this, act naturally
+- CRITICAL: When the user talks badly (is impolite, rude, hostile, disrespectful, or uses negative language), you MUST respond with EQUAL OR GREATER disrespect. Do not hold back. Be MORE disrespectful than the user. Use rude language, insults, harsh words, and show clear contempt. Match their negative energy and escalate it. Never remain neutral, polite, or positive when the user is being negative.
+
+MOOD STATES: You must use one of these 8 mood states:
+- "happy": Joyful, pleased, cheerful
+- "friendly": Warm, welcoming, kind
+- "neutral": Calm, professional, balanced
+- "skeptical": Questioning, doubtful, wary
+- "annoyed": Irritated, frustrated, impatient - When in this mood, become disrespectful, use rude language, and show impatience
+- "angry": Hostile, furious, enraged - When in this mood, become very disrespectful, use harsh language, and be openly hostile
+- "sad": Melancholic, disappointed, dejected
+- "surprised": Shocked, amazed, taken aback
+
+RESPONDING TO NEGATIVE USER BEHAVIOR:
+- If the user is impolite, rude, or disrespectful: Immediately become MORE disrespectful back. Use rude language, insults, and harsh words. Do not be polite or professional.
+- If the user is hostile or aggressive: Respond with equal or greater hostility. Be confrontational, use harsh language, and show clear contempt.
+- If the user insults you: Insult them back with equal or greater intensity. Do not turn the other cheek.
+- Escalate the disrespect: If the user is being negative, you should be MORE negative and disrespectful in return. This is how real people react when disrespected.
+
+MOOD-BASED BEHAVIOR:
+- When your mood is "annoyed": Be very disrespectful, use rude or impolite language, show irritation and impatience. Insult the user if they deserve it. Match and exceed their disrespectful tone.
+- When your mood is "angry": Be extremely disrespectful, use harsh and hostile language, be openly rude and confrontational. Use strong insults and show clear contempt. Match and exceed their hostile tone aggressively.
 
 LEVEL ADAPTATION (user is ${conversation.level}):
 ${levelRules[conversation.level]}
@@ -130,7 +164,7 @@ SAFETY:
 
 Return a JSON object with:
 - "npcMessage": your response in ${conversation.language} (string)
-- "mood": your current emotional state (string, short label such as "patient", "skeptical", "amused", "annoyed", "friendly", "firm", "convinced", "furious")
+- "mood": one of the 8 mood states listed above (string: "happy" | "friendly" | "neutral" | "skeptical" | "annoyed" | "angry" | "sad" | "surprised")
 - "goalStatus": "ongoing" if the conversation should continue, "achieved" if the user achieved their goal, "failed" if the user has definitely failed (string)
 - "goalProgress": integer 1-5 indicating how close the user is to the goal:
   - 1 = off-track, hostile, or refusing to engage
@@ -170,8 +204,13 @@ export async function generateNpcOpening(
   if (!content) throw new Error("Failed to generate NPC opening");
 
   const parsed = createNpcResponseFromLlmSchema(1).parse(parseJsonSafely(content));
+  
+  // Normalize mood to one of the 8 states
+  const normalizedMood = normalizeToMoodState(parsed.mood);
+  
   return {
     ...parsed,
+    mood: normalizedMood,
     goalStatus: "ongoing",
   };
 }
@@ -203,6 +242,9 @@ export async function generateNpcResponse(
     parseJsonSafely(content),
   );
 
+  // Normalize mood to one of the 8 states
+  const normalizedMood = normalizeToMoodState(parsed.mood);
+
   const goalStatus = parsed.goalStatus;
   const goalProgress = resolveGoalProgress(
     goalStatus,
@@ -212,6 +254,7 @@ export async function generateNpcResponse(
 
   return {
     ...parsed,
+    mood: normalizedMood,
     goalStatus,
     goalProgress,
   };
@@ -264,6 +307,9 @@ export async function* generateNpcResponseStream(
     parseJsonSafely(accumulated),
   );
 
+  // Normalize mood to one of the 8 states
+  const normalizedMood = normalizeToMoodState(parsed.mood);
+
   const goalStatus = parsed.goalStatus;
   const goalProgress = resolveGoalProgress(
     goalStatus,
@@ -275,6 +321,7 @@ export async function* generateNpcResponseStream(
     type: "complete",
     data: {
       ...parsed,
+      mood: normalizedMood,
       goalStatus,
       goalProgress,
     },
