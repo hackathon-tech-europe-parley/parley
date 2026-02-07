@@ -21,6 +21,15 @@ import { ChatConversationView } from "./chat-conversation-view";
 import { ChatDebriefView } from "./chat-debrief-view";
 import { fromCachedConversation, type ConversationState, type DebriefState } from "./chat-types";
 
+function preloadImage(url: string): Promise<void> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve();
+    img.onerror = () => resolve();
+    img.src = url;
+  });
+}
+
 export function ChatPageClient() {
   const params = useParams<{ id?: string }>();
   const parsedId = idParamSchema.safeParse(params.id);
@@ -241,6 +250,8 @@ export function ChatPageClient() {
         throw new Error("Failed to send message");
       }
 
+      let completeData: MessageStreamCompletePayload | null = null;
+
       await consumeSSE<MessageStreamCompletePayload>(
         res,
         {
@@ -248,30 +259,7 @@ export function ChatPageClient() {
             setStreamingText((prev) => prev + token);
           },
           onComplete(data) {
-            setStreamingText("");
-            setState((prev) => {
-              if (!prev) {
-                return prev;
-              }
-              const newHistory = [...prev.history, { role: "npc" as const, text: data.npcMessage }];
-              return {
-                ...prev,
-                history: newHistory,
-                mood: data.mood,
-                goalProgress: data.goalProgress,
-                hints: data.hints,
-                sceneImageUrl: data.sceneImageUrl,
-                npcFaceImageUrl: data.npcFaceImageUrl || prev.npcFaceImageUrl,
-              };
-            });
-            if (data.debrief) {
-              setDebriefState({
-                debrief: data.debrief,
-                sceneImageUrl: data.sceneImageUrl,
-                npcName: state.npcName,
-                goalStatus: data.goalStatus,
-              });
-            }
+            completeData = data;
           },
           onError(streamError) {
             setError(streamError);
@@ -279,6 +267,54 @@ export function ChatPageClient() {
         },
         messageStreamCompletePayloadSchema,
       );
+
+      // Preload all assets before revealing the message
+      if (completeData) {
+        const data = completeData as MessageStreamCompletePayload;
+        const npcMsgIndex = state.history.length + 1;
+        const cacheKey = `msg-${npcMsgIndex}`;
+
+        const preloads: Promise<void>[] = [];
+
+        if (ttsPlayerRef.current && !ttsPlayerRef.current.muted) {
+          preloads.push(
+            ttsPlayerRef.current.prefetch(data.npcMessage, cacheKey, state.languageCode, state.npcGender),
+          );
+        }
+        if (data.sceneImageUrl && data.sceneImageUrl !== state.sceneImageUrl) {
+          preloads.push(preloadImage(data.sceneImageUrl));
+        }
+        if (data.npcFaceImageUrl && data.npcFaceImageUrl !== state.npcFaceImageUrl) {
+          preloads.push(preloadImage(data.npcFaceImageUrl));
+        }
+
+        await Promise.all(preloads);
+
+        // Commit everything in one render
+        setStreamingText("");
+        setState((prev) => {
+          if (!prev) {
+            return prev;
+          }
+          return {
+            ...prev,
+            history: [...prev.history, { role: "npc" as const, text: data.npcMessage }],
+            mood: data.mood,
+            goalProgress: data.goalProgress,
+            hints: data.hints,
+            sceneImageUrl: data.sceneImageUrl,
+            npcFaceImageUrl: data.npcFaceImageUrl || prev.npcFaceImageUrl,
+          };
+        });
+        if (data.debrief) {
+          setDebriefState({
+            debrief: data.debrief,
+            sceneImageUrl: data.sceneImageUrl,
+            npcName: state.npcName,
+            goalStatus: data.goalStatus,
+          });
+        }
+      }
     } catch (sendError) {
       setError(sendError instanceof Error ? sendError.message : "Failed to send message");
     } finally {
