@@ -48,18 +48,18 @@ export default async function LocaleLayout({ children, params }: Props) {
         <NextIntlClientProvider messages={messages}>
           {/* Header */}
           <header className="flex-shrink-0 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md">
-            <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-              <Link href="/" className="flex items-center gap-2.5">
+            <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-3 sm:px-4 md:px-6">
+              <Link href="/" className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white">
                   P
                 </div>
-                <span className="text-lg font-semibold text-white">Parley</span>
+                <span className="text-base font-semibold text-white sm:text-lg">Parley</span>
               </Link>
               <nav className="flex items-center gap-1">
                 <LanguageSwitcher />
                 <Link
                   href="/"
-                  className="rounded-lg px-3 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200"
+                  className="hidden rounded-lg px-3 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200 sm:inline-block"
                 >
                   {(await getTranslations("Layout"))("newSession")}
                 </Link>

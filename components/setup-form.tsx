@@ -148,17 +148,17 @@ export function SetupForm() {
   const displayLanguage = languageCode ? tLangs(languageCode) : "";
 
   return (
-    <div className="w-full max-w-2xl px-4">
-      <div className="mb-10 text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-white">
+    <div className="w-full max-w-2xl px-2 sm:px-4 lg:max-w-3xl">
+      <div className="mb-6 text-center sm:mb-8 md:mb-10">
+        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
           {t("heading")}
         </h1>
-        <p className="mt-2 text-slate-400">
+        <p className="mt-1.5 text-sm text-slate-400 sm:mt-2 sm:text-base">
           {t("subheading")}
         </p>
       </div>
 
-      <div className="mb-8 flex items-center justify-center gap-2">
+      <div className="mb-6 flex items-center justify-center gap-2 sm:mb-8">
         {[1, 2].map((s) => (
           <button
             key={s}
@@ -187,7 +187,7 @@ export function SetupForm() {
           <p className="mb-6 text-center text-sm text-slate-400">
             {t("step1Subtitle")}
           </p>
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4">
             {LANGUAGES.map((lang) => (
               <button
                 key={lang.code}
@@ -221,13 +221,13 @@ export function SetupForm() {
           </p>
 
           {/* Level toggle */}
-          <div className="mb-5 flex items-center justify-center">
+          <div className="mb-5 flex items-center justify-center overflow-x-auto">
             <div className="inline-flex rounded-lg bg-slate-800/80 p-1">
               {LEVEL_KEYS.map((l) => (
                 <button
                   key={l}
                   onClick={() => setLevel(l)}
-                  className={`rounded-md px-4 py-1.5 text-sm font-medium transition-all ${
+                  className={`whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-medium transition-all sm:px-4 sm:text-sm ${
                     level === l
                       ? l === "impossible"
                         ? "bg-red-600 text-white shadow-sm shadow-red-600/30"
@@ -244,7 +244,7 @@ export function SetupForm() {
           </div>
 
           {/* Scenario cards */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
             {scenarios.map((s) => {
               const isSelected = selectedScenario?.key === s.key;
               const title = tScenarios(`${s.key}_title`);
