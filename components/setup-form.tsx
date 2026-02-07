@@ -39,12 +39,12 @@ interface ScenarioDef {
 const SCENARIOS: ScenarioDef[] = [
   {
     key: "taxi",
-    scenario: "You just landed at the airport and hopped in a taxi. The driver seems friendly but the meter looks suspiciously high. You need to get to your hotel downtown.",
+    scenario: "You've arrived at your destination in a taxi and just realized you don't have any money to pay. The driver is already irritated and demanding payment.",
     emoji: "\u{1F695}",
   },
   {
     key: "cafe",
-    scenario: "You walk into a cozy neighborhood caf\u00e9 for breakfast. The menu is only in the local language and the barista doesn't speak English.",
+    scenario: "You just spilled your coffee all over another customer's expensive laptop in a cafe. The customer is angry and demanding compensation.",
     emoji: "\u2615",
   },
   {
@@ -54,17 +54,17 @@ const SCENARIOS: ScenarioDef[] = [
   },
   {
     key: "market",
-    scenario: "You're at a vibrant street market filled with handmade goods. A vendor catches your eye and starts pitching their wares enthusiastically.",
+    scenario: "You just accidentally knocked over an entire display of expensive ceramics at a street market. The vendor is screaming and demanding you pay for everything.",
     emoji: "\u{1F6CD}\uFE0F",
   },
   {
     key: "hotel",
-    scenario: "You arrive at your hotel after a long journey but the receptionist can't find your reservation. There seems to be a mix-up with the dates.",
+    scenario: "You just accidentally set off the fire alarm at the hotel and the entire building is being evacuated. The manager is furious and fire trucks are arriving.",
     emoji: "\u{1F3E8}",
   },
   {
     key: "doctor",
-    scenario: "You've been feeling unwell and visit a local clinic. The doctor speaks only the local language and needs to understand your symptoms.",
+    scenario: "You just accidentally broke expensive medical equipment while waiting at a clinic. The clinic staff is angry and demanding payment.",
     emoji: "\u{1FA7A}",
   },
   {
@@ -79,22 +79,22 @@ const SCENARIOS: ScenarioDef[] = [
   },
   {
     key: "restaurant",
-    scenario: "You ordered a specific dish at a nice restaurant, but the waiter brought something completely different. You also have food allergies to communicate.",
+    scenario: "You just accidentally pushed the server who dropped plates, breaking other customers' dishes at a restaurant. The server is furious and demanding you pay for everything.",
     emoji: "\u{1F37D}\uFE0F",
   },
   {
     key: "apartment",
-    scenario: "You're looking to rent an apartment and the landlord is showing you around. You need to ask about the price, utilities, and neighborhood.",
+    scenario: "You just accidentally flooded the apartment while testing the sink during a viewing. Water is leaking to the apartment below. The landlord is furious.",
     emoji: "\u{1F3E0}",
   },
   {
     key: "train",
-    scenario: "You're at a busy train station and the departure board is confusing. A station worker notices you looking lost.",
+    scenario: "You just accidentally pulled the emergency brake on a train and it has stopped. The conductor is furious, passengers are angry, and the train is delayed.",
     emoji: "\u{1F682}",
   },
   {
     key: "pharmacy",
-    scenario: "You need a specific medication but the pharmacist needs to understand your situation to recommend the right product. The brand names are all different here.",
+    scenario: "You just accidentally knocked over an entire shelf of expensive prescription medications at a pharmacy. The pharmacist is furious and demanding you pay for everything.",
     emoji: "\u{1F48A}",
   },
 ];

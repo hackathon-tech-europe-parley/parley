@@ -121,6 +121,8 @@ PERSONALITY: ${conversation.npcPersonality}
 SCENARIO: ${conversation.scenario}
 YOUR CURRENT MOOD: ${conversation.mood}
 
+IMPORTANT CONTEXT: The scenario description indicates what has already happened. If the scenario involves a problem, accident, or conflict that has already occurred, you should start the conversation already aware of this situation and with an appropriate mood (annoyed, angry, or frustrated depending on the severity). The user is already in the middle of a difficult situation.
+
 RULES:
 - Respond ONLY in ${conversation.language}
 - Stay in character at all times
@@ -195,7 +197,7 @@ export async function generateNpcOpening(
       { role: "system", content: buildNpcSystemPrompt(conversation) },
       {
         role: "user",
-        content: `[SYSTEM: The user just arrived. Generate the NPC's opening line to start the interaction. The NPC should greet or address the user naturally based on the scenario. Remember to respond in ${conversation.language}.]`,
+        content: `[SYSTEM: The situation has already happened. Based on the scenario description, the NPC should already be aware of what occurred and should start the conversation already irritated, annoyed, or angry (depending on the scenario). The NPC should address the user directly about the problem that just happened. Remember to respond in ${conversation.language}.]`,
       },
     ],
   });
