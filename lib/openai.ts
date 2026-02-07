@@ -3,6 +3,7 @@ import type {
   Conversation,
   NpcResponse,
   NpcProfile,
+  NpcGender,
   Debrief,
   GoalProgress,
   GoalStatus,
@@ -22,7 +23,7 @@ export async function generateNpcProfile(
     messages: [
       {
         role: "system",
-        content: `You generate NPC profiles for language learning roleplay scenarios. Return JSON with "name" (a realistic local name) and "personality" (2-3 sentence personality description). The NPC should be a realistic character from the scenario who speaks ${language}.`,
+        content: `You generate NPC profiles for language learning roleplay scenarios. Return JSON with "name" (a realistic local name), "personality" (2-3 sentence personality description), and "gender" (either "masculine" or "feminine"). The NPC should be a realistic character from the scenario who speaks ${language}.`,
       },
       {
         role: "user",
@@ -33,7 +34,12 @@ export async function generateNpcProfile(
 
   const content = response.choices[0]?.message?.content;
   if (!content) throw new Error("Failed to generate NPC profile");
-  return JSON.parse(content) as NpcProfile;
+  const parsed = JSON.parse(content) as Record<string, unknown>;
+  return {
+    name: String(parsed.name ?? ""),
+    personality: String(parsed.personality ?? ""),
+    gender: parseNpcGender(parsed.gender),
+  };
 }
 
 function buildNpcSystemPrompt(conversation: Conversation): string {
@@ -279,6 +285,11 @@ function asRecord(value: unknown): Record<string, unknown> {
     return value as Record<string, unknown>;
   }
   return {};
+}
+
+function parseNpcGender(value: unknown): NpcGender {
+  if (value === "masculine" || value === "feminine") return value;
+  return "feminine";
 }
 
 function parseNpcMessage(value: unknown): string {
