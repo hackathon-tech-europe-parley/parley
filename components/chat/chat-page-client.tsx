@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import confetti from "canvas-confetti";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { AudioRecorder } from "@/lib/audio-recorder";
 import { consumeSSE } from "@/lib/sse-client";
@@ -35,6 +37,7 @@ export function ChatPageClient() {
   const parsedId = idParamSchema.safeParse(params.id);
   const conversationId = parsedId.success ? parsedId.data : null;
 
+  const router = useRouter();
   const t = useTranslations("Chat");
   const tDebrief = useTranslations("Debrief");
   const tLevels = useTranslations("Levels");
@@ -43,8 +46,8 @@ export function ChatPageClient() {
 
   const [state, setState] = useState<ConversationState | null>(null);
   const [debriefState, setDebriefState] = useState<DebriefState | null>(null);
+  const [endStatus, setEndStatus] = useState<DebriefState | null>(null);
   const [input, setInput] = useState("");
-  const [streamingText, setStreamingText] = useState("");
   const [sending, setSending] = useState(false);
   const [quitting, setQuitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +55,7 @@ export function ChatPageClient() {
   const [transcribing, setTranscribing] = useState(false);
   const [pendingTranscription, setPendingTranscription] = useState<string | null>(null);
   const [ttsPlaying, setTtsPlaying] = useState<number | null>(null);
+  const [npcMuted, setNpcMuted] = useState(false);
 
   const messagesEnd = useRef<HTMLDivElement>(null);
   const recorderRef = useRef<AudioRecorder | null>(null);
@@ -99,7 +103,7 @@ export function ChatPageClient() {
 
   useEffect(() => {
     messagesEnd.current?.scrollIntoView({ behavior: "smooth" });
-  }, [state?.history, streamingText]);
+  }, [state?.history, sending, endStatus]);
 
   useEffect(() => {
     ttsPlayerRef.current = new TTSPlayer();
@@ -111,7 +115,7 @@ export function ChatPageClient() {
 
   const autoPlayTts = useCallback(
     (text: string, messageIndex: number, langCode?: string, gender?: NpcGender) => {
-      if (!ttsPlayerRef.current) {
+      if (!ttsPlayerRef.current || ttsPlayerRef.current.muted) {
         return;
       }
       setTtsPlaying(messageIndex);
@@ -168,8 +172,50 @@ export function ChatPageClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingTranscription]);
 
+  // Fire confetti burst when goal is achieved
+  useEffect(() => {
+    if (endStatus?.goalStatus !== "achieved") return;
+    const end = Date.now() + 2500;
+    const frame = () => {
+      confetti({
+        particleCount: 3,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.6 },
+        colors: ["#22c55e", "#3b82f6", "#eab308", "#ef4444", "#a855f7"],
+      });
+      confetti({
+        particleCount: 3,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.6 },
+        colors: ["#22c55e", "#3b82f6", "#eab308", "#ef4444", "#a855f7"],
+      });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    };
+    frame();
+  }, [endStatus?.goalStatus]);
+
   function handleReplay(messageIndex: number, text: string) {
     autoPlayTts(text, messageIndex, state?.languageCode, state?.npcGender);
+  }
+
+  function handleMuteToggle() {
+    const next = !npcMuted;
+    setNpcMuted(next);
+    if (ttsPlayerRef.current) {
+      ttsPlayerRef.current.muted = next;
+    }
+    if (next) setTtsPlaying(null);
+  }
+
+  function handleEndStatusClick() {
+    if (!endStatus) return;
+    if (endStatus.goalStatus === "achieved") {
+      router.push("/");
+    } else {
+      setDebriefState(endStatus);
+    }
   }
 
   async function handleMicToggle() {
@@ -201,6 +247,9 @@ export function ChatPageClient() {
       return;
     }
 
+    // Start recording — stop any NPC audio to avoid overlap
+    ttsPlayerRef.current?.stop();
+    setTtsPlaying(null);
     try {
       if (!recorderRef.current) {
         recorderRef.current = new AudioRecorder();
@@ -226,7 +275,6 @@ export function ChatPageClient() {
 
     setInput("");
     setSending(true);
-    setStreamingText("");
     setError(null);
 
     setState((prev) =>
@@ -255,8 +303,8 @@ export function ChatPageClient() {
       await consumeSSE<MessageStreamCompletePayload>(
         res,
         {
-          onToken(token) {
-            setStreamingText((prev) => prev + token);
+          onToken() {
+            // Tokens are consumed but not displayed — we show a typing indicator instead
           },
           onComplete(data) {
             completeData = data;
@@ -291,7 +339,6 @@ export function ChatPageClient() {
         await Promise.all(preloads);
 
         // Commit everything in one render
-        setStreamingText("");
         setState((prev) => {
           if (!prev) {
             return prev;
@@ -307,7 +354,7 @@ export function ChatPageClient() {
           };
         });
         if (data.debrief) {
-          setDebriefState({
+          setEndStatus({
             debrief: data.debrief,
             sceneImageUrl: data.sceneImageUrl,
             npcName: state.npcName,
@@ -347,7 +394,7 @@ export function ChatPageClient() {
         throw new Error("Malformed quit payload");
       }
       const data = parsed.data;
-      setDebriefState({
+      setEndStatus({
         debrief: data.debrief,
         sceneImageUrl: data.sceneImageUrl,
         npcName: data.npcName,
@@ -380,38 +427,47 @@ export function ChatPageClient() {
     );
   }
 
-  if (debriefState) {
-    return <ChatDebriefView debriefState={debriefState} tDebrief={tDebrief} />;
-  }
-
   return (
-    <ChatConversationView
-      state={state}
-      input={input}
-      streamingText={streamingText}
-      sending={sending}
-      quitting={quitting}
-      recording={recording}
-      transcribing={transcribing}
-      ttsPlaying={ttsPlaying}
-      error={error}
-      t={t}
-      tLevels={tLevels}
-      tLangs={tLangs}
-      tScenarios={tScenarios}
-      messagesEndRef={messagesEnd}
-      onReplay={handleReplay}
-      onHintSelect={setInput}
-      onInputChange={setInput}
-      onSubmit={() => {
-        void sendMessage();
-      }}
-      onMicToggle={() => {
-        void handleMicToggle();
-      }}
-      onQuit={() => {
-        void handleQuit();
-      }}
-    />
+    <>
+      <ChatConversationView
+        state={state}
+        input={input}
+        sending={sending}
+        quitting={quitting}
+        recording={recording}
+        transcribing={transcribing}
+        ttsPlaying={ttsPlaying}
+        npcMuted={npcMuted}
+        endStatus={endStatus}
+        error={error}
+        t={t}
+        tDebrief={tDebrief}
+        tLevels={tLevels}
+        tLangs={tLangs}
+        tScenarios={tScenarios}
+        messagesEndRef={messagesEnd}
+        onReplay={handleReplay}
+        onHintSelect={setInput}
+        onInputChange={setInput}
+        onSubmit={() => {
+          void sendMessage();
+        }}
+        onMicToggle={() => {
+          void handleMicToggle();
+        }}
+        onMuteToggle={handleMuteToggle}
+        onEndStatusClick={handleEndStatusClick}
+        onQuit={() => {
+          void handleQuit();
+        }}
+      />
+      {debriefState && (
+        <ChatDebriefView
+          debriefState={debriefState}
+          tDebrief={tDebrief}
+          onClose={() => setDebriefState(null)}
+        />
+      )}
+    </>
   );
 }
