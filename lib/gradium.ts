@@ -1,6 +1,5 @@
 import type { NpcGender } from "./types";
-
-const GRADIUM_API_KEY = process.env.GRADIUM_API_KEY!;
+import { getGradiumApiKey } from "./env";
 
 // Flagship voices per language and gender
 const VOICE_MAP: Record<string, Record<NpcGender, string>> = {
@@ -26,11 +25,12 @@ export async function synthesizeSpeech(
   languageCode?: string,
   gender?: NpcGender,
 ): Promise<ArrayBuffer> {
+  const apiKey = getGradiumApiKey();
   const res = await fetch("https://eu.api.gradium.ai/api/post/speech/tts", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": GRADIUM_API_KEY,
+      "x-api-key": apiKey,
     },
     body: JSON.stringify({
       text,
