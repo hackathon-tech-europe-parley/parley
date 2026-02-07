@@ -245,9 +245,9 @@ export function ChatConversationView({
               key={i}
               className={`flex items-start gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              {msg.role === "npc" && state.npcFaceImageUrl && (
+              {msg.role === "npc" && (msg.npcFaceImageUrl || state.npcFaceImageUrl) && (
                 <img
-                  src={state.npcFaceImageUrl}
+                  src={msg.npcFaceImageUrl || state.npcFaceImageUrl}
                   alt={state.npcName}
                   className="h-20 w-20 flex-shrink-0 rounded-full border-2 border-slate-700/50 object-cover object-top"
                 />

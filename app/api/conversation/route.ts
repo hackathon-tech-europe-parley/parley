@@ -56,11 +56,16 @@ export async function POST(request: Request) {
     };
 
     const opening = await generateNpcOpening(conversation);
-    conversation.history.push({ role: "npc", text: opening.npcMessage });
+    const npcFaceImageUrl = getNpcFaceAssetUrl(scenarioKey ?? "__custom__", npcProfile.gender, opening.mood);
+
+    conversation.history.push({
+      role: "npc",
+      text: opening.npcMessage,
+      mood: opening.mood,
+      npcFaceImageUrl,
+    });
     conversation.mood = opening.mood;
     conversation.goalProgress = opening.goalProgress;
-
-    const npcFaceImageUrl = getNpcFaceAssetUrl(scenarioKey ?? "__custom__", npcProfile.gender, opening.mood);
     conversation.npcFaceImageUrl = npcFaceImageUrl;
 
     await setConversation(conversationId, conversation);

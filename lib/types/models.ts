@@ -10,6 +10,8 @@ import type {
 export interface ConversationMessage {
   role: ConversationRole;
   text: string;
+  mood?: string;
+  npcFaceImageUrl?: string;
 }
 
 export interface Conversation {
