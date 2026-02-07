@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Parley is a standalone Next.js 15 webapp for situational language learning through immersive roleplay. Users set up a scenario, chat with an AI NPC in a target language, and receive a debrief with key phrases.
+Parley is a standalone Next.js 15 webapp for situational language learning through immersive roleplay. Users pick a language, choose a difficulty and scenario, then chat with an AI NPC in the target language. After the conversation they receive a debrief with key phrases.
 
 ## Commands
 
@@ -14,8 +14,15 @@ Parley is a standalone Next.js 15 webapp for situational language learning throu
 
 Next.js 15 App Router with two pages:
 
-- **`/`** — Setup form (scenario, language, level, goal)
-- **`/chat/[id]`** — Conversation + debrief
+- **`/`** — 2-step setup: pick language, then pick difficulty + scenario (each scenario has per-level goals)
+- **`/chat/[id]`** — Conversation with goal banner, scene image, hints, and debrief
+
+### Difficulty Levels
+
+- **Beginner** — Simple vocabulary, patient NPC, full phrase hints
+- **Intermediate** — Natural speech, moderate tolerance, vocabulary hints
+- **Advanced** — Idioms and slang, demanding NPC, minimal hints
+- **Impossible** — Literary/archaic register, uncooperative NPC, no hints, absurd goals
 
 ### API Routes
 
@@ -26,9 +33,14 @@ Next.js 15 App Router with two pages:
 
 ### Key Directories
 
-- `app/` — Pages and API route handlers
+- `app/` — Pages, layout (global header), and API route handlers
 - `lib/` — Shared library (types, OpenAI, FAL, conversations store, SSE client)
-- `components/` — React components
+- `components/` — React components (setup-form)
+
+### Layout
+
+- Global header with logo and "New session" link (in `app/layout.tsx`)
+- Footer only on the home page (in `app/page.tsx`), not on the chat page
 
 ### State Management
 
@@ -44,3 +56,4 @@ Next.js 15, Tailwind CSS v4, Zod, OpenAI SDK, FAL SDK, TypeScript strict mode.
 - TypeScript strict mode with `verbatimModuleSyntax`
 - Plain `<img>` tags for dynamic FAL image URLs
 - SSE via `fetch` POST (not `EventSource`) for message streaming
+- Dark theme throughout (slate-950 background, blue-600 primary, red-600 for impossible mode)

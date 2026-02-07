@@ -1,0 +1,134 @@
+{
+  "Layout": {
+    "title": "Parley",
+    "description": "Situational language learning through immersive roleplay",
+    "newSession": "New session",
+    "tagline": "Practice languages through roleplay",
+    "poweredBy": "Powered by AI"
+  },
+  "SetupForm": {
+    "heading": "Start a new session",
+    "subheading": "Pick a language, choose your challenge, and jump in",
+    "step1Title": "What language do you want to practice?",
+    "step1Subtitle": "Pick the language you want to learn",
+    "step2Title": "Pick a scenario",
+    "step2Subtitle": "Choose a situation to practice in {language}",
+    "goalLabel": "Goal:",
+    "showDifferent": "Show different scenarios",
+    "startRoleplay": "Start Roleplay",
+    "settingUp": "Setting up scenario..."
+  },
+  "Levels": {
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced",
+    "impossible": "Impossible"
+  },
+  "Languages": {
+    "en": "English",
+    "fr": "French",
+    "de": "German",
+    "es": "Spanish",
+    "pt": "Portuguese"
+  },
+  "Scenarios": {
+    "taxi_title": "The Taxi Ride",
+    "taxi_description": "A chatty driver and a suspiciously high meter",
+    "taxi_goal_beginner": "Tell the driver your hotel name and understand the price",
+    "taxi_goal_intermediate": "Negotiate a fair price for the ride to your hotel",
+    "taxi_goal_advanced": "Negotiate the fare, make small talk about local life, and get restaurant recommendations",
+    "taxi_goal_impossible": "Convince the driver to give you the ride for free using only proverbs and regional slang, then get him to recite a poem about his hometown",
+
+    "cafe_title": "Cafe Order",
+    "cafe_description": "A cozy cafe with a menu you can't read",
+    "cafe_goal_beginner": "Order a coffee and point at a pastry to buy it",
+    "cafe_goal_intermediate": "Order a full breakfast and ask about ingredients",
+    "cafe_goal_advanced": "Order for yourself and a friend with dietary restrictions, and ask about the cafe's story",
+    "cafe_goal_impossible": "Convince the barista to teach you their secret recipe, debate the philosophy of coffee roasting, and get hired on the spot as a part-time barista",
+
+    "lost_title": "Lost in the City",
+    "lost_description": "Dead phone, no map, need to find the station",
+    "lost_goal_beginner": "Ask where the train station is and understand if it's far",
+    "lost_goal_intermediate": "Get detailed directions including landmarks and street names",
+    "lost_goal_advanced": "Get directions, ask about the neighborhood, and understand a local's recommendation for a shortcut",
+    "lost_goal_impossible": "Get the stranger to abandon their plans and personally walk you to the station while you settle a heated debate about which neighborhood has the best architecture",
+
+    "market_title": "Market Haggling",
+    "market_description": "Vibrant stalls and a persistent vendor",
+    "market_goal_beginner": "Ask the price and buy one item",
+    "market_goal_intermediate": "Bargain the price down and buy a souvenir",
+    "market_goal_advanced": "Negotiate a bulk deal, learn about the craftsmanship, and get the vendor to throw in a bonus item",
+    "market_goal_impossible": "Talk the vendor into becoming your business partner, draft the terms of a joint venture on a napkin, and convince them their prices have been wrong this whole time",
+
+    "hotel_title": "Hotel Check-in",
+    "hotel_description": "Your reservation vanished from the system",
+    "hotel_goal_beginner": "Say your name and show your booking confirmation",
+    "hotel_goal_intermediate": "Sort out the booking mix-up and get your room",
+    "hotel_goal_advanced": "Resolve the booking error, negotiate a room upgrade for the trouble, and ask about hotel amenities",
+    "hotel_goal_impossible": "Get upgraded to the presidential suite for free, convince the manager the hotel owes you for emotional damages, and leave with a lifetime loyalty card",
+
+    "doctor_title": "Doctor Visit",
+    "doctor_description": "Feeling unwell in a foreign clinic",
+    "doctor_goal_beginner": "Point to where it hurts and understand if you need medicine",
+    "doctor_goal_intermediate": "Describe your symptoms clearly and understand the treatment plan",
+    "doctor_goal_advanced": "Give a detailed medical history, discuss treatment options, and ask about side effects",
+    "doctor_goal_impossible": "Diagnose yourself more accurately than the doctor using only medical jargon, then convince them to let you shadow their rounds for the day",
+
+    "friends_title": "Making Friends",
+    "friends_description": "A curious local at a cultural event",
+    "friends_goal_beginner": "Introduce yourself and say where you're from",
+    "friends_goal_intermediate": "Have a fun conversation and exchange contact info",
+    "friends_goal_advanced": "Build a genuine connection, discuss cultural differences, and make plans to meet again",
+    "friends_goal_impossible": "Convince them you're a long-lost relative using an elaborate backstory, get invited to Sunday family dinner, and settle a family feud they've had for years",
+
+    "interview_title": "The Job Interview",
+    "interview_description": "Testing your language skills for a role",
+    "interview_goal_beginner": "Introduce yourself and describe your current job in simple terms",
+    "interview_goal_intermediate": "Answer questions about your experience and ask about the role",
+    "interview_goal_advanced": "Deliver a compelling pitch, handle tough questions, and negotiate salary expectations",
+    "interview_goal_impossible": "Reverse the interview — end up interviewing the CEO instead, expose a flaw in their business model, and get offered the position of VP",
+
+    "restaurant_title": "Restaurant Disaster",
+    "restaurant_description": "Wrong dish, and you have allergies",
+    "restaurant_goal_beginner": "Tell the waiter this is the wrong dish and say what you can't eat",
+    "restaurant_goal_intermediate": "Get the correct dish and clearly explain your food allergies",
+    "restaurant_goal_advanced": "Resolve the mix-up diplomatically, discuss allergen-safe options, and ask the chef for a recommendation",
+    "restaurant_goal_impossible": "Talk your way into the kitchen, convince the chef their signature dish needs improvement, cook a better version yourself, and get the meal comped",
+
+    "apartment_title": "Apartment Hunting",
+    "apartment_description": "Touring a place with a chatty landlord",
+    "apartment_goal_beginner": "Ask how much the rent is and when you can move in",
+    "apartment_goal_intermediate": "Get all the details about price, utilities, and negotiate the rent",
+    "apartment_goal_advanced": "Negotiate terms, discuss lease flexibility, ask about neighbors, and secure a discount for long-term rental",
+    "apartment_goal_impossible": "Convince the landlord to sell you the building instead, get them to throw in the furniture, and have them apologize for the rent being too high all along",
+
+    "train_title": "Train Trouble",
+    "train_description": "Confusing departure board, wrong platform",
+    "train_goal_beginner": "Ask which platform your train leaves from",
+    "train_goal_intermediate": "Find the right platform, confirm the schedule, and buy a ticket",
+    "train_goal_advanced": "Navigate a train change, understand delay announcements, and arrange alternative transport if needed",
+    "train_goal_impossible": "Talk the station master into letting you drive the train, give a PA announcement that impresses the passengers, and arrive ahead of schedule",
+
+    "pharmacy_title": "The Pharmacy",
+    "pharmacy_description": "Different brands, unfamiliar packaging",
+    "pharmacy_goal_beginner": "Describe your problem with simple words and buy medicine",
+    "pharmacy_goal_intermediate": "Get the right medication with proper dosage instructions",
+    "pharmacy_goal_advanced": "Explain your full situation, compare options, ask about interactions with other medicines, and understand the pharmacist's advice completely",
+    "pharmacy_goal_impossible": "Outsmart the pharmacist in a debate about drug interactions, get them to admit you know more than they do, and leave with a handwritten apology note"
+  },
+  "Chat": {
+    "backToSetup": "Back to setup",
+    "goalLabel": "Goal:",
+    "messagePlaceholder": "Message in {language}...",
+    "send": "Send",
+    "quit": "Quit"
+  },
+  "Debrief": {
+    "goalAchieved": "Goal Achieved",
+    "goalFailed": "Goal Failed",
+    "quitEarly": "Quit Early",
+    "withNpc": "with {npcName}",
+    "keyPhrases": "Key Phrases",
+    "newScenario": "New Scenario"
+  }
+}

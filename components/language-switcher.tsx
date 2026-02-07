@@ -1,0 +1,34 @@
+"use client";
+
+import { useLocale } from "next-intl";
+import { usePathname, useRouter } from "@/i18n/navigation";
+
+const LOCALE_LABELS: Record<string, string> = {
+  en: "English",
+  fr: "Francais",
+  de: "Deutsch",
+  es: "Espanol",
+  pt: "Portugues",
+};
+
+export function LanguageSwitcher() {
+  const locale = useLocale();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  return (
+    <select
+      value={locale}
+      onChange={(e) => {
+        router.replace(pathname, { locale: e.target.value });
+      }}
+      className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-slate-300 focus:border-blue-500 focus:outline-none"
+    >
+      {Object.entries(LOCALE_LABELS).map(([code, label]) => (
+        <option key={code} value={code}>
+          {label}
+        </option>
+      ))}
+    </select>
+  );
+}

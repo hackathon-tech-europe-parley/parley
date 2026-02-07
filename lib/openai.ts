@@ -40,6 +40,12 @@ function buildNpcSystemPrompt(conversation: Conversation): string {
     advanced: `- Speak naturally with idioms, slang, and colloquialisms in ${conversation.language}
 - Be demanding and realistic
 - Only provide minimal vocabulary hints when generating hints`,
+    impossible: `- Speak in the most complex, literary, and idiomatic register of ${conversation.language}
+- Use regional dialects, archaic expressions, double meanings, and cultural references that even native speakers would struggle with
+- Be extremely uncooperative, skeptical, and difficult to convince
+- Never make things easy — argue back, change the subject, misunderstand on purpose
+- The user's goal is nearly impossible — only grant success if they are truly extraordinary
+- Provide no hints at all`,
   };
 
   return `You are ${conversation.npcName}, a character in a language learning roleplay.

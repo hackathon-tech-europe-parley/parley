@@ -5,7 +5,7 @@ import { z } from "zod";
 export const createConversationSchema = z.object({
   scenario: z.string().min(1),
   language: z.string().min(1),
-  level: z.enum(["beginner", "intermediate", "advanced"]),
+  level: z.enum(["beginner", "intermediate", "advanced", "impossible"]),
   goal: z.string().min(1),
 });
 
@@ -23,7 +23,7 @@ export interface ConversationMessage {
 export interface Conversation {
   scenario: string;
   language: string;
-  level: "beginner" | "intermediate" | "advanced";
+  level: "beginner" | "intermediate" | "advanced" | "impossible";
   goal: string;
   npcName: string;
   npcPersonality: string;

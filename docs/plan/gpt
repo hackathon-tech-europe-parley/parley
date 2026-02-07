@@ -1,0 +1,157 @@
+# Parley GPT App Plan (Merged)
+
+## Core Concept
+Parley is a ChatGPT App for situational language learning through immersive roleplay. The user describes a real-life scenario in a target language, gets a generated scene, practices with an NPC, and receives adaptive coaching based on level.
+
+## Value Proposition
+### Problem + User
+- Problem: learners freeze in stressful situations and fail to reach practical goals.
+- Target users: travelers and expats from beginner to advanced levels.
+
+### Pain Today
+- Most tools focus on vocabulary drills instead of dynamic, goal-driven practice.
+- Learners lack realistic pressure, adaptive coaching, and post-conversation feedback.
+
+### Core Actions (MVP)
+1. Generate a scenario visual + role context.
+2. Run text roleplay with adaptive NPC behavior.
+3. Provide hints and next-best phrasing based on level and objective.
+4. End with debrief and retry guidance.
+
+## Why LLM Inside ChatGPT
+### Conversational Win
+Users can state intent naturally (example: "I need to resolve a taxi misunderstanding in Barcelona") and get an instant tailored simulation.
+
+### What the LLM Adds
+- Intent understanding and scenario shaping.
+- Dynamic NPC responses with mood progression.
+- Level adaptation and contextual feedback.
+- Outcome-aware debrief generation.
+
+### What LLM Alone Lacks
+- External scene image generation.
+- Optional voice STT/TTS.
+- Optional workflow orchestration and observability.
+
+## Hackathon Stack Plan (Locked MVP)
+Assumption accepted: Alpic/Skybridge already counts as one partner technology.
+
+MVP committed stack:
+1. Skybridge/Alpic (framework + deployment)
+2. OpenAI (NPC and coaching logic)
+3. fal (scene image generation)
+
+Stretch stack:
+- Gradium (voice STT/TTS)
+- Dify (workflow/prompt orchestration)
+
+## Single Widget, Three Phases
+### 1) Setup Phase
+Inputs collected: scenario, target language, level, user objective.
+Server actions:
+- Generate initial scene image (fal).
+- Build NPC profile (name, personality, initial mood).
+- Create conversation state.
+
+Widget displays:
+- Scene image
+- Situation and objective summary
+- NPC info and level badge
+- Start button
+
+### 2) Conversation Phase
+Widget displays:
+- Scene image (top)
+- Scrollable chat log (middle)
+- Hint button
+- Text input + send button
+- Give up button
+
+Behavior:
+- NPC responds in target language.
+- Hints adapt to level.
+- Image can refresh every 2-3 turns based on mood changes.
+
+### 3) Debrief Phase
+Triggered by goal achieved, failure, quit, or timeout.
+Widget displays:
+- Final outcome image
+- Narrative summary
+- 3-5 key phrases (target language + translation)
+- Goal achieved indicator + retry suggestion
+
+## MCP Tool Design
+One tool: `parley`
+
+### Input Schema
+- `action`: `"setup" | "message" | "quit"`
+- `scenario`: string (setup only)
+- `language`: string (setup only)
+- `level`: `"beginner" | "intermediate" | "advanced"` (setup only)
+- `goal`: string (setup only)
+- `message`: string (message only)
+- `conversationId`: string (message/quit)
+
+### Output Contract
+- `phase`: `"setup" | "conversation" | "debrief"`
+- `sceneImageUrl`: string
+- `npcName`: string
+- `npcMessage`: string
+- `conversationHistory`: array of `{ role, text }`
+- `hints`: string[]
+- `debrief`: `{ narrative, keyPhrases, goalAchieved }` (debrief only)
+- `conversationId`: string
+
+## Server-Side State
+In-memory map keyed by `conversationId`, storing:
+- NPC profile and personality
+- Conversation history
+- Current NPC mood
+- Message count since last image regeneration
+- User goal and level
+
+## NPC Logic (OpenAI)
+System prompt includes:
+- NPC personality and context
+- User objective and scenario constraints
+- User level adaptation rules
+- Current mood state
+- Safety constraints
+
+Structured generation target:
+- `npcMessage` (target language)
+- `mood` (`skeptical`, `neutral`, `convinced`, `frustrated`, etc.)
+- `goalStatus` (`ongoing | achieved | failed`)
+- `hints` (level-appropriate)
+
+## Level Adaptation Rules
+- Beginner: shorter sentences, explicit phrase hints with translation, patient NPC.
+- Intermediate: natural speech, lighter hints, moderate tolerance.
+- Advanced: richer idioms/slang, minimal hints unless asked, stricter NPC.
+
+## Conversation End Triggers
+- Goal reached (e.g., mood becomes convinced) -> success debrief.
+- Goal failed (e.g., mood becomes done/frustrated) -> failure debrief.
+- User quits -> early debrief.
+- Max turn budget (~15 exchanges) -> timeout debrief.
+
+## Safety and Scope
+- Reframe unsafe/illegal requests into safe communication objectives.
+- Focus on de-escalation, dispute clarification, and respectful communication.
+- Do not provide manipulation/coercion guidance or harm-enabling tactics.
+- Enforce this in both scenario generation and NPC response prompts.
+
+## Build Order
+1. Create `SPEC.md` from this merged plan.
+2. Implement server tool (`parley`) with Zod schema and action routing.
+3. Add in-memory conversation store.
+4. Integrate fal for initial and mood-based scene images.
+5. Integrate OpenAI for NPC turn generation and debrief.
+6. Implement widget phases (setup/conversation/debrief).
+7. Deploy on Alpic and test `/try`.
+8. Stretch: add Gradium voice mode.
+
+## Submission Deliverables Checklist
+- Public GitHub repository with README/setup/API documentation.
+- 2-minute demo video with walkthrough.
+- Explicit list of partner technologies used in final submission form.

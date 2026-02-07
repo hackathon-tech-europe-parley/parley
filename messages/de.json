@@ -1,0 +1,134 @@
+{
+  "Layout": {
+    "title": "Parley",
+    "description": "Sprachenlernens durch immersives Rollenspiel",
+    "newSession": "Neue Sitzung",
+    "tagline": "Üben Sie Sprachen durch Rollenspiel",
+    "poweredBy": "Powered by AI"
+  },
+  "SetupForm": {
+    "heading": "Neue Sitzung starten",
+    "subheading": "Wählen Sie eine Sprache, nehmen Sie sich einer Herausforderung an und tauchen Sie ein",
+    "step1Title": "Welche Sprache möchten Sie üben?",
+    "step1Subtitle": "Wählen Sie die Sprache, die Sie lernen möchten",
+    "step2Title": "Wählen Sie ein Szenario",
+    "step2Subtitle": "Wählen Sie eine Situation zum Üben in {language}",
+    "goalLabel": "Ziel:",
+    "showDifferent": "Andere Szenarien anzeigen",
+    "startRoleplay": "Rollenspiel starten",
+    "settingUp": "Szenario wird vorbereitet..."
+  },
+  "Levels": {
+    "beginner": "Anfänger",
+    "intermediate": "Fortgeschrittene",
+    "advanced": "Experte",
+    "impossible": "Unmöglich"
+  },
+  "Languages": {
+    "en": "Englisch",
+    "fr": "Französisch",
+    "de": "Deutsch",
+    "es": "Spanisch",
+    "pt": "Portugiesisch"
+  },
+  "Scenarios": {
+    "taxi_title": "Die Taxifahrt",
+    "taxi_description": "Ein gesprächiger Fahrer und ein verdächtig hohes Taxameter",
+    "taxi_goal_beginner": "Sagen Sie dem Fahrer den Namen Ihres Hotels und verstehen Sie den Preis",
+    "taxi_goal_intermediate": "Verhandeln Sie einen fairen Preis für die Fahrt zu Ihrem Hotel",
+    "taxi_goal_advanced": "Verhandeln Sie den Fahrpreis, führen Sie Smalltalk über das lokale Leben und holen Sie Restaurantempfehlungen",
+    "taxi_goal_impossible": "Überreden Sie den Fahrer, Ihnen die Fahrt kostenlos zu geben, indem Sie nur Sprichwörter und Dialektslang verwenden, dann bringen Sie ihn dazu, ein Gedicht über seine Heimatstadt zu rezitieren",
+
+    "cafe_title": "Café-Bestellung",
+    "cafe_description": "Ein gemütliches Café mit einer Speisekarte, die Sie nicht lesen können",
+    "cafe_goal_beginner": "Bestellen Sie einen Kaffee und zeigen Sie auf ein Gebäck, um es zu kaufen",
+    "cafe_goal_intermediate": "Bestellen Sie ein vollständiges Frühstück und fragen Sie nach Zutaten",
+    "cafe_goal_advanced": "Bestellen Sie für sich und einen Freund mit Ernährungsbeschränkungen und fragen Sie nach der Geschichte des Cafés",
+    "cafe_goal_impossible": "Überreden Sie den Barista, Ihnen sein Geheimrezept beizubringen, diskutieren Sie über die Philosophie von Kaffeebrand und lassen Sie sich auf der Stelle als Teilzeitbarista einstellen",
+
+    "lost_title": "Verloren in der Stadt",
+    "lost_description": "Handy leer, keine Karte, muss zum Bahnhof",
+    "lost_goal_beginner": "Fragen Sie, wo sich der Bahnhof befindet und verstehen Sie, ob es weit ist",
+    "lost_goal_intermediate": "Erhalten Sie detaillierte Anweisungen einschließlich Wahrzeichen und Straßennamen",
+    "lost_goal_advanced": "Holen Sie sich Anweisungen, fragen Sie nach der Gegend und verstehen Sie die Empfehlung eines Einheimischen für eine Abkürzung",
+    "lost_goal_impossible": "Bringen Sie den Fremden dazu, seine Pläne aufzugeben und Sie persönlich zum Bahnhof zu begleiten, während Sie einen hitzigen Streit über das beste Viertel beilegen",
+
+    "market_title": "Marktverhandlungen",
+    "market_description": "Lebhafte Stände und ein hartnäckiger Verkäufer",
+    "market_goal_beginner": "Fragen Sie nach dem Preis und kaufen Sie einen Artikel",
+    "market_goal_intermediate": "Verhandeln Sie den Preis herunter und kaufen Sie ein Souvenir",
+    "market_goal_advanced": "Verhandeln Sie einen Großauftrag, lernen Sie das Handwerk kennen und lassen Sie sich einen Bonusartikel mitgeben",
+    "market_goal_impossible": "Überreden Sie den Verkäufer, Ihr Geschäftspartner zu werden, entwerfen Sie die Bedingungen eines Joint Ventures auf einer Serviette und überreden Sie ihn, dass seine Preise die ganze Zeit falsch waren",
+
+    "hotel_title": "Hotel-Check-in",
+    "hotel_description": "Ihre Reservierung ist aus dem System verschwunden",
+    "hotel_goal_beginner": "Sagen Sie Ihren Namen und zeigen Sie Ihre Buchungsbestätigung",
+    "hotel_goal_intermediate": "Klären Sie das Buchungsdebakel auf und erhalten Sie Ihr Zimmer",
+    "hotel_goal_advanced": "Beheben Sie den Buchungsfehler, verhandeln Sie ein Zimmerupgrade als Entschädigung und fragen Sie nach den Hoteleinrichtungen",
+    "hotel_goal_impossible": "Bekommen Sie kostenlos ein Upgrade auf die Präsidentensuite, überreden Sie den Manager, dass das Hotel Ihnen für emotionale Schäden Geld schuldet, und verlassen Sie das Hotel mit einer unbegrenzten Loyalitätskarte",
+
+    "doctor_title": "Besuch beim Arzt",
+    "doctor_description": "Sie fühlen sich unwohl in einer fremden Klinik",
+    "doctor_goal_beginner": "Zeigen Sie, wo es weh tut und verstehen Sie, ob Sie Medizin brauchen",
+    "doctor_goal_intermediate": "Beschreiben Sie Ihre Symptome klar und verstehen Sie den Behandlungsplan",
+    "doctor_goal_advanced": "Geben Sie eine detaillierte Krankengeschichte, besprechen Sie Behandlungsoptionen und fragen Sie nach Nebenwirkungen",
+    "doctor_goal_impossible": "Diagnostizieren Sie sich selbst genauer als der Arzt, indem Sie nur medizinische Fachbegriffe verwenden, und überreden Sie ihn, Sie den ganzen Tag bei seinen Visiten hospitieren zu lassen",
+
+    "friends_title": "Freundschaften schließen",
+    "friends_description": "Ein neugieriger Einheimischer bei einer Kulturveranstaltung",
+    "friends_goal_beginner": "Stellen Sie sich vor und sagen Sie, woher Sie kommen",
+    "friends_goal_intermediate": "Führen Sie ein unterhaltsames Gespräch und tauschen Sie Kontaktinformationen aus",
+    "friends_goal_advanced": "Bauen Sie eine echte Verbindung auf, diskutieren Sie über Kulturunterschiede und verabreden Sie sich, um sich wiederzusehen",
+    "friends_goal_impossible": "Überreden Sie ihn, dass Sie ein lange vermisster Verwandter sind, indem Sie eine aufwendige Vorgeschichte erfinden, lassen Sie sich zum Sonntagsfamilienessen einladen und beilegen Sie einen Familienstreit, den er seit Jahren hat",
+
+    "interview_title": "Das Vorstellungsgespräch",
+    "interview_description": "Ihre Sprachkenntnisse werden für eine Stelle getestet",
+    "interview_goal_beginner": "Stellen Sie sich vor und beschreiben Sie Ihren jetzigen Job in einfachen Worten",
+    "interview_goal_intermediate": "Beantworten Sie Fragen zu Ihrer Erfahrung und fragen Sie nach der Stelle",
+    "interview_goal_advanced": "Halten Sie einen überzeugenden Vortrag, handhaben Sie schwierige Fragen und verhandeln Sie über Gehaltserwartungen",
+    "interview_goal_impossible": "Kehren Sie das Vorstellungsgespräch um – führen Sie am Ende selbst ein Gespräch mit dem CEO, decken Sie einen Fehler in seinem Geschäftsmodell auf und lassen Sie sich die Position des VP anbieten",
+
+    "restaurant_title": "Restaurantdebakel",
+    "restaurant_description": "Falsches Gericht und Sie haben Allergien",
+    "restaurant_goal_beginner": "Sagen Sie dem Kellner, dass dies das falsche Gericht ist und sagen Sie, worauf Sie allergisch sind",
+    "restaurant_goal_intermediate": "Bekommen Sie das richtige Gericht und erklären Sie klar Ihre Lebensmittelallergien",
+    "restaurant_goal_advanced": "Regeln Sie das Debakel diplomatisch, besprechen Sie allergenfreie Optionen und bitten Sie den Chef um eine Empfehlung",
+    "restaurant_goal_impossible": "Reden Sie sich in die Küche, überreden Sie den Chef, dass sein Signature-Gericht Verbesserungen braucht, kochen Sie selbst eine bessere Version und lassen Sie sich die Mahlzeit bezahlen",
+
+    "apartment_title": "Wohnungssuche",
+    "apartment_description": "Besichtigung mit einem gesprächigen Vermieter",
+    "apartment_goal_beginner": "Fragen Sie, wie viel die Miete ist und wann Sie einziehen können",
+    "apartment_goal_intermediate": "Erhalten Sie alle Details über Preis und Nebenkosten und verhandeln Sie die Miete",
+    "apartment_goal_advanced": "Verhandeln Sie über Bedingungen, diskutieren Sie über Flexibilität des Mietvertrags, fragen Sie nach Nachbarn und sichern Sie sich einen Rabatt für langfristige Vermietung",
+    "apartment_goal_impossible": "Überreden Sie den Vermieter, Ihnen das Gebäude zu verkaufen, bringen Sie ihn dazu, die Möbel auch zu geben, und lassen Sie ihn sich entschuldigen, dass die Miete die ganze Zeit zu hoch war",
+
+    "train_title": "Zugprobleme",
+    "train_description": "Verwirrende Anzeigetafel, falscher Bahnsteig",
+    "train_goal_beginner": "Fragen Sie, von welchem Bahnsteig Ihr Zug abfährt",
+    "train_goal_intermediate": "Finden Sie den richtigen Bahnsteig, bestätigen Sie den Fahrplan und kaufen Sie ein Ticket",
+    "train_goal_advanced": "Navigieren Sie einen Zugwechsel, verstehen Sie Verspätungsankündigungen und arrangieren Sie alternative Transporte, falls erforderlich",
+    "train_goal_impossible": "Reden Sie den Bahnhofsvorsteher um, Sie den Zug fahren zu lassen, machen Sie eine PA-Ankündigung, die die Fahrgäste beeindruckt, und kommen Sie pünktlich an",
+
+    "pharmacy_title": "Die Apotheke",
+    "pharmacy_description": "Verschiedene Marken, unbekannte Verpackung",
+    "pharmacy_goal_beginner": "Beschreiben Sie Ihr Problem mit einfachen Worten und kaufen Sie Medizin",
+    "pharmacy_goal_intermediate": "Erhalten Sie das richtige Medikament mit ordnungsgemäßen Dosierungsanweisungen",
+    "pharmacy_goal_advanced": "Erklären Sie Ihre ganze Situation, vergleichen Sie Optionen, fragen Sie nach Wechselwirkungen mit anderen Arzneimitteln und verstehen Sie den Rat des Apothekers vollständig",
+    "pharmacy_goal_impossible": "Übertrumpfen Sie den Apotheker in einer Debatte über Arzneimittelwechselwirkungen, bringen Sie ihn dazu zuzugeben, dass Sie mehr wissen als er, und gehen Sie mit einem handschriftlich geschriebenem Entschuldigungsschreiben"
+  },
+  "Chat": {
+    "backToSetup": "Zurück zum Setup",
+    "goalLabel": "Ziel:",
+    "messagePlaceholder": "Nachricht in {language}...",
+    "send": "Senden",
+    "quit": "Beenden"
+  },
+  "Debrief": {
+    "goalAchieved": "Ziel erreicht",
+    "goalFailed": "Ziel nicht erreicht",
+    "quitEarly": "Vorzeitig beendet",
+    "withNpc": "mit {npcName}",
+    "keyPhrases": "Wichtige Ausdrücke",
+    "newScenario": "Neues Szenario"
+  }
+}
