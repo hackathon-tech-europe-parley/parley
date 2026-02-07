@@ -62,6 +62,7 @@ export const ttsRequestSchema = z
     text: nonEmptyStringSchema,
     languageCode: languageCodeSchema.optional(),
     npcGender: npcGenderSchema.optional(),
+    speed: z.number().min(0.5).max(2.0).optional(),
   })
   .strict();
 

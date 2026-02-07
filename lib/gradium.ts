@@ -32,21 +32,36 @@ export function synthesizeSpeech(
   text: string,
   languageCode?: string,
   gender?: NpcGender,
+  speed?: number,
 ): Promise<ArrayBuffer> {
   return enqueue(async () => {
     const apiKey = getGradiumApiKey();
+    const body: Record<string, unknown> = {
+      text,
+      voice_id: getVoiceId(languageCode, gender),
+      output_format: "wav",
+      only_audio: true,
+    };
+    
+    // Convert speed (0.5-2.0) to padding_bonus in json_config
+    // speed 0.5 (slowest) → padding_bonus 2.0
+    // speed 1.0 (normal) → padding_bonus 0.0
+    // speed 2.0 (fastest) → padding_bonus -2.0
+    // Note: json_config must be a JSON string, not an object
+    if (speed !== undefined) {
+      const paddingBonus = (1.0 - speed) * 2.0;
+      body.json_config = JSON.stringify({
+        padding_bonus: paddingBonus,
+      });
+    }
+    
     const res = await fetch("https://eu.api.gradium.ai/api/post/speech/tts", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
       },
-      body: JSON.stringify({
-        text,
-        voice_id: getVoiceId(languageCode, gender),
-        output_format: "wav",
-        only_audio: true,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {

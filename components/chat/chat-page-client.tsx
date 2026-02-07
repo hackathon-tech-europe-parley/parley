@@ -56,6 +56,19 @@ export function ChatPageClient() {
   const [pendingTranscription, setPendingTranscription] = useState<string | null>(null);
   const [ttsPlaying, setTtsPlaying] = useState<number | null>(null);
   const [npcMuted, setNpcMuted] = useState(false);
+  const [ttsSpeed, setTtsSpeed] = useState(() => {
+    // Load speed from localStorage or default to 1.0
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("parley:ttsSpeed");
+      if (saved) {
+        const parsed = parseFloat(saved);
+        if (!isNaN(parsed) && parsed >= 0.5 && parsed <= 2.0) {
+          return parsed;
+        }
+      }
+    }
+    return 1.0;
+  });
 
   const messagesEnd = useRef<HTMLDivElement>(null);
   const recorderRef = useRef<AudioRecorder | null>(null);
@@ -120,14 +133,14 @@ export function ChatPageClient() {
       }
       setTtsPlaying(messageIndex);
       ttsPlayerRef.current
-        .play(text, `msg-${messageIndex}`, langCode, gender)
+        .play(text, `msg-${messageIndex}`, langCode, gender, ttsSpeed)
         .then(() => setTtsPlaying(null))
         .catch((playError) => {
           console.error("TTS autoplay failed:", playError);
           setTtsPlaying(null);
         });
     },
-    [],
+    [ttsSpeed],
   );
 
   useEffect(() => {
@@ -198,6 +211,14 @@ export function ChatPageClient() {
 
   function handleReplay(messageIndex: number, text: string) {
     autoPlayTts(text, messageIndex, state?.languageCode, state?.npcGender);
+  }
+
+  function handleSpeedChange(speed: number) {
+    setTtsSpeed(speed);
+    // Save to localStorage for persistence
+    if (typeof window !== "undefined") {
+      localStorage.setItem("parley:ttsSpeed", speed.toString());
+    }
   }
 
   function handleMuteToggle() {
@@ -326,7 +347,7 @@ export function ChatPageClient() {
 
         if (ttsPlayerRef.current && !ttsPlayerRef.current.muted) {
           preloads.push(
-            ttsPlayerRef.current.prefetch(data.npcMessage, cacheKey, state.languageCode, state.npcGender),
+            ttsPlayerRef.current.prefetch(data.npcMessage, cacheKey, state.languageCode, state.npcGender, ttsSpeed),
           );
         }
         if (data.sceneImageUrl && data.sceneImageUrl !== state.sceneImageUrl) {
@@ -462,6 +483,8 @@ export function ChatPageClient() {
           void handleMicToggle();
         }}
         onMuteToggle={handleMuteToggle}
+        ttsSpeed={ttsSpeed}
+        onSpeedChange={handleSpeedChange}
         onEndStatusClick={handleEndStatusClick}
         onQuit={() => {
           void handleQuit();
