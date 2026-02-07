@@ -27,6 +27,8 @@ export async function GET(
     sceneImageUrl: conversation.sceneImageUrl,
     history: conversation.history,
     hints: getHints(id),
+    scenarioKey: conversation.scenarioKey,
+    languageCode: conversation.languageCode,
   };
 
   return NextResponse.json(snapshot);

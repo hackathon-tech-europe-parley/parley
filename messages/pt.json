@@ -16,7 +16,11 @@
     "goalLabel": "Objetivo:",
     "showDifferent": "Mostrar cenários diferentes",
     "startRoleplay": "Iniciar Roleplay",
-    "settingUp": "Configurando cenário..."
+    "settingUp": "Configurando cenário...",
+    "createOwn": "Crie o seu",
+    "customPromptPlaceholder": "Descreva uma situação...",
+    "generate": "Gerar",
+    "generating": "Gerando cenário..."
   },
   "Levels": {
     "beginner": "Iniciante",

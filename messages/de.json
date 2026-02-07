@@ -16,7 +16,11 @@
     "goalLabel": "Ziel:",
     "showDifferent": "Andere Szenarien anzeigen",
     "startRoleplay": "Rollenspiel starten",
-    "settingUp": "Szenario wird vorbereitet..."
+    "settingUp": "Szenario wird vorbereitet...",
+    "createOwn": "Eigenes erstellen",
+    "customPromptPlaceholder": "Beschreiben Sie eine Situation...",
+    "generate": "Generieren",
+    "generating": "Szenario wird generiert..."
   },
   "Levels": {
     "beginner": "Anfänger",

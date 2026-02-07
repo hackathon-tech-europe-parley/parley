@@ -118,17 +118,65 @@ export function SetupForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Custom scenario state
+  const [creatingCustom, setCreatingCustom] = useState(false);
+  const [generatingCustom, setGeneratingCustom] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [customScenario, setCustomScenario] = useState<{
+    title: string;
+    description: string;
+    emoji: string;
+    scenario: string;
+    goals: Record<Level, string>;
+  } | null>(null);
+
   const reshuffleScenarios = useCallback(() => {
     setScenarios(shuffleArray(SCENARIOS).slice(0, 4));
     setSelectedScenario(null);
+    setCustomScenario(null);
+    setCreatingCustom(false);
   }, []);
+
+  async function handleGenerateCustom() {
+    if (!customPrompt.trim()) return;
+    setGeneratingCustom(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/generate-scenario", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: customPrompt.trim() }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to generate scenario");
+      }
+
+      const data = await res.json();
+      setCustomScenario(data);
+      setSelectedScenario({
+        key: "__custom__",
+        scenario: data.scenario,
+        emoji: data.emoji,
+      });
+      setCreatingCustom(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setGeneratingCustom(false);
+    }
+  }
 
   async function handleStart() {
     if (!languageCode || !selectedScenario) return;
     setLoading(true);
     setError(null);
 
-    const goal = tScenarios(`${selectedScenario.key}_goal_${level}`);
+    const goal = selectedScenario.key === "__custom__" && customScenario
+      ? customScenario.goals[level]
+      : tScenarios(`${selectedScenario.key}_goal_${level}`);
 
     try {
       const res = await fetch("/api/conversation", {
@@ -139,6 +187,8 @@ export function SetupForm() {
           language: LANGUAGE_ENGLISH_NAMES[languageCode],
           level,
           goal,
+          scenarioKey: selectedScenario.key,
+          languageCode,
         }),
       });
 
@@ -150,7 +200,11 @@ export function SetupForm() {
       const data = await res.json();
       sessionStorage.setItem(
         `parley:${data.conversationId}`,
-        JSON.stringify(data),
+        JSON.stringify({
+          ...data,
+          scenarioKey: selectedScenario.key,
+          languageCode,
+        }),
       );
       router.push(`/chat/${data.conversationId}`);
     } catch (err) {
@@ -299,6 +353,85 @@ export function SetupForm() {
                 </button>
               );
             })}
+
+            {/* Generated custom scenario card */}
+            {customScenario && (
+              <button
+                onClick={() => setSelectedScenario({
+                  key: "__custom__",
+                  scenario: customScenario.scenario,
+                  emoji: customScenario.emoji,
+                })}
+                className={`flex flex-col gap-2 rounded-xl border p-4 text-left transition-all hover:scale-[1.01] ${
+                  selectedScenario?.key === "__custom__"
+                    ? "border-blue-500 bg-blue-600/10 shadow-lg shadow-blue-600/10"
+                    : "border-slate-700/50 bg-slate-900/50 hover:border-slate-600 hover:bg-slate-800/50"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 text-2xl">{customScenario.emoji}</span>
+                  <div className="min-w-0">
+                    <div className="font-semibold text-white">{customScenario.title}</div>
+                    <div className="text-sm text-slate-400">{customScenario.description}</div>
+                  </div>
+                </div>
+                <div className={`mt-1 rounded-lg px-3 py-2 text-xs leading-relaxed transition-colors ${
+                  selectedScenario?.key === "__custom__"
+                    ? level === "impossible"
+                      ? "bg-red-600/15 text-red-300"
+                      : "bg-blue-600/15 text-blue-300"
+                    : level === "impossible"
+                      ? "bg-red-900/20 text-red-400/70"
+                      : "bg-slate-800/50 text-slate-500"
+                }`}>
+                  <span className="font-medium">{t("goalLabel")}</span> {customScenario.goals[level]}
+                </div>
+              </button>
+            )}
+
+            {/* Create your own — input or card */}
+            {creatingCustom ? (
+              <div className="flex flex-col gap-3 rounded-xl border border-dashed border-slate-600 bg-slate-900/50 p-4">
+                <textarea
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  placeholder={t("customPromptPlaceholder")}
+                  rows={3}
+                  className="w-full resize-none rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleGenerateCustom}
+                    disabled={!customPrompt.trim() || generatingCustom}
+                    className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {generatingCustom ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        {t("generating")}
+                      </span>
+                    ) : (
+                      t("generate")
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setCreatingCustom(false)}
+                    disabled={generatingCustom}
+                    className="rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-300 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    &times;
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setCreatingCustom(true)}
+                className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-600 bg-slate-900/30 p-4 text-center transition-all hover:border-slate-500 hover:bg-slate-800/50"
+              >
+                <span className="text-2xl">+</span>
+                <span className="text-sm font-medium text-slate-400">{t("createOwn")}</span>
+              </button>
+            )}
           </div>
 
           <button

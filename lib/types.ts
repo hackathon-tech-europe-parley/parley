@@ -7,6 +7,8 @@ export const createConversationSchema = z.object({
   language: z.string().min(1),
   level: z.enum(["beginner", "intermediate", "advanced", "impossible"]),
   goal: z.string().min(1),
+  scenarioKey: z.string().optional(),
+  languageCode: z.string().optional(),
 });
 
 export const sendMessageSchema = z.object({
@@ -31,6 +33,8 @@ export interface Conversation {
   history: ConversationMessage[];
   messagesSinceImageRegen: number;
   sceneImageUrl: string;
+  scenarioKey?: string;
+  languageCode?: string;
 }
 
 export interface NpcResponse {
@@ -62,4 +66,6 @@ export interface ConversationSnapshot {
   sceneImageUrl: string;
   history: ConversationMessage[];
   hints: string[];
+  scenarioKey?: string;
+  languageCode?: string;
 }

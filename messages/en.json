@@ -16,7 +16,11 @@
     "goalLabel": "Goal:",
     "showDifferent": "Show different scenarios",
     "startRoleplay": "Start Roleplay",
-    "settingUp": "Setting up scenario..."
+    "settingUp": "Setting up scenario...",
+    "createOwn": "Create your own",
+    "customPromptPlaceholder": "Describe a situation...",
+    "generate": "Generate",
+    "generating": "Generating scenario..."
   },
   "Levels": {
     "beginner": "Beginner",
