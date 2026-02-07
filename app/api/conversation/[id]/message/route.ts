@@ -1,5 +1,5 @@
 import { getConversation, setHints } from "@/lib/conversations";
-import { generateSceneImage } from "@/lib/fal";
+import { generateSceneImage, updateNpcFaceImage } from "@/lib/fal";
 import { generateNpcResponseStream } from "@/lib/openai";
 import { generateDebrief } from "@/lib/openai";
 import { sendMessageSchema } from "@/lib/types";
@@ -57,6 +57,22 @@ export async function POST(
 
             setHints(id, npcResponse.hints);
 
+            // Update NPC face image based on new mood
+            let npcFaceImageUrl = conversation.npcFaceImageUrl;
+            try {
+              if (conversation.npcFaceImageUrl) {
+                npcFaceImageUrl = await updateNpcFaceImage(
+                  conversation.npcFaceImageUrl,
+                  npcResponse.mood,
+                  conversation.npcName,
+                );
+                conversation.npcFaceImageUrl = npcFaceImageUrl;
+              }
+            } catch (error) {
+              console.error("Failed to update NPC face image:", error);
+              // Continue with existing face image if update fails
+            }
+
             let sceneImageUrl = conversation.sceneImageUrl;
             if (conversation.messagesSinceImageRegen >= 3) {
               const moodPrompt = `Photorealistic scene: ${conversation.scenario}. The person you're interacting with looks ${npcResponse.mood}. First-person perspective. Cinematic lighting.`;
@@ -74,6 +90,7 @@ export async function POST(
                     goalStatus: npcResponse.goalStatus,
                     hints: npcResponse.hints,
                     sceneImageUrl,
+                    npcFaceImageUrl,
                   }),
                 ),
               );

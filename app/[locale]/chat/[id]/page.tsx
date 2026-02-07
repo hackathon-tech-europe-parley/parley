@@ -18,6 +18,7 @@ interface ConversationState {
   npcName: string;
   mood: string;
   sceneImageUrl: string;
+  npcFaceImageUrl: string;
   history: ConversationMessage[];
   hints: string[];
   scenarioKey?: string;
@@ -77,6 +78,7 @@ export default function ChatPage() {
         npcName: data.npcName,
         mood: data.npcOpeningMood || "neutral",
         sceneImageUrl: data.sceneImageUrl,
+        npcFaceImageUrl: data.npcFaceImageUrl || "",
         history: [{ role: "npc", text: data.npcOpeningMessage }],
         hints: data.hints || [],
         scenarioKey: data.scenarioKey,
@@ -247,6 +249,7 @@ export default function ChatPage() {
               mood: data.mood as string,
               hints: (data.hints as string[]) || [],
               sceneImageUrl: (data.sceneImageUrl as string) || s.sceneImageUrl,
+              npcFaceImageUrl: (data.npcFaceImageUrl as string) || s.npcFaceImageUrl,
             };
           });
           if (data.debrief) {
@@ -492,8 +495,15 @@ export default function ChatPage() {
           {state.history.map((msg, i) => (
             <div
               key={i}
-              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              className={`flex items-start gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
+              {msg.role === "npc" && state.npcFaceImageUrl && (
+                <img
+                  src={state.npcFaceImageUrl}
+                  alt={state.npcName}
+                  className="h-20 w-20 rounded-full object-cover border-2 border-slate-700/50 flex-shrink-0"
+                />
+              )}
               <div
                 className={`max-w-[75%] rounded-2xl px-5 py-3 shadow-lg ${
                   msg.role === "user"
@@ -522,11 +532,21 @@ export default function ChatPage() {
                 )}
                 <p className="whitespace-pre-wrap leading-relaxed text-[15px]">{msg.text}</p>
               </div>
+              {msg.role === "user" && (
+                <div className="h-20 w-20 flex-shrink-0" />
+              )}
             </div>
           ))}
 
           {streamingText && (
-            <div className="flex justify-start">
+            <div className="flex items-start gap-3 justify-start">
+              {state.npcFaceImageUrl && (
+                <img
+                  src={state.npcFaceImageUrl}
+                  alt={state.npcName}
+                  className="h-20 w-20 rounded-full object-cover border-2 border-slate-700/50 flex-shrink-0"
+                />
+              )}
               <div className="max-w-[75%] rounded-2xl bg-slate-800/90 backdrop-blur-sm px-5 py-3 text-slate-100 border border-slate-700/50 shadow-lg">
                 <div className="mb-2">
                   <span className="text-xs font-semibold text-blue-400 uppercase tracking-wide">
