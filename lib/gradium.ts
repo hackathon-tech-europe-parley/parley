@@ -1,6 +1,14 @@
 import type { NpcGender } from "./types";
 import { getGradiumApiKey } from "./env";
 
+// Serialize TTS requests to avoid Gradium concurrency limit (max 2 sessions)
+let pending: Promise<unknown> = Promise.resolve();
+function enqueue<T>(fn: () => Promise<T>): Promise<T> {
+  const next = pending.then(fn, fn);
+  pending = next.then(() => {}, () => {});
+  return next;
+}
+
 // Flagship voices per language and gender
 const VOICE_MAP: Record<string, Record<NpcGender, string>> = {
   en: { feminine: "YTpq7expH9539ERJ", masculine: "LFZvm12tW_z0xfGo" }, // Emma / Kent
@@ -20,30 +28,32 @@ export function getVoiceId(languageCode?: string, gender?: NpcGender): string {
   return VOICE_MAP["en"]?.[g] ?? DEFAULT_VOICE;
 }
 
-export async function synthesizeSpeech(
+export function synthesizeSpeech(
   text: string,
   languageCode?: string,
   gender?: NpcGender,
 ): Promise<ArrayBuffer> {
-  const apiKey = getGradiumApiKey();
-  const res = await fetch("https://eu.api.gradium.ai/api/post/speech/tts", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-    },
-    body: JSON.stringify({
-      text,
-      voice_id: getVoiceId(languageCode, gender),
-      output_format: "wav",
-      only_audio: true,
-    }),
+  return enqueue(async () => {
+    const apiKey = getGradiumApiKey();
+    const res = await fetch("https://eu.api.gradium.ai/api/post/speech/tts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        text,
+        voice_id: getVoiceId(languageCode, gender),
+        output_format: "wav",
+        only_audio: true,
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`Gradium TTS failed (${res.status}): ${body}`);
+    }
+
+    return res.arrayBuffer();
   });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Gradium TTS failed (${res.status}): ${body}`);
-  }
-
-  return res.arrayBuffer();
 }
