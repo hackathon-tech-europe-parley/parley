@@ -1,6 +1,6 @@
 {
   "name": "parley",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "Situational language learning through immersive roleplay",
   "type": "module",
