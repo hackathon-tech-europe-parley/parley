@@ -130,7 +130,11 @@
     "startRecording": "Commencer l'enregistrement",
     "stopRecording": "Arrêter l'enregistrement",
     "recording": "Enregistrement... cliquez sur le micro pour arrêter",
-    "transcribing": "Transcription en cours..."
+    "transcribing": "Transcription en cours...",
+    "mute": "Couper le son du PNJ",
+    "unmute": "Activer le son du PNJ",
+    "clickNewScenario": "Cliquer pour commencer un nouveau sc\u00e9nario",
+    "clickForDebrief": "Cliquer pour voir votre bilan"
   },
   "Debrief": {
     "goalAchieved": "Objectif atteint",

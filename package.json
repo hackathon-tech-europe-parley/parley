@@ -13,6 +13,7 @@
   "dependencies": {
     "@confiture-ai/gradium-sdk-js": "^0.1.1",
     "@fal-ai/client": "^1.2.1",
+    "canvas-confetti": "^1.9.4",
     "next": "15.5.12",
     "next-intl": "^4.8.2",
     "openai": "^5.8.2",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.10",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^22.16.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
