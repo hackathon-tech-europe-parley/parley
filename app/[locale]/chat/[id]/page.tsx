@@ -14,6 +14,7 @@ import {
   messageStreamCompletePayloadSchema,
   quitConversationResponseSchema,
   sttResponseSchema,
+  normalizeToMoodState,
   type ConversationLevel,
   type ConversationMessage,
   type Debrief,
@@ -85,7 +86,7 @@ const GOAL_PROGRESS_GLOW_IMPOSSIBLE: Record<GoalProgress, string> = {
   5: "shadow-red-400/50",
 };
 
-// Mood visual theming — maps mood keywords to color schemes
+// Mood visual theming — maps mood to one of the 8 core mood states and returns color scheme
 function getMoodTheme(mood: string): {
   bg: string;
   border: string;
@@ -93,27 +94,28 @@ function getMoodTheme(mood: string): {
   dot: string;
   glow: string;
 } {
-  const m = mood.toLowerCase();
-  if (["warm", "friendly", "happy", "cheerful", "welcoming", "kind", "pleased"].some(k => m.includes(k))) {
-    return { bg: "bg-emerald-950/50", border: "border-emerald-700/50", text: "text-emerald-300", dot: "bg-emerald-400", glow: "shadow-emerald-500/20" };
+  const moodState = normalizeToMoodState(mood);
+  
+  switch (moodState) {
+    case "happy":
+      return { bg: "bg-emerald-950/50", border: "border-emerald-700/50", text: "text-emerald-300", dot: "bg-emerald-400", glow: "shadow-emerald-500/20" };
+    case "friendly":
+      return { bg: "bg-green-950/50", border: "border-green-700/50", text: "text-green-300", dot: "bg-green-400", glow: "shadow-green-500/20" };
+    case "neutral":
+      return { bg: "bg-blue-950/30", border: "border-blue-800/30", text: "text-blue-300", dot: "bg-blue-400", glow: "shadow-blue-500/15" };
+    case "skeptical":
+      return { bg: "bg-violet-950/40", border: "border-violet-800/40", text: "text-violet-300", dot: "bg-violet-400", glow: "shadow-violet-500/20" };
+    case "annoyed":
+      return { bg: "bg-amber-950/40", border: "border-amber-800/40", text: "text-amber-300", dot: "bg-amber-400", glow: "shadow-amber-500/20" };
+    case "angry":
+      return { bg: "bg-red-950/50", border: "border-red-800/50", text: "text-red-300", dot: "bg-red-400", glow: "shadow-red-500/30" };
+    case "sad":
+      return { bg: "bg-indigo-950/40", border: "border-indigo-800/40", text: "text-indigo-300", dot: "bg-indigo-400", glow: "shadow-indigo-500/20" };
+    case "surprised":
+      return { bg: "bg-yellow-950/40", border: "border-yellow-800/40", text: "text-yellow-300", dot: "bg-yellow-400", glow: "shadow-yellow-500/20" };
+    default:
+      return { bg: "bg-blue-950/30", border: "border-blue-800/30", text: "text-blue-300", dot: "bg-blue-400", glow: "shadow-blue-500/15" };
   }
-  if (["cold", "distant", "indifferent", "aloof", "reserved", "cool"].some(k => m.includes(k))) {
-    return { bg: "bg-cyan-950/40", border: "border-cyan-800/40", text: "text-cyan-300", dot: "bg-cyan-400", glow: "shadow-cyan-500/20" };
-  }
-  if (["angry", "hostile", "furious", "enraged", "aggressive"].some(k => m.includes(k))) {
-    return { bg: "bg-red-950/50", border: "border-red-800/50", text: "text-red-300", dot: "bg-red-400", glow: "shadow-red-500/30" };
-  }
-  if (["annoyed", "frustrated", "irritated", "impatient", "exasperated"].some(k => m.includes(k))) {
-    return { bg: "bg-amber-950/40", border: "border-amber-800/40", text: "text-amber-300", dot: "bg-amber-400", glow: "shadow-amber-500/20" };
-  }
-  if (["suspicious", "wary", "distrustful", "guarded", "skeptical"].some(k => m.includes(k))) {
-    return { bg: "bg-violet-950/40", border: "border-violet-800/40", text: "text-violet-300", dot: "bg-violet-400", glow: "shadow-violet-500/20" };
-  }
-  if (["sad", "melancholic", "gloomy", "somber", "dejected"].some(k => m.includes(k))) {
-    return { bg: "bg-indigo-950/40", border: "border-indigo-800/40", text: "text-indigo-300", dot: "bg-indigo-400", glow: "shadow-indigo-500/20" };
-  }
-  // Neutral / professional / default
-  return { bg: "bg-blue-950/30", border: "border-blue-800/30", text: "text-blue-300", dot: "bg-blue-400", glow: "shadow-blue-500/15" };
 }
 
 interface DebriefState {
