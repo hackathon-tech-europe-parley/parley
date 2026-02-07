@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { DM_Sans, JetBrains_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { setRequestLocale, getTranslations, getMessages } from "next-intl/server";
@@ -8,7 +8,8 @@ import { routing } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/components/language-switcher";
 
-const inter = Inter({ subsets: ["latin"] });
+const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
+const jetBrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -44,22 +45,25 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   return (
     <html lang={locale} className="dark">
-      <body className={`${inter.className} flex min-h-screen flex-col`}>
+      <body className={`${dmSans.variable} ${jetBrainsMono.variable} font-[family-name:var(--font-dm-sans)] flex min-h-screen flex-col`}>
         <NextIntlClientProvider messages={messages}>
           {/* Header */}
-          <header className="flex-shrink-0 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md">
+          <header className="flex-shrink-0 border-b border-slate-800/50 bg-slate-950/90 backdrop-blur-xl">
             <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-3 sm:px-4 md:px-6">
-              <Link href="/" className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white">
+              <Link href="/" className="group flex items-center gap-2.5">
+                <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all group-hover:shadow-blue-500/40 group-hover:scale-105">
                   P
+                  <div className="absolute inset-0 rounded-lg bg-white/10 opacity-0 transition-opacity group-hover:opacity-100" />
                 </div>
-                <span className="text-base font-semibold text-white sm:text-lg">Parley</span>
+                <span className="text-base font-semibold tracking-tight text-white sm:text-lg">
+                  Parley
+                </span>
               </Link>
-              <nav className="flex items-center gap-1">
+              <nav className="flex items-center gap-2">
                 <LanguageSwitcher />
                 <Link
                   href="/"
-                  className="hidden rounded-lg px-3 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200 sm:inline-block"
+                  className="btn-press hidden rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-1.5 text-sm text-slate-400 transition-all hover:border-slate-700 hover:bg-slate-800/80 hover:text-slate-200 sm:inline-block"
                 >
                   {(await getTranslations("Layout"))("newSession")}
                 </Link>

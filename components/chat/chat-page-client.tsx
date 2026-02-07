@@ -415,9 +415,9 @@ export function ChatPageClient() {
   if (error && !state) {
     return (
       <main className="flex flex-1 items-center justify-center p-4">
-        <div className="rounded-xl bg-red-900/50 p-8 text-center">
+        <div className="animate-in rounded-xl border border-red-800/30 bg-red-900/30 p-8 text-center">
           <p className="text-red-300">{error}</p>
-          <Link href="/" className="mt-4 inline-block text-blue-400 underline">
+          <Link href="/" className="mt-4 inline-block text-blue-400 transition-colors hover:text-blue-300">
             {t("backToSetup")}
           </Link>
         </div>
@@ -428,7 +428,7 @@ export function ChatPageClient() {
   if (!state) {
     return (
       <main className="flex flex-1 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-white" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-blue-500" />
       </main>
     );
   }

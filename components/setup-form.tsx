@@ -148,17 +148,19 @@ export function SetupForm() {
   const displayLanguage = languageCode ? tLangs(languageCode) : "";
 
   return (
-    <div className="w-full max-w-2xl px-2 sm:px-4 lg:max-w-3xl">
+    <div className="relative w-full max-w-2xl px-2 sm:px-4 lg:max-w-3xl">
+      {/* Header */}
       <div className="mb-6 text-center sm:mb-8 md:mb-10">
-        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl md:text-4xl">
           {t("heading")}
         </h1>
-        <p className="mt-1.5 text-sm text-slate-400 sm:mt-2 sm:text-base">
+        <p className="mt-2 text-sm text-slate-400 sm:text-base">
           {t("subheading")}
         </p>
       </div>
 
-      <div className="mb-6 flex items-center justify-center gap-2 sm:mb-8">
+      {/* Step indicators */}
+      <div className="mb-6 flex items-center justify-center gap-3 sm:mb-8">
         {[1, 2].map((s) => (
           <button
             key={s}
@@ -166,19 +168,21 @@ export function SetupForm() {
               if (s === 1) setStep(1);
               else if (s === 2 && languageCode) setStep(2);
             }}
-            className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all ${
+            className={`btn-press flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${
               step === s
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                ? "bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-lg shadow-blue-600/30 scale-110"
                 : step > s
                   ? "bg-blue-600/20 text-blue-400 hover:bg-blue-600/30"
-                  : "bg-slate-800 text-slate-500"
+                  : "bg-slate-800/80 text-slate-500"
             }`}
           >
             {step > s ? "\u2713" : s}
           </button>
         ))}
+        <div className={`h-px w-8 transition-colors duration-500 ${step > 1 ? "bg-blue-500/50" : "bg-slate-700/50"}`} />
       </div>
 
+      {/* Step 1 — Language selection */}
       {step === 1 && (
         <div className="animate-in">
           <h2 className="mb-1 text-center text-xl font-semibold text-white">
@@ -187,7 +191,7 @@ export function SetupForm() {
           <p className="mb-6 text-center text-sm text-slate-400">
             {t("step1Subtitle")}
           </p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4">
+          <div className="stagger-children grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4">
             {LANGUAGES.map((lang) => (
               <button
                 key={lang.code}
@@ -195,13 +199,15 @@ export function SetupForm() {
                   setLanguageCode(lang.code);
                   setStep(2);
                 }}
-                className={`group flex flex-col items-center gap-2 rounded-xl border p-4 transition-all hover:scale-[1.03] ${
+                className={`btn-press group flex flex-col items-center gap-2.5 rounded-xl border p-4 transition-all duration-200 hover:scale-[1.04] ${
                   languageCode === lang.code
-                    ? "border-blue-500 bg-blue-600/10 shadow-lg shadow-blue-600/10"
-                    : "border-slate-700/50 bg-slate-900/50 hover:border-slate-600 hover:bg-slate-800/50"
+                    ? "border-blue-500/60 bg-blue-600/10 shadow-lg shadow-blue-600/10"
+                    : "border-slate-700/40 bg-slate-900/40 hover:border-slate-600/60 hover:bg-slate-800/50"
                 }`}
               >
-                <span className="text-3xl">{lang.flag}</span>
+                <span className="text-3xl transition-transform duration-200 group-hover:scale-110">
+                  {lang.flag}
+                </span>
                 <span className="text-sm font-medium text-slate-200">
                   {tLangs(lang.code)}
                 </span>
@@ -211,6 +217,7 @@ export function SetupForm() {
         </div>
       )}
 
+      {/* Step 2 — Difficulty & scenario */}
       {step === 2 && (
         <div className="animate-in">
           <h2 className="mb-1 text-center text-xl font-semibold text-white">
@@ -222,18 +229,18 @@ export function SetupForm() {
 
           {/* Level toggle */}
           <div className="mb-5 flex items-center justify-center overflow-x-auto">
-            <div className="inline-flex rounded-lg bg-slate-800/80 p-1">
+            <div className="inline-flex rounded-xl bg-slate-900/80 p-1 border border-slate-800/50">
               {LEVEL_KEYS.map((l) => (
                 <button
                   key={l}
                   onClick={() => setLevel(l)}
-                  className={`whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-medium transition-all sm:px-4 sm:text-sm ${
+                  className={`btn-press whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-300 sm:px-4 sm:text-sm ${
                     level === l
                       ? l === "impossible"
-                        ? "bg-red-600 text-white shadow-sm shadow-red-600/30"
-                        : "bg-blue-600 text-white shadow-sm"
+                        ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-sm shadow-red-600/30"
+                        : "bg-gradient-to-r from-blue-500 to-blue-700 text-white shadow-sm shadow-blue-600/30"
                       : l === "impossible"
-                        ? "text-red-400 hover:text-red-300"
+                        ? "text-red-400/70 hover:text-red-300"
                         : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
@@ -244,7 +251,7 @@ export function SetupForm() {
           </div>
 
           {/* Scenario cards */}
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
+          <div className="stagger-children grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
             {scenarios.map((s) => {
               const isSelected = selectedScenario?.key === s.key;
               const title = tScenarios(`${s.key}_title`);
@@ -254,20 +261,20 @@ export function SetupForm() {
                 <button
                   key={s.key}
                   onClick={() => setSelectedScenario(s)}
-                  className={`flex flex-col gap-2 rounded-xl border p-4 text-left transition-all hover:scale-[1.01] ${
+                  className={`btn-press group flex flex-col gap-2 rounded-xl border p-4 text-left transition-all duration-200 hover:scale-[1.02] ${
                     isSelected
-                      ? "border-blue-500 bg-blue-600/10 shadow-lg shadow-blue-600/10"
-                      : "border-slate-700/50 bg-slate-900/50 hover:border-slate-600 hover:bg-slate-800/50"
+                      ? "border-blue-500/50 bg-blue-600/10 shadow-lg shadow-blue-600/10"
+                      : "border-slate-700/40 bg-slate-900/40 hover:border-slate-600/60 hover:bg-slate-800/40"
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 text-2xl">{s.emoji}</span>
+                    <span className="mt-0.5 text-2xl transition-transform duration-200 group-hover:scale-110">{s.emoji}</span>
                     <div className="min-w-0">
                       <div className="font-semibold text-white">{title}</div>
                       <div className="text-sm text-slate-400">{description}</div>
                     </div>
                   </div>
-                  <div className={`mt-1 rounded-lg px-3 py-2 text-xs leading-relaxed transition-colors ${
+                  <div className={`mt-1 rounded-lg px-3 py-2 text-xs leading-relaxed transition-all duration-300 ${
                     isSelected
                       ? level === "impossible"
                         ? "bg-red-600/15 text-red-300"
@@ -290,20 +297,20 @@ export function SetupForm() {
                   scenario: customScenario.scenario,
                   emoji: customScenario.emoji,
                 })}
-                className={`flex flex-col gap-2 rounded-xl border p-4 text-left transition-all hover:scale-[1.01] ${
+                className={`btn-press group flex flex-col gap-2 rounded-xl border p-4 text-left transition-all duration-200 hover:scale-[1.02] ${
                   selectedScenario?.key === "__custom__"
-                    ? "border-blue-500 bg-blue-600/10 shadow-lg shadow-blue-600/10"
-                    : "border-slate-700/50 bg-slate-900/50 hover:border-slate-600 hover:bg-slate-800/50"
+                    ? "border-blue-500/50 bg-blue-600/10 shadow-lg shadow-blue-600/10"
+                    : "border-slate-700/40 bg-slate-900/40 hover:border-slate-600/60 hover:bg-slate-800/40"
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <span className="mt-0.5 text-2xl">{customScenario.emoji}</span>
+                  <span className="mt-0.5 text-2xl transition-transform duration-200 group-hover:scale-110">{customScenario.emoji}</span>
                   <div className="min-w-0">
                     <div className="font-semibold text-white">{customScenario.title}</div>
                     <div className="text-sm text-slate-400">{customScenario.description}</div>
                   </div>
                 </div>
-                <div className={`mt-1 rounded-lg px-3 py-2 text-xs leading-relaxed transition-colors ${
+                <div className={`mt-1 rounded-lg px-3 py-2 text-xs leading-relaxed transition-all duration-300 ${
                   selectedScenario?.key === "__custom__"
                     ? level === "impossible"
                       ? "bg-red-600/15 text-red-300"
@@ -317,21 +324,21 @@ export function SetupForm() {
               </button>
             )}
 
-            {/* Create your own — input or card */}
+            {/* Create your own */}
             {creatingCustom ? (
-              <div className="flex flex-col gap-3 rounded-xl border border-dashed border-slate-600 bg-slate-900/50 p-4">
+              <div className="flex flex-col gap-3 rounded-xl border border-dashed border-slate-600/50 bg-slate-900/40 p-4">
                 <textarea
                   value={customPrompt}
                   onChange={(e) => setCustomPrompt(e.target.value)}
                   placeholder={t("customPromptPlaceholder")}
                   rows={3}
-                  className="w-full resize-none rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                  className="w-full resize-none rounded-lg border border-slate-700/50 bg-slate-800/50 px-3 py-2 text-sm text-white placeholder-slate-500 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={handleGenerateCustom}
                     disabled={!customPrompt.trim() || generatingCustom}
-                    className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="btn-press flex-1 rounded-lg bg-gradient-to-r from-blue-500 to-blue-700 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-blue-600/20 transition-all hover:from-blue-500 hover:to-blue-600 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {generatingCustom ? (
                       <span className="flex items-center justify-center gap-2">
@@ -354,34 +361,37 @@ export function SetupForm() {
             ) : (
               <button
                 onClick={() => setCreatingCustom(true)}
-                className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-600 bg-slate-900/30 p-4 text-center transition-all hover:border-slate-500 hover:bg-slate-800/50"
+                className="btn-press group flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-700/40 bg-slate-900/20 p-4 text-center transition-all hover:border-slate-500/50 hover:bg-slate-800/30"
               >
-                <span className="text-2xl">+</span>
-                <span className="text-sm font-medium text-slate-400">{t("createOwn")}</span>
+                <span className="text-2xl text-slate-500 transition-transform duration-200 group-hover:scale-110">+</span>
+                <span className="text-sm font-medium text-slate-500 group-hover:text-slate-400">{t("createOwn")}</span>
               </button>
             )}
           </div>
 
+          {/* Reshuffle button */}
           <button
             onClick={reshuffleScenarios}
-            className="mx-auto mt-4 flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-300"
+            className="btn-press mx-auto mt-4 flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-slate-400 transition-all hover:bg-slate-800/50 hover:text-slate-300"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
             {t("showDifferent")}
           </button>
 
+          {/* Error */}
           {error && (
-            <p className="mt-4 rounded-lg bg-red-900/50 px-4 py-2 text-center text-sm text-red-300">
+            <p className="mt-4 rounded-lg border border-red-800/30 bg-red-900/30 px-4 py-2.5 text-center text-sm text-red-300">
               {error}
             </p>
           )}
 
+          {/* Start button */}
           <button
             onClick={handleStart}
             disabled={!selectedScenario || loading}
-            className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3.5 font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-500 hover:shadow-blue-500/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+            className="btn-press mt-6 w-full rounded-xl bg-gradient-to-r from-blue-500 to-blue-700 px-4 py-3.5 font-semibold text-white shadow-lg shadow-blue-600/20 transition-all duration-300 hover:from-blue-500 hover:to-blue-600 hover:shadow-blue-500/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
