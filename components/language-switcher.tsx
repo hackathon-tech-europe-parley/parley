@@ -27,7 +27,7 @@ export function LanguageSwitcher() {
           router.replace(pathname, { locale: e.target.value });
         });
       }}
-      className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-2 text-sm text-slate-300 focus:border-blue-500 focus:outline-none sm:py-1.5"
+      className="rounded-lg border border-slate-800 bg-slate-900/50 px-2 py-2 text-sm text-slate-400 transition-all hover:border-slate-700 hover:text-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:py-1.5"
     >
       {Object.entries(LOCALE_LABELS).map(([code, label]) => (
         <option key={code} value={code}>

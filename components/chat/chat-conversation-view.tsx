@@ -87,16 +87,16 @@ export function ChatConversationView({
 
   return (
     <main className="flex h-screen min-h-0 flex-1 flex-col md:flex-row">
-      {/* Left side - Meta Information: compact top bar on mobile, sidebar on md+ */}
+      {/* Left side - Meta Information */}
       <div className="flex flex-shrink-0 flex-col bg-slate-950 md:min-w-0 md:flex-[0.3] md:flex-shrink">
         {/* Scene Image */}
         <div className="relative h-32 flex-shrink-0 overflow-hidden sm:h-44 md:h-64">
-          <img src={state.sceneImageUrl} alt="Scene" className="h-full w-full object-cover" />
+          <img src={state.sceneImageUrl} alt="Scene" className="h-full w-full object-cover transition-opacity duration-700" />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-950" />
         </div>
 
         {/* Meta Information */}
-        <div className="space-y-3 p-3 sm:space-y-4 sm:p-4 md:flex-1 md:overflow-y-auto md:p-5">
+        <div className="space-y-3 p-3 sm:space-y-4 sm:p-4 md:flex-1 md:overflow-y-auto md:p-5 styled-scrollbar">
           {/* Mood Indicator */}
           {(() => {
             const moodTheme = getMoodTheme(state.mood);
@@ -109,7 +109,7 @@ export function ChatConversationView({
                     <img
                       src={state.npcFaceImageUrl}
                       alt={state.npcName}
-                      className="h-9 w-9 flex-shrink-0 rounded-full border-2 border-slate-700/60 object-cover object-top sm:h-11 sm:w-11"
+                      className="h-9 w-9 flex-shrink-0 rounded-full border-2 border-slate-700/60 object-cover object-top shadow-lg sm:h-11 sm:w-11"
                     />
                   )}
                   <div className="min-w-0 flex-1">
@@ -149,7 +149,7 @@ export function ChatConversationView({
                 Objective
               </h3>
               <span
-                className={`text-xs font-mono font-bold tabular-nums ${
+                className={`font-[family-name:var(--font-mono)] text-xs font-bold tabular-nums ${
                   state.level === "impossible" ? "text-red-400/70" : "text-slate-500"
                 }`}
               >
@@ -175,9 +175,10 @@ export function ChatConversationView({
                     key={step}
                     className={`h-2.5 flex-1 rounded-md transition-all duration-500 sm:h-3 ${
                       isActive
-                        ? `${progressPalette[state.goalProgress]} shadow-md ${glowPalette[state.goalProgress]}`
+                        ? `${progressPalette[state.goalProgress]} shadow-md ${glowPalette[state.goalProgress]} progress-animated`
                         : progressTrackColor
                     }`}
+                    style={isActive ? { animationDelay: `${(step - 1) * 80}ms` } : undefined}
                   />
                 );
               })}
@@ -186,7 +187,7 @@ export function ChatConversationView({
 
           {/* Extra meta — hidden on mobile, visible on md+ */}
           <div className="hidden space-y-4 md:block">
-            <div className="border-t border-slate-800/60" />
+            <div className="border-t border-slate-800/40" />
 
             <div>
               <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
@@ -196,7 +197,7 @@ export function ChatConversationView({
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <div className="inline-flex items-center gap-1.5 rounded-lg border border-blue-600/25 bg-blue-600/15 px-2.5 py-1.5">
+              <div className="inline-flex items-center gap-1.5 rounded-lg border border-blue-600/20 bg-blue-600/10 px-2.5 py-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-400/60">
                   Lang
                 </span>
@@ -207,8 +208,8 @@ export function ChatConversationView({
               <div
                 className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 ${
                   state.level === "impossible"
-                    ? "border-red-600/25 bg-red-600/15"
-                    : "border-slate-700/40 bg-slate-800/40"
+                    ? "border-red-600/20 bg-red-600/10"
+                    : "border-slate-700/30 bg-slate-800/30"
                 }`}
               >
                 <span
@@ -232,7 +233,7 @@ export function ChatConversationView({
 
             <div className="flex justify-between text-sm">
               <span className="text-slate-500">Messages</span>
-              <span className="font-medium tabular-nums text-slate-300">
+              <span className="font-[family-name:var(--font-mono)] font-medium tabular-nums text-slate-300">
                 {state.history.length}
               </span>
             </div>
@@ -240,26 +241,26 @@ export function ChatConversationView({
         </div>
       </div>
 
-      {/* Right side - Messages: full width on mobile, 70% on md+ */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col border-t border-slate-800 md:flex-[0.7] md:border-l md:border-t-0">
-        <div className="flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-slate-950 to-slate-900 p-3 sm:space-y-4 sm:p-4 md:p-6">
+      {/* Right side - Messages */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col border-t border-slate-800/50 md:flex-[0.7] md:border-l md:border-t-0">
+        <div className="styled-scrollbar flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-slate-950 to-slate-900/80 p-3 sm:space-y-4 sm:p-4 md:p-6">
           {state.history.map((msg, i) => (
             <div
               key={i}
-              className={`flex items-start gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              className={`flex items-start gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end msg-user" : "justify-start msg-npc"}`}
             >
               {msg.role === "npc" && (msg.npcFaceImageUrl || state.npcFaceImageUrl) && (
                 <img
                   src={msg.npcFaceImageUrl || state.npcFaceImageUrl}
                   alt={state.npcName}
-                  className="h-8 w-8 flex-shrink-0 rounded-full border-2 border-slate-700/50 object-cover object-top sm:h-10 sm:w-10 md:h-12 md:w-12"
+                  className="h-8 w-8 flex-shrink-0 rounded-full border-2 border-slate-700/40 object-cover object-top shadow-md sm:h-10 sm:w-10 md:h-12 md:w-12"
                 />
               )}
               <div
                 className={`max-w-[85%] rounded-2xl px-3 py-2 shadow-lg sm:max-w-[80%] sm:px-4 sm:py-3 md:max-w-[75%] md:px-5 ${
                   msg.role === "user"
-                    ? "bg-gradient-to-br from-blue-600 to-blue-700 text-white"
-                    : "border border-slate-700/50 bg-slate-800/90 text-slate-100 backdrop-blur-sm"
+                    ? "bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-blue-600/10"
+                    : "border border-slate-700/40 bg-slate-800/80 text-slate-100 backdrop-blur-sm"
                 }`}
               >
                 {msg.role === "npc" && (
@@ -271,7 +272,7 @@ export function ChatConversationView({
                       type="button"
                       onClick={() => onReplay(i, msg.text)}
                       title={t("replaySpeaker")}
-                      className="inline-flex items-center rounded p-1 text-slate-400 transition-colors hover:bg-slate-700/50 hover:text-blue-400"
+                      className="inline-flex items-center rounded p-1 text-slate-400 transition-all hover:bg-slate-700/50 hover:text-blue-400"
                     >
                       {ttsPlaying === i ? (
                         <svg className="h-4 w-4 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
@@ -291,38 +292,40 @@ export function ChatConversationView({
             </div>
           ))}
 
+          {/* Typing indicator */}
           {sending && (
-            <div className="flex items-start justify-start gap-2 sm:gap-3">
+            <div className="msg-npc flex items-start justify-start gap-2 sm:gap-3">
               {state.npcFaceImageUrl && (
                 <img
                   src={state.npcFaceImageUrl}
                   alt={state.npcName}
-                  className="h-8 w-8 flex-shrink-0 rounded-full border-2 border-slate-700/50 object-cover object-top sm:h-10 sm:w-10 md:h-12 md:w-12"
+                  className="h-8 w-8 flex-shrink-0 rounded-full border-2 border-slate-700/40 object-cover object-top shadow-md sm:h-10 sm:w-10 md:h-12 md:w-12"
                 />
               )}
-              <div className="rounded-2xl border border-slate-700/50 bg-slate-800/90 px-4 py-3 shadow-lg backdrop-blur-sm sm:px-5 sm:py-4">
+              <div className="rounded-2xl border border-slate-700/40 bg-slate-800/80 px-4 py-3 shadow-lg backdrop-blur-sm sm:px-5 sm:py-4">
                 <div className="mb-2">
                   <span className="text-xs font-semibold uppercase tracking-wide text-blue-400">
                     {state.npcName}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "150ms" }} />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "300ms" }} />
+                  <span className="typing-dot h-2 w-2 rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
+                  <span className="typing-dot h-2 w-2 rounded-full bg-slate-400" style={{ animationDelay: "200ms" }} />
+                  <span className="typing-dot h-2 w-2 rounded-full bg-slate-400" style={{ animationDelay: "400ms" }} />
                 </div>
               </div>
             </div>
           )}
 
+          {/* End status badge */}
           {endStatus && (
             <div className="flex justify-center py-3 sm:py-4">
               <div className={`rounded-full px-3 py-1 text-xs font-medium sm:px-4 sm:py-1.5 ${
                 endStatus.goalStatus === "achieved"
-                  ? "border border-green-800/50 bg-green-900/30 text-green-400"
+                  ? "border border-green-800/40 bg-green-900/30 text-green-400"
                   : endStatus.goalStatus === "failed"
-                    ? "border border-red-800/50 bg-red-900/30 text-red-400"
-                    : "border border-amber-800/50 bg-amber-900/30 text-amber-400"
+                    ? "border border-red-800/40 bg-red-900/30 text-red-400"
+                    : "border border-amber-800/40 bg-amber-900/30 text-amber-400"
               }`}>
                 {endStatus.goalStatus === "achieved"
                   ? tDebrief("goalAchieved")
@@ -336,14 +339,15 @@ export function ChatConversationView({
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Hints */}
         {state.hints.length > 0 && !sending && !endStatus && (
-          <div className="flex-shrink-0 border-t border-slate-800/50 bg-slate-900/50 px-3 py-2 sm:px-4 sm:py-3 md:px-6">
-            <div className="flex gap-2 overflow-x-auto">
+          <div className="flex-shrink-0 border-t border-slate-800/40 bg-slate-900/40 px-3 py-2 sm:px-4 sm:py-3 md:px-6">
+            <div className="flex gap-2 overflow-x-auto styled-scrollbar">
               {state.hints.map((hint, i) => (
                 <button
                   key={i}
                   onClick={() => onHintSelect(hint)}
-                  className="flex-shrink-0 rounded-full border border-blue-600/30 bg-blue-600/10 px-3 py-1.5 text-xs text-blue-300 transition-colors hover:border-blue-600/50 hover:bg-blue-600/20 sm:px-4 sm:py-2 sm:text-sm"
+                  className="btn-press flex-shrink-0 rounded-full border border-blue-600/25 bg-blue-600/8 px-3 py-1.5 text-xs text-blue-300 transition-all hover:border-blue-500/40 hover:bg-blue-600/15 sm:px-4 sm:py-2 sm:text-sm"
                 >
                   {hint}
                 </button>
@@ -352,38 +356,39 @@ export function ChatConversationView({
           </div>
         )}
 
+        {/* Error */}
         {error && (
-          <div className="flex-shrink-0 border-t border-red-900/50 bg-red-950/30 px-3 py-2 sm:px-6">
+          <div className="flex-shrink-0 border-t border-red-900/30 bg-red-950/20 px-3 py-2 sm:px-6">
             <p className="text-sm text-red-400">{error}</p>
           </div>
         )}
 
         {/* Input / End status */}
-        <div className="flex-shrink-0 border-t border-slate-800 bg-slate-900/50 p-2 sm:p-3 md:p-4">
+        <div className="flex-shrink-0 border-t border-slate-800/50 bg-slate-900/40 p-2 sm:p-3 md:p-4">
           {endStatus ? (
             <button
               type="button"
               onClick={onEndStatusClick}
-              className={`w-full rounded-xl p-3 text-left transition-all sm:p-4 md:p-5 ${
+              className={`btn-press w-full rounded-xl p-3 text-left transition-all sm:p-4 md:p-5 ${
                 endStatus.goalStatus === "achieved"
-                  ? "border border-green-700/50 bg-gradient-to-r from-green-900/50 to-green-800/30 hover:from-green-900/70 hover:to-green-800/50"
+                  ? "border border-green-700/40 bg-gradient-to-r from-green-900/40 to-green-800/20 hover:from-green-900/60 hover:to-green-800/40"
                   : endStatus.goalStatus === "failed"
-                    ? "border border-red-700/50 bg-gradient-to-r from-red-900/50 to-red-800/30 hover:from-red-900/70 hover:to-red-800/50"
-                    : "border border-amber-700/50 bg-gradient-to-r from-amber-900/50 to-amber-800/30 hover:from-amber-900/70 hover:to-amber-800/50"
+                    ? "border border-red-700/40 bg-gradient-to-r from-red-900/40 to-red-800/20 hover:from-red-900/60 hover:to-red-800/40"
+                    : "border border-amber-700/40 bg-gradient-to-r from-amber-900/40 to-amber-800/20 hover:from-amber-900/60 hover:to-amber-800/40"
               }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 sm:gap-3">
                   {endStatus.goalStatus === "achieved" ? (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600/30 sm:h-10 sm:w-10">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600/20 sm:h-10 sm:w-10">
                       <svg className="h-4 w-4 text-green-400 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                     </div>
                   ) : endStatus.goalStatus === "failed" ? (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-600/30 sm:h-10 sm:w-10">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-600/20 sm:h-10 sm:w-10">
                       <svg className="h-4 w-4 text-red-400 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                     </div>
                   ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-600/30 sm:h-10 sm:w-10">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-600/20 sm:h-10 sm:w-10">
                       <svg className="h-4 w-4 text-amber-400 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
                   )}
@@ -421,14 +426,14 @@ export function ChatConversationView({
                       : t("messagePlaceholder", { language: tLangs(activeLanguageCode) })
                 }
                 disabled={sending || recording}
-                className="flex-1 rounded-xl border border-slate-700 bg-slate-800/50 px-3 py-2.5 text-sm text-white backdrop-blur-sm placeholder-slate-500 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:px-4 sm:py-3 sm:text-base md:px-5"
+                className="flex-1 rounded-xl border border-slate-700/50 bg-slate-800/40 px-3 py-2.5 text-sm text-white backdrop-blur-sm placeholder-slate-500 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:px-4 sm:py-3 sm:text-base md:px-5"
               />
               <div className="flex gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={onMuteToggle}
                   title={npcMuted ? t("unmute") : t("mute")}
-                  className="rounded-xl border border-slate-700 bg-slate-800/50 px-3 py-2.5 text-slate-400 transition-all hover:border-slate-600 hover:bg-slate-700/50 sm:px-4 sm:py-3"
+                  className="btn-press rounded-xl border border-slate-700/50 bg-slate-800/40 px-3 py-2.5 text-slate-400 transition-all hover:border-slate-600 hover:bg-slate-700/50 sm:px-4 sm:py-3"
                 >
                   {npcMuted ? (
                     <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
@@ -441,10 +446,10 @@ export function ChatConversationView({
                   onClick={onMicToggle}
                   disabled={sending || transcribing}
                   title={recording ? t("stopRecording") : t("startRecording")}
-                  className={`rounded-xl px-3 py-2.5 transition-all sm:px-4 sm:py-3 ${
+                  className={`btn-press rounded-xl px-3 py-2.5 transition-all sm:px-4 sm:py-3 ${
                     recording
                       ? "animate-pulse bg-red-600 text-white shadow-lg shadow-red-600/30"
-                      : "border border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600 hover:bg-slate-700/50"
+                      : "border border-slate-700/50 bg-slate-800/40 text-slate-400 hover:border-slate-600 hover:bg-slate-700/50"
                   } disabled:opacity-50`}
                 >
                   {transcribing ? (
@@ -461,7 +466,7 @@ export function ChatConversationView({
                 <button
                   type="submit"
                   disabled={sending || !input.trim() || recording}
-                  className="flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-600/30 transition-all hover:from-blue-500 hover:to-blue-600 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-6 sm:py-3 sm:text-base"
+                  className="btn-press flex-1 rounded-xl bg-gradient-to-r from-blue-500 to-blue-700 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-600/20 transition-all hover:from-blue-500 hover:to-blue-600 hover:shadow-blue-500/30 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-6 sm:py-3 sm:text-base"
                 >
                   {t("send")}
                 </button>
@@ -469,7 +474,7 @@ export function ChatConversationView({
                   type="button"
                   onClick={onQuit}
                   disabled={sending || quitting || recording}
-                  className="rounded-xl border border-slate-700 bg-slate-800/50 px-3 py-2.5 text-xs text-slate-400 transition-all hover:border-slate-600 hover:bg-slate-700/50 disabled:opacity-50 sm:px-4 sm:py-3 sm:text-sm"
+                  className="btn-press rounded-xl border border-slate-700/50 bg-slate-800/40 px-3 py-2.5 text-xs text-slate-400 transition-all hover:border-slate-600 hover:bg-slate-700/50 disabled:opacity-50 sm:px-4 sm:py-3 sm:text-sm"
                 >
                   {quitting ? "..." : t("quit")}
                 </button>
