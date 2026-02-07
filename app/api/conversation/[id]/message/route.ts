@@ -93,22 +93,25 @@ export async function POST(
             );
           } else if (event.type === "complete") {
             const npcResponse = applyNpcPolicy(conversation, event.data);
-            conversation.history.push({
-              role: "npc",
-              text: npcResponse.npcMessage,
-            });
-            conversation.mood = npcResponse.mood;
-            conversation.goalProgress = npcResponse.goalProgress;
-            conversation.messagesSinceImageRegen++;
-
-            await setHints(id, npcResponse.hints);
 
             const npcFaceImageUrl = getNpcFaceAssetUrl(
               conversation.scenarioKey ?? "__custom__",
               conversation.npcGender,
               npcResponse.mood,
             );
+
+            conversation.history.push({
+              role: "npc",
+              text: npcResponse.npcMessage,
+              mood: npcResponse.mood,
+              npcFaceImageUrl,
+            });
+            conversation.mood = npcResponse.mood;
+            conversation.goalProgress = npcResponse.goalProgress;
+            conversation.messagesSinceImageRegen++;
             conversation.npcFaceImageUrl = npcFaceImageUrl;
+
+            await setHints(id, npcResponse.hints);
 
             let sceneImageUrl = conversation.sceneImageUrl;
             if (conversation.messagesSinceImageRegen >= 3) {

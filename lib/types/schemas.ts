@@ -29,6 +29,8 @@ export const conversationMessageSchema = z
   .object({
     role: conversationRoleSchema,
     text: nonEmptyStringSchema,
+    mood: nonEmptyStringSchema.optional(),
+    npcFaceImageUrl: z.string().optional(),
   })
   .strict();
 
