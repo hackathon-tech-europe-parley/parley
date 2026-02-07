@@ -10,12 +10,14 @@ const GOAL_STATUSES = ["ongoing", "achieved", "failed"] as const;
 const GOAL_PROGRESS_VALUES = [1, 2, 3, 4, 5] as const;
 const CONVERSATION_ROLES = ["user", "npc"] as const;
 const LANGUAGE_CODES = ["en", "fr", "de", "es", "pt"] as const;
+const NPC_GENDERS = ["masculine", "feminine"] as const;
 
 export type ConversationLevel = (typeof CONVERSATION_LEVELS)[number];
 export type GoalStatus = (typeof GOAL_STATUSES)[number];
 export type GoalProgress = (typeof GOAL_PROGRESS_VALUES)[number];
 export type ConversationRole = (typeof CONVERSATION_ROLES)[number];
 export type LanguageCode = (typeof LANGUAGE_CODES)[number];
+export type NpcGender = (typeof NPC_GENDERS)[number];
 
 export interface ConversationMessage {
   role: ConversationRole;
@@ -38,6 +40,7 @@ export interface Conversation {
   messagesSinceImageRegen: number;
   sceneImageUrl: string;
   npcFaceImageUrl: string;
+  npcGender: NpcGender;
   scenarioKey?: string;
   languageCode?: LanguageCode;
 }
@@ -65,6 +68,7 @@ export interface NpcResponse {
 export interface NpcProfile {
   name: string;
   personality: string;
+  gender: NpcGender;
 }
 
 export interface Debrief {
@@ -84,6 +88,7 @@ export interface ConversationSnapshot {
   goalProgress: GoalProgress;
   sceneImageUrl: string;
   npcFaceImageUrl: string;
+  npcGender: NpcGender;
   history: ConversationMessage[];
   hints: string[];
   scenarioKey?: string;
@@ -108,6 +113,7 @@ export interface CreateConversationResponse {
   sceneImageUrl: string;
   npcFaceImageUrl: string;
   npcName: string;
+  npcGender: NpcGender;
   npcOpeningMessage: string;
   npcOpeningMood: string;
   npcOpeningGoalProgress: GoalProgress;
@@ -138,6 +144,7 @@ export interface MessageStreamCompletePayload {
 }
 
 export const languageCodeSchema = z.enum(LANGUAGE_CODES);
+export const npcGenderSchema = z.enum(NPC_GENDERS);
 export const conversationLevelSchema = z.enum(CONVERSATION_LEVELS);
 export const goalStatusSchema = z.enum(GOAL_STATUSES);
 export const conversationRoleSchema = z.enum(CONVERSATION_ROLES);
@@ -187,6 +194,7 @@ export const ttsRequestSchema = z
   .object({
     text: nonEmptyStringSchema,
     languageCode: languageCodeSchema.optional(),
+    npcGender: npcGenderSchema.optional(),
   })
   .strict();
 
@@ -237,6 +245,7 @@ export const npcProfileSchema = z
   .object({
     name: nonEmptyStringSchema,
     personality: nonEmptyStringSchema,
+    gender: npcGenderSchema,
   })
   .strict();
 
@@ -289,6 +298,7 @@ export const conversationSchema = z
     messagesSinceImageRegen: z.number().int().min(0),
     sceneImageUrl: nonEmptyStringSchema,
     npcFaceImageUrl: z.string(),
+    npcGender: npcGenderSchema,
     scenarioKey: nonEmptyStringSchema.optional(),
     languageCode: languageCodeSchema.optional(),
   })
@@ -306,6 +316,7 @@ export const conversationSnapshotSchema = z
     goalProgress: goalProgressSchema,
     sceneImageUrl: nonEmptyStringSchema,
     npcFaceImageUrl: z.string(),
+    npcGender: npcGenderSchema,
     history: z.array(conversationMessageSchema),
     hints: z.array(nonEmptyStringSchema),
     scenarioKey: nonEmptyStringSchema.optional(),
@@ -319,6 +330,7 @@ export const createConversationResponseSchema = z
     sceneImageUrl: nonEmptyStringSchema,
     npcFaceImageUrl: z.string(),
     npcName: nonEmptyStringSchema,
+    npcGender: npcGenderSchema,
     npcOpeningMessage: nonEmptyStringSchema,
     npcOpeningMood: nonEmptyStringSchema,
     npcOpeningGoalProgress: goalProgressSchema,
@@ -435,8 +447,13 @@ export const npcProfileFromLlmSchema = z
   .object({
     name: z.string().trim().min(1).catch("NPC"),
     personality: z.string().trim().min(1).catch("Neutral personality."),
+    gender: npcGenderSchema.catch("feminine"),
   })
-  .catch({ name: "NPC", personality: "Neutral personality." });
+  .catch({
+    name: "NPC",
+    personality: "Neutral personality.",
+    gender: "feminine",
+  });
 
 export const customScenarioFromLlmSchema = z
   .object({

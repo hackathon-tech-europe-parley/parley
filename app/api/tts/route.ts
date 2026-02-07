@@ -17,7 +17,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const wav = await synthesizeSpeech(parsed.data.text, parsed.data.languageCode);
+    const wav = await synthesizeSpeech(
+      parsed.data.text,
+      parsed.data.languageCode,
+      parsed.data.npcGender,
+    );
     return new Response(wav, {
       headers: {
         "Content-Type": "audio/wav",
