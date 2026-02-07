@@ -40,7 +40,7 @@ export class TTSPlayer {
 
   }
 
-  async play(text: string, cacheKey: string, languageCode?: string, npcGender?: string): Promise<void> {
+  async play(text: string, cacheKey: string, languageCode?: string, npcGender?: string, speed?: number): Promise<void> {
     if (this._muted) return;
 
     // If there's already a play operation in progress, wait for it to complete
@@ -55,7 +55,7 @@ export class TTSPlayer {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Create a promise for this play operation
-    this.playPromise = this._doPlay(text, cacheKey, languageCode, npcGender);
+    this.playPromise = this._doPlay(text, cacheKey, languageCode, npcGender, speed);
     
     try {
       await this.playPromise;
@@ -64,19 +64,21 @@ export class TTSPlayer {
     }
   }
 
-  private async _doPlay(text: string, cacheKey: string, languageCode?: string, npcGender?: string): Promise<void> {
-
-    let url = this.cache.get(cacheKey);
+  private async _doPlay(text: string, cacheKey: string, languageCode?: string, npcGender?: string, speed?: number): Promise<void> {
+    // Include speed in cache key to cache different speeds separately
+    const speedCacheKey = speed !== undefined ? `${cacheKey}-speed-${speed}` : cacheKey;
+    
+    let url = this.cache.get(speedCacheKey);
     if (!url) {
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, languageCode, npcGender }),
+        body: JSON.stringify({ text, languageCode, npcGender, speed }),
       });
       if (!res.ok) throw new Error("TTS fetch failed");
       const blob = await res.blob();
       url = URL.createObjectURL(blob);
-      this.cache.set(cacheKey, url);
+      this.cache.set(speedCacheKey, url);
     }
 
     // Reuse existing audio element or create a new one
@@ -112,21 +114,23 @@ export class TTSPlayer {
   }
 
   /** Fetch TTS audio and store in cache so play() is instant. */
-  prefetch(text: string, cacheKey: string, languageCode?: string, npcGender?: string): Promise<void> {
+  prefetch(text: string, cacheKey: string, languageCode?: string, npcGender?: string, speed?: number): Promise<void> {
     if (this._muted) return Promise.resolve();
-    if (this.cache.has(cacheKey)) return Promise.resolve();
+    // Include speed in cache key to cache different speeds separately
+    const speedCacheKey = speed !== undefined ? `${cacheKey}-speed-${speed}` : cacheKey;
+    if (this.cache.has(speedCacheKey)) return Promise.resolve();
     return fetch("/api/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, languageCode, npcGender }),
+      body: JSON.stringify({ text, languageCode, npcGender, speed }),
     })
       .then((res) => {
         if (!res.ok) return;
         return res.blob();
       })
       .then((blob) => {
-        if (blob && !this.cache.has(cacheKey)) {
-          this.cache.set(cacheKey, URL.createObjectURL(blob));
+        if (blob && !this.cache.has(speedCacheKey)) {
+          this.cache.set(speedCacheKey, URL.createObjectURL(blob));
         }
       })
       .catch(() => {
