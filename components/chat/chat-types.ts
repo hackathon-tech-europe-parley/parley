@@ -48,7 +48,12 @@ export function fromCachedConversation(
     goalProgress: cached.npcOpeningGoalProgress,
     sceneImageUrl: cached.sceneImageUrl,
     npcFaceImageUrl: cached.npcFaceImageUrl,
-    history: [{ role: "npc", text: cached.npcOpeningMessage }],
+    history: [{
+      role: "npc",
+      text: cached.npcOpeningMessage,
+      mood: cached.npcOpeningMood,
+      npcFaceImageUrl: cached.npcFaceImageUrl,
+    }],
     hints: cached.hints,
     scenarioKey: cached.scenarioKey,
     languageCode: cached.languageCode,

@@ -343,14 +343,20 @@ export function ChatPageClient() {
           if (!prev) {
             return prev;
           }
+          const resolvedFaceUrl = data.npcFaceImageUrl || prev.npcFaceImageUrl;
           return {
             ...prev,
-            history: [...prev.history, { role: "npc" as const, text: data.npcMessage }],
+            history: [...prev.history, {
+              role: "npc" as const,
+              text: data.npcMessage,
+              mood: data.mood,
+              npcFaceImageUrl: resolvedFaceUrl,
+            }],
             mood: data.mood,
             goalProgress: data.goalProgress,
             hints: data.hints,
             sceneImageUrl: data.sceneImageUrl,
-            npcFaceImageUrl: data.npcFaceImageUrl || prev.npcFaceImageUrl,
+            npcFaceImageUrl: resolvedFaceUrl,
           };
         });
         if (data.debrief) {
