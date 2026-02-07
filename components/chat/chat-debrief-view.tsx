@@ -18,13 +18,13 @@ export function ChatDebriefView({
   onClose,
 }: ChatDebriefViewProps) {
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-700/50 bg-slate-900 shadow-2xl">
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="relative max-h-[95vh] w-full overflow-y-auto rounded-t-2xl border border-slate-700/50 bg-slate-900 shadow-2xl sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl">
         {/* Close button */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 z-10 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+          className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white sm:right-4 sm:top-4"
         >
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
@@ -33,14 +33,14 @@ export function ChatDebriefView({
         <img
           src={debriefState.sceneImageUrl}
           alt="Scene"
-          className="h-48 w-full rounded-t-2xl object-cover"
+          className="h-36 w-full rounded-t-2xl object-cover sm:h-48"
         />
 
-        <div className="space-y-4 p-6">
+        <div className="space-y-3 p-4 sm:space-y-4 sm:p-6">
           {/* Status badge + NPC name */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span
-              className={`rounded-full px-3 py-1 text-sm font-medium ${
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium sm:px-3 sm:py-1 sm:text-sm ${
                 debriefState.goalStatus === "achieved"
                   ? "bg-green-900 text-green-300"
                   : debriefState.goalStatus === "failed"
@@ -54,7 +54,7 @@ export function ChatDebriefView({
                   ? tDebrief("goalFailed")
                   : tDebrief("quitEarly")}
             </span>
-            <span className="text-sm text-slate-400">
+            <span className="text-xs text-slate-400 sm:text-sm">
               {tDebrief("withNpc", { npcName: debriefState.npcName })}
             </span>
           </div>
@@ -72,7 +72,7 @@ export function ChatDebriefView({
               </h3>
               <ul className="space-y-2">
                 {debriefState.debrief.keyPhrases.map((kp, i) => (
-                  <li key={i} className="flex gap-3 text-sm">
+                  <li key={i} className="flex flex-col gap-0.5 text-sm sm:flex-row sm:gap-3">
                     <span className="font-medium text-blue-400">{kp.phrase}</span>
                     <span className="text-slate-500">{kp.translation}</span>
                   </li>
@@ -84,7 +84,7 @@ export function ChatDebriefView({
           {/* CTA */}
           <Link
             href="/"
-            className="block w-full rounded-xl bg-blue-600 px-6 py-3 text-center font-medium text-white transition-colors hover:bg-blue-500"
+            className="block w-full rounded-xl bg-blue-600 px-4 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-blue-500 sm:px-6 sm:py-3 sm:text-base"
           >
             {tDebrief("newScenario")}
           </Link>
