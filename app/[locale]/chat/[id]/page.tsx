@@ -7,7 +7,7 @@ import { consumeSSE } from "@/lib/sse-client";
 import { Link } from "@/i18n/navigation";
 import { AudioRecorder } from "@/lib/audio-recorder";
 import { TTSPlayer } from "@/lib/tts-player";
-import type { ConversationMessage, Debrief, GoalProgress } from "@/lib/types";
+import type { ConversationMessage, Debrief, GoalProgress, NpcGender } from "@/lib/types";
 
 interface ConversationState {
   conversationId: string;
@@ -16,6 +16,7 @@ interface ConversationState {
   level: string;
   goal: string;
   npcName: string;
+  npcGender?: NpcGender;
   mood: string;
   goalProgress: GoalProgress;
   sceneImageUrl: string;
@@ -114,6 +115,7 @@ export default function ChatPage() {
         level: data.level,
         goal: data.goal,
         npcName: data.npcName,
+        npcGender: data.npcGender,
         mood: sanitizeMood(data.npcOpeningMood, "neutral"),
         goalProgress: sanitizeGoalProgress(
           data.npcOpeningGoalProgress,
@@ -156,10 +158,10 @@ export default function ChatPage() {
     };
   }, []);
 
-  const autoPlayTts = useCallback((text: string, messageIndex: number, langCode?: string) => {
+  const autoPlayTts = useCallback((text: string, messageIndex: number, langCode?: string, gender?: NpcGender) => {
     if (!ttsPlayerRef.current) return;
     setTtsPlaying(messageIndex);
-    ttsPlayerRef.current.play(text, `msg-${messageIndex}`, langCode).then(() => {
+    ttsPlayerRef.current.play(text, `msg-${messageIndex}`, langCode, gender).then(() => {
       setTtsPlaying(null);
     }).catch((err) => {
       console.error("TTS autoplay failed:", err);
@@ -183,7 +185,7 @@ export default function ChatPage() {
       hasAutoPlayed.current = true;
       const firstNpc = state.history[0];
       if (firstNpc?.role === "npc") {
-        autoPlayTts(firstNpc.text, 0, state.languageCode);
+        autoPlayTts(firstNpc.text, 0, state.languageCode, state.npcGender);
         lastProcessedIndex.current = 0;
       }
     }
@@ -200,7 +202,7 @@ export default function ChatPage() {
       for (let i = lastProcessedIndex.current + 1; i <= currentLastIndex; i++) {
         const message = state.history[i];
         if (message?.role === "npc") {
-          autoPlayTts(message.text, i, state.languageCode);
+          autoPlayTts(message.text, i, state.languageCode, state.npcGender);
         }
       }
       // Update after processing all new messages
@@ -217,7 +219,7 @@ export default function ChatPage() {
   }, [pendingTranscription]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleReplay(messageIndex: number, text: string) {
-    autoPlayTts(text, messageIndex, state?.languageCode);
+    autoPlayTts(text, messageIndex, state?.languageCode, state?.npcGender);
   }
 
   async function handleMicToggle() {

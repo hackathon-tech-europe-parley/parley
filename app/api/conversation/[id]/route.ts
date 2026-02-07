@@ -27,6 +27,7 @@ export async function GET(
     goalProgress: conversation.goalProgress ?? 1,
     sceneImageUrl: conversation.sceneImageUrl,
     npcFaceImageUrl: conversation.npcFaceImageUrl,
+    npcGender: conversation.npcGender,
     history: conversation.history,
     hints: getHints(id),
     scenarioKey: conversation.scenarioKey,
