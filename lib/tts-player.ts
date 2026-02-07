@@ -5,6 +5,18 @@ export class TTSPlayer {
   private errorHandler: (() => void) | null = null;
 
   private playPromise: Promise<void> | null = null;
+  private _muted = false;
+
+  get muted(): boolean {
+    return this._muted;
+  }
+
+  set muted(value: boolean) {
+    this._muted = value;
+    if (value) {
+      this.stop();
+    }
+  }
 
   private cleanup(): void {
     if (this.audio) {
@@ -29,6 +41,8 @@ export class TTSPlayer {
   }
 
   async play(text: string, cacheKey: string, languageCode?: string, npcGender?: string): Promise<void> {
+    if (this._muted) return;
+
     // If there's already a play operation in progress, wait for it to complete
     if (this.playPromise) {
       await this.playPromise;
@@ -86,7 +100,38 @@ export class TTSPlayer {
     this.audio.src = url;
     this.audio.load(); // Ensure the audio is properly loaded
 
-    await this.audio.play();
+    try {
+      await this.audio.play();
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "NotAllowedError") {
+        // Browser blocked autoplay — user hasn't interacted yet. Silently skip.
+        return;
+      }
+      throw err;
+    }
+  }
+
+  /** Fetch TTS audio and store in cache so play() is instant. */
+  prefetch(text: string, cacheKey: string, languageCode?: string, npcGender?: string): Promise<void> {
+    if (this._muted) return Promise.resolve();
+    if (this.cache.has(cacheKey)) return Promise.resolve();
+    return fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, languageCode, npcGender }),
+    })
+      .then((res) => {
+        if (!res.ok) return;
+        return res.blob();
+      })
+      .then((blob) => {
+        if (blob && !this.cache.has(cacheKey)) {
+          this.cache.set(cacheKey, URL.createObjectURL(blob));
+        }
+      })
+      .catch(() => {
+        // Best-effort; play() will retry on miss.
+      });
   }
 
   stop(): void {
