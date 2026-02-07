@@ -119,7 +119,7 @@ export async function POST(
 
             let sceneImageUrl = conversation.sceneImageUrl;
             if (conversation.messagesSinceImageRegen >= 3) {
-              const moodPrompt = `Photorealistic scene: ${conversation.scenario}. The person you're interacting with looks ${npcResponse.mood}. First-person perspective. Cinematic lighting.`;
+              const moodPrompt = `Photorealistic background scene: ${conversation.scenario}. No people, just the environment and setting. First-person perspective.`;
               sceneImageUrl = await generateSceneImage(moodPrompt);
               conversation.sceneImageUrl = sceneImageUrl;
               conversation.messagesSinceImageRegen = 0;
@@ -150,8 +150,8 @@ export async function POST(
               );
               const finalImagePrompt =
                 npcResponse.goalStatus === "achieved"
-                  ? `Photorealistic scene: ${conversation.scenario}. Happy resolution. First-person perspective. Cinematic lighting.`
-                  : `Photorealistic scene: ${conversation.scenario}. Tense, unsuccessful interaction. First-person perspective. Cinematic lighting.`;
+                  ? `Photorealistic background scene: ${conversation.scenario}. No people, just the environment and setting. First-person perspective.`
+                  : `Photorealistic background scene: ${conversation.scenario}. No people, just the environment and setting. First-person perspective.`;
               const finalImageUrl =
                 await generateSceneImage(finalImagePrompt);
 
