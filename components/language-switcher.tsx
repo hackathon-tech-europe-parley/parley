@@ -27,7 +27,7 @@ export function LanguageSwitcher() {
           router.replace(pathname, { locale: e.target.value });
         });
       }}
-      className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-slate-300 focus:border-blue-500 focus:outline-none"
+      className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-2 text-sm text-slate-300 focus:border-blue-500 focus:outline-none sm:py-1.5"
     >
       {Object.entries(LOCALE_LABELS).map(([code, label]) => (
         <option key={code} value={code}>
