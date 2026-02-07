@@ -16,9 +16,14 @@ const VALID_MOODS = new Set([
   "skeptical",
 ]);
 
+// Map normalized 8 mood states to available asset moods
 const MOOD_FALLBACK: Record<string, string> = {
-  neutral: "patient",
   happy: "amused",
+  friendly: "friendly",
+  neutral: "patient",
+  skeptical: "skeptical",
+  annoyed: "annoyed",
+  angry: "furious",
   sad: "annoyed",
   surprised: "amused",
 };
