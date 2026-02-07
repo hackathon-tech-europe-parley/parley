@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
@@ -10,105 +9,15 @@ import {
   type CustomScenario,
   type LanguageCode,
 } from "@/lib/types";
-
-type Level = "beginner" | "intermediate" | "advanced" | "impossible";
-
-const LANGUAGES = [
-  { code: "en", flag: "\u{1F1EC}\u{1F1E7}" },
-  { code: "fr", flag: "\u{1F1EB}\u{1F1F7}" },
-  { code: "de", flag: "\u{1F1E9}\u{1F1EA}" },
-  { code: "es", flag: "\u{1F1EA}\u{1F1F8}" },
-  { code: "pt", flag: "\u{1F1E7}\u{1F1F7}" },
-] as const;
-
-// English names sent to the API (the AI prompt always uses English)
-const LANGUAGE_ENGLISH_NAMES: Record<LanguageCode, string> = {
-  en: "English",
-  fr: "French",
-  de: "German",
-  es: "Spanish",
-  pt: "Portuguese",
-};
-
-interface ScenarioDef {
-  key: string;
-  scenario: string;
-  emoji: string;
-}
-
-const SCENARIOS: ScenarioDef[] = [
-  {
-    key: "taxi",
-    scenario: "You've arrived at your destination in a taxi and just realized you don't have any money to pay. The driver is already irritated and demanding payment.",
-    emoji: "\u{1F695}",
-  },
-  {
-    key: "cafe",
-    scenario: "You just spilled your coffee all over another customer's expensive laptop in a cafe. The customer is angry and demanding compensation.",
-    emoji: "\u2615",
-  },
-  {
-    key: "lost",
-    scenario: "You're lost in a busy city center. Your phone is dead and you need to find your way to the main train station. A local is walking by.",
-    emoji: "\u{1F5FA}\uFE0F",
-  },
-  {
-    key: "market",
-    scenario: "You just accidentally knocked over an entire display of expensive ceramics at a street market. The vendor is screaming and demanding you pay for everything.",
-    emoji: "\u{1F6CD}\uFE0F",
-  },
-  {
-    key: "hotel",
-    scenario: "You just accidentally set off the fire alarm at the hotel and the entire building is being evacuated. The manager is furious and fire trucks are arriving.",
-    emoji: "\u{1F3E8}",
-  },
-  {
-    key: "doctor",
-    scenario: "You just accidentally broke expensive medical equipment while waiting at a clinic. The clinic staff is angry and demanding payment.",
-    emoji: "\u{1FA7A}",
-  },
-  {
-    key: "friends",
-    scenario: "You're at a local cultural event and the person next to you starts a friendly conversation. They're curious about where you're from.",
-    emoji: "\u{1F389}",
-  },
-  {
-    key: "interview",
-    scenario: "You're interviewing for a position at a local company. The interviewer wants to test your language skills as part of the role requires client communication.",
-    emoji: "\u{1F4BC}",
-  },
-  {
-    key: "restaurant",
-    scenario: "You just accidentally pushed the server who dropped plates, breaking other customers' dishes at a restaurant. The server is furious and demanding you pay for everything.",
-    emoji: "\u{1F37D}\uFE0F",
-  },
-  {
-    key: "apartment",
-    scenario: "You just accidentally flooded the apartment while testing the sink during a viewing. Water is leaking to the apartment below. The landlord is furious.",
-    emoji: "\u{1F3E0}",
-  },
-  {
-    key: "train",
-    scenario: "You just accidentally pulled the emergency brake on a train and it has stopped. The conductor is furious, passengers are angry, and the train is delayed.",
-    emoji: "\u{1F682}",
-  },
-  {
-    key: "pharmacy",
-    scenario: "You just accidentally knocked over an entire shelf of expensive prescription medications at a pharmacy. The pharmacist is furious and demanding you pay for everything.",
-    emoji: "\u{1F48A}",
-  },
-];
-
-const LEVEL_KEYS: Level[] = ["beginner", "intermediate", "advanced", "impossible"];
-
-function shuffleArray<T>(array: T[]): T[] {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
+import {
+  LANGUAGES,
+  LANGUAGE_ENGLISH_NAMES,
+  LEVEL_KEYS,
+  SCENARIOS,
+  type Level,
+  type ScenarioDef,
+  shuffleArray,
+} from "./setup-form.constants";
 
 export function SetupForm() {
   const router = useRouter();
@@ -125,7 +34,6 @@ export function SetupForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Custom scenario state
   const [creatingCustom, setCreatingCustom] = useState(false);
   const [generatingCustom, setGeneratingCustom] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
@@ -241,7 +149,6 @@ export function SetupForm() {
 
   return (
     <div className="w-full max-w-2xl px-4">
-      {/* Tagline */}
       <div className="mb-10 text-center">
         <h1 className="text-3xl font-bold tracking-tight text-white">
           {t("heading")}
@@ -251,7 +158,6 @@ export function SetupForm() {
         </p>
       </div>
 
-      {/* Progress */}
       <div className="mb-8 flex items-center justify-center gap-2">
         {[1, 2].map((s) => (
           <button
@@ -273,7 +179,6 @@ export function SetupForm() {
         ))}
       </div>
 
-      {/* Step 1: Language */}
       {step === 1 && (
         <div className="animate-in">
           <h2 className="mb-1 text-center text-xl font-semibold text-white">
@@ -306,7 +211,6 @@ export function SetupForm() {
         </div>
       )}
 
-      {/* Step 2: Scenario + Level */}
       {step === 2 && (
         <div className="animate-in">
           <h2 className="mb-1 text-center text-xl font-semibold text-white">

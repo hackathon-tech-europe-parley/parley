@@ -1,5 +1,6 @@
 import { getConversation, setConversation, setHints } from "@/lib/conversations";
-import { generateSceneImage, updateNpcFaceImage } from "@/lib/fal";
+import { generateSceneImage } from "@/lib/fal";
+import { getNpcFaceAssetUrl } from "@/lib/npc-assets";
 import { generateNpcResponseStream } from "@/lib/openai";
 import { generateDebrief } from "@/lib/openai";
 import { applyNpcPolicy } from "@/lib/npc-policy";
@@ -102,20 +103,12 @@ export async function POST(
 
             await setHints(id, npcResponse.hints);
 
-            // Update NPC face image based on new mood
-            let npcFaceImageUrl = conversation.npcFaceImageUrl;
-            try {
-              if (conversation.npcFaceImageUrl) {
-                npcFaceImageUrl = await updateNpcFaceImage(
-                  conversation.npcFaceImageUrl,
-                  npcResponse.mood,
-                );
-                conversation.npcFaceImageUrl = npcFaceImageUrl;
-              }
-            } catch (error) {
-              console.error("Failed to update NPC face image:", error);
-              // Continue with existing face image if update fails
-            }
+            const npcFaceImageUrl = getNpcFaceAssetUrl(
+              conversation.scenarioKey ?? "__custom__",
+              conversation.npcGender,
+              npcResponse.mood,
+            );
+            conversation.npcFaceImageUrl = npcFaceImageUrl;
 
             let sceneImageUrl = conversation.sceneImageUrl;
             if (conversation.messagesSinceImageRegen >= 3) {

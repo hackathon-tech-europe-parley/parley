@@ -1,6 +1,7 @@
 import type { Conversation } from "./types";
+import { DATABASE_URL } from "./env";
 
-const usePostgres = Boolean(process.env.DATABASE_URL);
+const usePostgres = Boolean(DATABASE_URL);
 
 // --- Postgres backend (production) ---
 
@@ -14,7 +15,10 @@ const globalWithSQL = globalThis as unknown as { __parleySQL?: SQL };
 
 function getSQL(): SQL {
   if (!globalWithSQL.__parleySQL) {
-    globalWithSQL.__parleySQL = postgres!(process.env.DATABASE_URL!);
+    if (!DATABASE_URL) {
+      throw new Error("DATABASE_URL is required when Postgres mode is enabled");
+    }
+    globalWithSQL.__parleySQL = postgres!(DATABASE_URL);
   }
   return globalWithSQL.__parleySQL;
 }
