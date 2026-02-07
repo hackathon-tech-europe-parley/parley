@@ -3,6 +3,13 @@
 import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import {
+  apiErrorSchema,
+  createConversationResponseSchema,
+  customScenarioSchema,
+  type CustomScenario,
+  type LanguageCode,
+} from "@/lib/types";
 
 type Level = "beginner" | "intermediate" | "advanced" | "impossible";
 
@@ -15,7 +22,7 @@ const LANGUAGES = [
 ] as const;
 
 // English names sent to the API (the AI prompt always uses English)
-const LANGUAGE_ENGLISH_NAMES: Record<string, string> = {
+const LANGUAGE_ENGLISH_NAMES: Record<LanguageCode, string> = {
   en: "English",
   fr: "French",
   de: "German",
@@ -111,7 +118,7 @@ export function SetupForm() {
   const tScenarios = useTranslations("Scenarios");
 
   const [step, setStep] = useState<1 | 2>(1);
-  const [languageCode, setLanguageCode] = useState<string | null>(null);
+  const [languageCode, setLanguageCode] = useState<LanguageCode | null>(null);
   const [level, setLevel] = useState<Level>("intermediate");
   const [scenarios, setScenarios] = useState(() => shuffleArray(SCENARIOS).slice(0, 4));
   const [selectedScenario, setSelectedScenario] = useState<ScenarioDef | null>(null);
@@ -122,13 +129,7 @@ export function SetupForm() {
   const [creatingCustom, setCreatingCustom] = useState(false);
   const [generatingCustom, setGeneratingCustom] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
-  const [customScenario, setCustomScenario] = useState<{
-    title: string;
-    description: string;
-    emoji: string;
-    scenario: string;
-    goals: Record<Level, string>;
-  } | null>(null);
+  const [customScenario, setCustomScenario] = useState<CustomScenario | null>(null);
 
   const reshuffleScenarios = useCallback(() => {
     setScenarios(shuffleArray(SCENARIOS).slice(0, 4));
@@ -150,11 +151,22 @@ export function SetupForm() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to generate scenario");
+        const errorPayload = apiErrorSchema.safeParse(
+          await res.json().catch(() => null),
+        );
+        throw new Error(
+          errorPayload.success
+            ? errorPayload.data.error
+            : "Failed to generate scenario",
+        );
       }
 
-      const data = await res.json();
+      const parsedScenario = customScenarioSchema.safeParse(await res.json());
+      if (!parsedScenario.success) {
+        throw new Error("Malformed scenario payload");
+      }
+      const data = parsedScenario.data;
+
       setCustomScenario(data);
       setSelectedScenario({
         key: "__custom__",
@@ -193,11 +205,23 @@ export function SetupForm() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create conversation");
+        const errorPayload = apiErrorSchema.safeParse(
+          await res.json().catch(() => null),
+        );
+        throw new Error(
+          errorPayload.success
+            ? errorPayload.data.error
+            : "Failed to create conversation",
+        );
       }
 
-      const data = await res.json();
+      const parsedConversation = createConversationResponseSchema.safeParse(
+        await res.json(),
+      );
+      if (!parsedConversation.success) {
+        throw new Error("Malformed conversation payload");
+      }
+      const data = parsedConversation.data;
       sessionStorage.setItem(
         `parley:${data.conversationId}`,
         JSON.stringify({
