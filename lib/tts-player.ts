@@ -3,7 +3,7 @@ export class TTSPlayer {
   private audio: HTMLAudioElement | null = null;
   private endedHandler: (() => void) | null = null;
   private errorHandler: (() => void) | null = null;
-  private playing = false;
+
   private playPromise: Promise<void> | null = null;
 
   private cleanup(): void {
@@ -25,7 +25,7 @@ export class TTSPlayer {
     
     this.endedHandler = null;
     this.errorHandler = null;
-    this.playing = false;
+
   }
 
   async play(text: string, cacheKey: string, languageCode?: string): Promise<void> {
@@ -72,11 +72,11 @@ export class TTSPlayer {
 
     // Set up event handlers
     this.endedHandler = () => {
-      this.playing = false;
+  
     };
     
     this.errorHandler = () => {
-      this.playing = false;
+  
     };
     
     this.audio.addEventListener('ended', this.endedHandler, { once: true });
@@ -85,7 +85,7 @@ export class TTSPlayer {
     // Set the source, load, and play
     this.audio.src = url;
     this.audio.load(); // Ensure the audio is properly loaded
-    this.playing = true;
+
     await this.audio.play();
   }
 

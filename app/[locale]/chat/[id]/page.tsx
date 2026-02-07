@@ -7,7 +7,7 @@ import { consumeSSE } from "@/lib/sse-client";
 import { Link } from "@/i18n/navigation";
 import { AudioRecorder } from "@/lib/audio-recorder";
 import { TTSPlayer } from "@/lib/tts-player";
-import type { ConversationMessage, Debrief } from "@/lib/types";
+import type { ConversationMessage, Debrief, GoalProgress } from "@/lib/types";
 
 interface ConversationState {
   conversationId: string;
@@ -17,6 +17,7 @@ interface ConversationState {
   goal: string;
   npcName: string;
   mood: string;
+  goalProgress: GoalProgress;
   sceneImageUrl: string;
   npcFaceImageUrl: string;
   history: ConversationMessage[];
@@ -33,6 +34,43 @@ const LANGUAGE_CODE_MAP: Record<string, string> = {
   Spanish: "es",
   Portuguese: "pt",
 };
+
+const GOAL_PROGRESS_STEPS: GoalProgress[] = [1, 2, 3, 4, 5];
+
+const GOAL_PROGRESS_COLORS: Record<GoalProgress, string> = {
+  1: "bg-slate-600",
+  2: "bg-blue-500",
+  3: "bg-amber-500",
+  4: "bg-orange-400",
+  5: "bg-green-500",
+};
+
+const GOAL_PROGRESS_COLORS_IMPOSSIBLE: Record<GoalProgress, string> = {
+  1: "bg-red-900",
+  2: "bg-rose-700",
+  3: "bg-red-600",
+  4: "bg-red-500",
+  5: "bg-red-400",
+};
+
+function sanitizeGoalProgress(
+  value: unknown,
+  fallback: GoalProgress = 1,
+): GoalProgress {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return fallback;
+  }
+  const rounded = Math.round(value);
+  const clamped = Math.min(5, Math.max(1, rounded));
+  return clamped as GoalProgress;
+}
+
+function sanitizeMood(value: unknown, fallback = "neutral"): string {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value.trim();
+  }
+  return fallback;
+}
 
 interface DebriefState {
   debrief: Debrief;
@@ -76,7 +114,11 @@ export default function ChatPage() {
         level: data.level,
         goal: data.goal,
         npcName: data.npcName,
-        mood: data.npcOpeningMood || "neutral",
+        mood: sanitizeMood(data.npcOpeningMood, "neutral"),
+        goalProgress: sanitizeGoalProgress(
+          data.npcOpeningGoalProgress,
+          sanitizeGoalProgress(data.goalProgress, 1),
+        ),
         sceneImageUrl: data.sceneImageUrl,
         npcFaceImageUrl: data.npcFaceImageUrl || "",
         history: [{ role: "npc", text: data.npcOpeningMessage }],
@@ -90,7 +132,13 @@ export default function ChatPage() {
           if (!r.ok) throw new Error("Conversation not found");
           return r.json();
         })
-        .then((data) => setState(data))
+        .then((data) =>
+          setState({
+            ...data,
+            mood: sanitizeMood(data.mood, "neutral"),
+            goalProgress: sanitizeGoalProgress(data.goalProgress, 1),
+          }),
+        )
         .catch((err) => setError(err.message));
     }
   }, [id]);
@@ -236,7 +284,13 @@ export default function ChatPage() {
         },
         onComplete(data: Record<string, unknown>) {
           setStreamingText("");
-          const npcText = data.npcMessage as string;
+          const npcText =
+            typeof data.npcMessage === "string" && data.npcMessage.trim().length > 0
+              ? data.npcMessage
+              : "...";
+          const nextHints = Array.isArray(data.hints)
+            ? data.hints.filter((hint): hint is string => typeof hint === "string")
+            : [];
           setState((s) => {
             if (!s) return s;
             const newHistory = [
@@ -246,8 +300,9 @@ export default function ChatPage() {
             return {
               ...s,
               history: newHistory,
-              mood: data.mood as string,
-              hints: (data.hints as string[]) || [],
+              mood: sanitizeMood(data.mood, s.mood),
+              goalProgress: sanitizeGoalProgress(data.goalProgress, s.goalProgress),
+              hints: nextHints,
               sceneImageUrl: (data.sceneImageUrl as string) || s.sceneImageUrl,
               npcFaceImageUrl: (data.npcFaceImageUrl as string) || s.npcFaceImageUrl,
             };
@@ -257,7 +312,10 @@ export default function ChatPage() {
               debrief: data.debrief as Debrief,
               sceneImageUrl: data.sceneImageUrl as string,
               npcName: state.npcName,
-              goalStatus: data.goalStatus as string,
+              goalStatus:
+                typeof data.goalStatus === "string"
+                  ? data.goalStatus
+                  : "ongoing",
             });
           }
         },
@@ -378,6 +436,13 @@ export default function ChatPage() {
   }
 
   // Conversation view
+  const progressPalette =
+    state.level === "impossible"
+      ? GOAL_PROGRESS_COLORS_IMPOSSIBLE
+      : GOAL_PROGRESS_COLORS;
+  const progressTrackColor =
+    state.level === "impossible" ? "bg-red-950/70" : "bg-slate-800/80";
+
   return (
     <main className="flex flex-1 min-h-0 h-screen">
       {/* Left side - Meta Information (30%) */}
@@ -451,6 +516,22 @@ export default function ChatPage() {
                   ? tScenarios(`${state.scenarioKey}_goal_${state.level}`)
                   : state.goal}
               </p>
+              <div
+                role="img"
+                aria-label={`Goal progress ${state.goalProgress} of 5`}
+                className="mt-3 flex gap-1"
+              >
+                {GOAL_PROGRESS_STEPS.map((step) => (
+                  <span
+                    key={step}
+                    className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                      step <= state.goalProgress
+                        ? progressPalette[state.goalProgress]
+                        : progressTrackColor
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
 

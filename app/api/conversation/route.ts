@@ -34,6 +34,10 @@ export async function POST(request: Request) {
       npcName: npcProfile.name,
       npcPersonality: npcProfile.personality,
       mood: "neutral",
+      goalProgress: 1,
+      hostilityStreak: 0,
+      disengagedStreak: 0,
+      constructiveStreak: 0,
       history: [],
       messagesSinceImageRegen: 0,
       sceneImageUrl,
@@ -45,6 +49,7 @@ export async function POST(request: Request) {
     const opening = await generateNpcOpening(conversation);
     conversation.history.push({ role: "npc", text: opening.npcMessage });
     conversation.mood = opening.mood;
+    conversation.goalProgress = opening.goalProgress;
 
     // Generate initial NPC face image
     const npcFaceImageUrl = await generateNpcFaceImage(
@@ -64,6 +69,7 @@ export async function POST(request: Request) {
       npcName: npcProfile.name,
       npcOpeningMessage: opening.npcMessage,
       npcOpeningMood: opening.mood,
+      npcOpeningGoalProgress: opening.goalProgress,
       hints: opening.hints,
       scenario,
       goal,

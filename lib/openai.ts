@@ -1,5 +1,13 @@
 import OpenAI from "openai";
-import type { Conversation, NpcResponse, NpcProfile, Debrief } from "./types";
+import type {
+  Conversation,
+  NpcResponse,
+  NpcProfile,
+  Debrief,
+  GoalProgress,
+  GoalStatus,
+  NpcEvaluation,
+} from "./types";
 
 const openai = new OpenAI();
 const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
@@ -48,6 +56,37 @@ function buildNpcSystemPrompt(conversation: Conversation): string {
 - Provide no hints at all`,
   };
 
+  const boundaryRulesByLevel = {
+    beginner: `- Distinguish poor grammar from disrespect: grammar mistakes are normal and should be handled patiently
+- If the user is mildly rude once, set a polite boundary and continue
+- If the user stays insulting/hostile/off-topic for 3 consecutive turns, set "goalStatus" to "failed" and end constructively`,
+    intermediate: `- Distinguish poor grammar from disrespect: grammar mistakes are normal and should be handled patiently
+- If the user is insulting/hostile/off-topic once, set a clear boundary and reduce progress
+- If the user is insulting/hostile/off-topic for 2 consecutive turns, become firm and set "goalStatus" to "failed"
+- Do not continue endlessly coaching when the user refuses respectful engagement`,
+    advanced: `- Distinguish poor grammar from disrespect: grammar mistakes are normal and should be handled patiently
+- Set a firm professional boundary on the first insulting/off-topic turn
+- If disrespect repeats or the user refuses engagement for 2 turns, set "goalStatus" to "failed"`,
+    impossible: `- Distinguish poor grammar from disrespect: grammar mistakes are normal and should be handled patiently
+- Be strict: any insulting/off-topic turn sharply lowers progress
+- If disrespect repeats, quickly set "goalStatus" to "failed"`,
+  };
+
+  const evaluationRulesByLevel = {
+    beginner: `- Mood baseline: patient/supportive
+- Keep progress optimistic if user is trying: on-topic attempts can be 2-3 even with errors
+- Only use "failed" after repeated clear refusal/disrespect`,
+    intermediate: `- Mood baseline: professional but encouraging
+- Progress should reflect relevance and cooperation, not grammar perfection
+- Use "failed" when disrespect/refusal is sustained`,
+    advanced: `- Mood baseline: demanding and direct
+- Require coherent, relevant replies for progress >= 3
+- Repeated evasion/disrespect should drop progress to 1-2 and can fail the goal`,
+    impossible: `- Mood baseline: skeptical, hard to impress, often uncooperative
+- Keep progress conservative: usually 1-3, rarely 4, and 5 only for exceptional performance
+- Grant "achieved" only if the user is truly extraordinary for this level`,
+  };
+
   return `You are ${conversation.npcName}, a character in a language learning roleplay.
 
 PERSONALITY: ${conversation.npcPersonality}
@@ -63,6 +102,12 @@ RULES:
 LEVEL ADAPTATION (user is ${conversation.level}):
 ${levelRules[conversation.level]}
 
+CONVERSATION BOUNDARIES:
+${boundaryRulesByLevel[conversation.level]}
+
+DIFFICULTY-SCALED EVALUATION:
+${evaluationRulesByLevel[conversation.level]}
+
 SAFETY:
 - If the scenario involves anything unethical, reframe toward respectful communication
 - Focus on de-escalation and cultural appropriateness
@@ -70,8 +115,24 @@ SAFETY:
 
 Return a JSON object with:
 - "npcMessage": your response in ${conversation.language} (string)
-- "mood": your current emotional state (string, e.g. "skeptical", "amused", "annoyed", "friendly", "convinced", "furious")
+- "mood": your current emotional state (string, short label such as "patient", "skeptical", "amused", "annoyed", "friendly", "firm", "convinced", "furious")
 - "goalStatus": "ongoing" if the conversation should continue, "achieved" if the user achieved their goal, "failed" if the user has definitely failed (string)
+- "goalProgress": integer 1-5 indicating how close the user is to the goal:
+  - 1 = off-track, hostile, or refusing to engage
+  - 2 = partially engaged but weak relevance
+  - 3 = making real progress
+  - 4 = very close to the goal
+  - 5 = goal is within reach / effectively achieved
+  If goalStatus is "achieved", goalProgress must be 5. If goalStatus is "failed", goalProgress should be 1.
+- "evaluation": an object with pragmatic turn-level metrics:
+  - "cooperation": number 0..1 (user willingness to engage)
+  - "relevance": number 0..1 (how related the user message is to the scenario goal)
+  - "politeness": number 0..1 (respectful tone)
+  - "clarity": number 0..1 (how understandable the user's message is)
+  - "taskIntent": number 0..1 (intent to actually pursue the goal)
+  - "offTopic": boolean
+  - "refusal": boolean (user refuses to participate: repeated "no", refusal to answer, etc.)
+  - "hostile": boolean (insults, aggressive language, or disrespect)
 - "hints": array of 2-3 suggestions for what the user could say next, adapted to their level (string[])`;
 }
 
@@ -93,12 +154,16 @@ export async function generateNpcOpening(
   const content = response.choices[0]?.message?.content;
   if (!content) throw new Error("Failed to generate NPC opening");
 
-  const parsed = JSON.parse(content);
+  const parsed = JSON.parse(content) as unknown;
+  const parsedObj = asRecord(parsed);
+  const goalProgress = parseGoalProgress(parsedObj.goalProgress, 1);
   return {
-    npcMessage: parsed.npcMessage || "...",
-    mood: parsed.mood || "neutral",
+    npcMessage: parseNpcMessage(parsedObj.npcMessage),
+    mood: parseMood(parsedObj.mood),
     goalStatus: "ongoing",
-    hints: parsed.hints || [],
+    goalProgress,
+    evaluation: parseNpcEvaluation(parsedObj.evaluation),
+    hints: parseHints(parsedObj.hints),
   };
 }
 
@@ -125,12 +190,22 @@ export async function generateNpcResponse(
   const content = response.choices[0]?.message?.content;
   if (!content) throw new Error("Failed to generate NPC response");
 
-  const parsed = JSON.parse(content);
+  const parsed = JSON.parse(content) as unknown;
+  const parsedObj = asRecord(parsed);
+  const goalStatus = parseGoalStatus(parsedObj.goalStatus);
+  const goalProgress = resolveGoalProgress(
+    goalStatus,
+    parsedObj.goalProgress,
+    conversation.goalProgress,
+  );
+
   return {
-    npcMessage: parsed.npcMessage || "...",
-    mood: parsed.mood || "neutral",
-    goalStatus: parsed.goalStatus || "ongoing",
-    hints: parsed.hints || [],
+    npcMessage: parseNpcMessage(parsedObj.npcMessage),
+    mood: parseMood(parsedObj.mood),
+    goalStatus,
+    goalProgress,
+    evaluation: parseNpcEvaluation(parsedObj.evaluation),
+    hints: parseHints(parsedObj.hints),
   };
 }
 
@@ -179,15 +254,127 @@ export async function* generateNpcResponseStream(
   }
 
   // Parse the final complete JSON
-  const parsed = JSON.parse(accumulated);
+  const parsed = JSON.parse(accumulated) as unknown;
+  const parsedObj = asRecord(parsed);
+  const goalStatus = parseGoalStatus(parsedObj.goalStatus);
+  const goalProgress = resolveGoalProgress(
+    goalStatus,
+    parsedObj.goalProgress,
+    conversation.goalProgress,
+  );
   const data: NpcResponse = {
-    npcMessage: parsed.npcMessage || "...",
-    mood: parsed.mood || "neutral",
-    goalStatus: parsed.goalStatus || "ongoing",
-    hints: parsed.hints || [],
+    npcMessage: parseNpcMessage(parsedObj.npcMessage),
+    mood: parseMood(parsedObj.mood),
+    goalStatus,
+    goalProgress,
+    evaluation: parseNpcEvaluation(parsedObj.evaluation),
+    hints: parseHints(parsedObj.hints),
   };
 
   yield { type: "complete", data };
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
+}
+
+function parseNpcMessage(value: unknown): string {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value;
+  }
+  return "...";
+}
+
+function parseMood(value: unknown): string {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value.trim();
+  }
+  return "neutral";
+}
+
+function parseGoalStatus(value: unknown): GoalStatus {
+  if (value === "achieved" || value === "failed" || value === "ongoing") {
+    return value;
+  }
+  return "ongoing";
+}
+
+function parseGoalProgress(
+  value: unknown,
+  fallback: GoalProgress | number,
+): GoalProgress {
+  const safeFallback = clampGoalProgress(fallback, 1);
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return safeFallback;
+  }
+
+  return clampGoalProgress(value, safeFallback);
+}
+
+function clampGoalProgress(
+  value: number,
+  fallback: GoalProgress,
+): GoalProgress {
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+  const rounded = Math.round(value);
+  const clamped = Math.min(5, Math.max(1, rounded));
+  return clamped as GoalProgress;
+}
+
+function resolveGoalProgress(
+  status: GoalStatus,
+  rawProgress: unknown,
+  fallback: GoalProgress,
+): GoalProgress {
+  if (status === "achieved") {
+    return 5;
+  }
+  return parseGoalProgress(rawProgress, fallback);
+}
+
+function parseHints(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((hint): hint is string => typeof hint === "string");
+}
+
+function parseNpcEvaluation(value: unknown): NpcEvaluation {
+  const parsedObj = asRecord(value);
+  return {
+    cooperation: parseUnitScore(parsedObj.cooperation, 0.5),
+    relevance: parseUnitScore(parsedObj.relevance, 0.5),
+    politeness: parseUnitScore(parsedObj.politeness, 0.5),
+    clarity: parseUnitScore(parsedObj.clarity, 0.5),
+    taskIntent: parseUnitScore(parsedObj.taskIntent, 0.5),
+    offTopic: parseBoolean(parsedObj.offTopic),
+    refusal: parseBoolean(parsedObj.refusal),
+    hostile: parseBoolean(parsedObj.hostile),
+  };
+}
+
+function parseUnitScore(value: unknown, fallback: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return fallback;
+  }
+  return Math.min(1, Math.max(0, value));
+}
+
+function parseBoolean(value: unknown): boolean {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true";
+  }
+  return false;
 }
 
 function extractPartialNpcMessage(partial: string): string | null {

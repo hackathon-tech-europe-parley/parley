@@ -24,6 +24,7 @@ export async function GET(
     goal: conversation.goal,
     npcName: conversation.npcName,
     mood: conversation.mood,
+    goalProgress: conversation.goalProgress ?? 1,
     sceneImageUrl: conversation.sceneImageUrl,
     npcFaceImageUrl: conversation.npcFaceImageUrl,
     history: conversation.history,

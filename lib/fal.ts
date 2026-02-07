@@ -60,7 +60,6 @@ export async function generateNpcFaceImage(
 export async function updateNpcFaceImage(
   referenceImageUrl: string,
   mood: string,
-  npcName: string,
 ): Promise<string> {
   // Create very specific expression descriptions that only affect the face
   const moodExpressions: Record<string, string> = {
