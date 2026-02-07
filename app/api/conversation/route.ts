@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     const { scenario, language, level, goal, scenarioKey, languageCode } = parsed.data;
     const conversationId = generateId();
 
-    const imagePrompt = `Photorealistic scene: ${scenario}. First-person perspective. Cinematic lighting.`;
+    const imagePrompt = `Photorealistic background scene: ${scenario}. No people, just the environment and setting. First-person perspective.`;
 
     const [sceneImageUrl, npcProfile] = await Promise.all([
       generateSceneImage(imagePrompt),

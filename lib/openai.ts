@@ -3,6 +3,7 @@ import {
   createNpcResponseFromLlmSchema,
   customScenarioFromLlmSchema,
   debriefFromLlmSchema,
+  normalizeToMoodState,
   npcProfileFromLlmSchema,
   type Conversation,
   type CustomScenario,
@@ -94,8 +95,12 @@ export async function generateNpcOpening(
   }
 
   const parsed = createNpcResponseFromLlmSchema(1).parse(parseJsonSafely(content));
+
+  const normalizedMood = normalizeToMoodState(parsed.mood);
+
   return {
     ...parsed,
+    mood: normalizedMood,
     goalStatus: "ongoing",
   };
 }
@@ -118,6 +123,8 @@ export async function generateNpcResponse(
     parseJsonSafely(content),
   );
 
+  const normalizedMood = normalizeToMoodState(parsed.mood);
+
   const goalStatus = parsed.goalStatus;
   const goalProgress = resolveGoalProgress(
     goalStatus,
@@ -127,6 +134,7 @@ export async function generateNpcResponse(
 
   return {
     ...parsed,
+    mood: normalizedMood,
     goalStatus,
     goalProgress,
   };
@@ -170,6 +178,8 @@ export async function* generateNpcResponseStream(
     parseJsonSafely(accumulated),
   );
 
+  const normalizedMood = normalizeToMoodState(parsed.mood);
+
   const goalStatus = parsed.goalStatus;
   const goalProgress = resolveGoalProgress(
     goalStatus,
@@ -181,6 +191,7 @@ export async function* generateNpcResponseStream(
     type: "complete",
     data: {
       ...parsed,
+      mood: normalizedMood,
       goalStatus,
       goalProgress,
     },

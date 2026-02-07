@@ -33,7 +33,7 @@ export async function POST(
     const [debrief, finalImageUrl] = await Promise.all([
       generateDebrief(conversation, "quit"),
       generateSceneImage(
-        `Photorealistic scene: ${conversation.scenario}. Person walking away. First-person perspective. Cinematic lighting.`,
+        `Photorealistic background scene: ${conversation.scenario}. No people, just the environment and setting. First-person perspective.`,
       ),
     ]);
 
