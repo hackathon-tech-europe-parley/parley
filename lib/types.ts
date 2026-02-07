@@ -46,6 +46,7 @@ export interface Conversation {
   messagesSinceImageRegen: number;
   sceneImageUrl: string;
   npcFaceImageUrl: string;
+  npcGender: NpcGender;
   scenarioKey?: string;
   languageCode?: string;
 }
@@ -70,9 +71,12 @@ export interface NpcResponse {
   hints: string[];
 }
 
+export type NpcGender = "masculine" | "feminine";
+
 export interface NpcProfile {
   name: string;
   personality: string;
+  gender: NpcGender;
 }
 
 export interface Debrief {
@@ -92,6 +96,7 @@ export interface ConversationSnapshot {
   goalProgress: GoalProgress;
   sceneImageUrl: string;
   npcFaceImageUrl: string;
+  npcGender: NpcGender;
   history: ConversationMessage[];
   hints: string[];
   scenarioKey?: string;
