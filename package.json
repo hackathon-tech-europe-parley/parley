@@ -1,11 +1,11 @@
 {
   "name": "parley",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "Situational language learning through immersive roleplay",
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -13,9 +13,10 @@
   "dependencies": {
     "@confiture-ai/gradium-sdk-js": "^0.1.1",
     "@fal-ai/client": "^1.2.1",
-    "next": "^15.3.3",
+    "next": "15.5.12",
     "next-intl": "^4.8.2",
     "openai": "^5.8.2",
+    "postgres": "^3.4.8",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "ws": "^8.19.0",

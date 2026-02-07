@@ -1,8 +1,30 @@
 import OpenAI from "openai";
-import type { Conversation, NpcResponse, NpcProfile, Debrief } from "./types";
+import type {
+  Conversation,
+  CustomScenario,
+  Debrief,
+  GoalProgress,
+  GoalStatus,
+  NpcProfile,
+  NpcResponse,
+} from "./types";
+import {
+  createNpcResponseFromLlmSchema,
+  customScenarioFromLlmSchema,
+  debriefFromLlmSchema,
+  npcProfileFromLlmSchema,
+} from "./types";
 
 const openai = new OpenAI();
 const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+
+function parseJsonSafely(content: string): unknown {
+  try {
+    return JSON.parse(content);
+  } catch {
+    return {};
+  }
+}
 
 export async function generateNpcProfile(
   scenario: string,
@@ -14,7 +36,7 @@ export async function generateNpcProfile(
     messages: [
       {
         role: "system",
-        content: `You generate NPC profiles for language learning roleplay scenarios. Return JSON with "name" (a realistic local name) and "personality" (2-3 sentence personality description). The NPC should be a realistic character from the scenario who speaks ${language}.`,
+        content: `You generate NPC profiles for language learning roleplay scenarios. Return JSON with "name" (a realistic local name), "personality" (2-3 sentence personality description), and "gender" (either "masculine" or "feminine"). The NPC should be a realistic character from the scenario who speaks ${language}.`,
       },
       {
         role: "user",
@@ -25,7 +47,8 @@ export async function generateNpcProfile(
 
   const content = response.choices[0]?.message?.content;
   if (!content) throw new Error("Failed to generate NPC profile");
-  return JSON.parse(content) as NpcProfile;
+
+  return npcProfileFromLlmSchema.parse(parseJsonSafely(content));
 }
 
 function buildNpcSystemPrompt(conversation: Conversation): string {
@@ -43,9 +66,40 @@ function buildNpcSystemPrompt(conversation: Conversation): string {
     impossible: `- Speak in the most complex, literary, and idiomatic register of ${conversation.language}
 - Use regional dialects, archaic expressions, double meanings, and cultural references that even native speakers would struggle with
 - Be extremely uncooperative, skeptical, and difficult to convince
-- Never make things easy — argue back, change the subject, misunderstand on purpose
-- The user's goal is nearly impossible — only grant success if they are truly extraordinary
+- Never make things easy - argue back, change the subject, misunderstand on purpose
+- The user's goal is nearly impossible - only grant success if they are truly extraordinary
 - Provide no hints at all`,
+  };
+
+  const boundaryRulesByLevel = {
+    beginner: `- Distinguish poor grammar from disrespect: grammar mistakes are normal and should be handled patiently
+- If the user is mildly rude once, set a polite boundary and continue
+- If the user stays insulting/hostile/off-topic for 3 consecutive turns, set "goalStatus" to "failed" and end constructively`,
+    intermediate: `- Distinguish poor grammar from disrespect: grammar mistakes are normal and should be handled patiently
+- If the user is insulting/hostile/off-topic once, set a clear boundary and reduce progress
+- If the user is insulting/hostile/off-topic for 2 consecutive turns, become firm and set "goalStatus" to "failed"
+- Do not continue endlessly coaching when the user refuses respectful engagement`,
+    advanced: `- Distinguish poor grammar from disrespect: grammar mistakes are normal and should be handled patiently
+- Set a firm professional boundary on the first insulting/off-topic turn
+- If disrespect repeats or the user refuses engagement for 2 turns, set "goalStatus" to "failed"`,
+    impossible: `- Distinguish poor grammar from disrespect: grammar mistakes are normal and should be handled patiently
+- Be strict: any insulting/off-topic turn sharply lowers progress
+- If disrespect repeats, quickly set "goalStatus" to "failed"`,
+  };
+
+  const evaluationRulesByLevel = {
+    beginner: `- Mood baseline: patient/supportive
+- Keep progress optimistic if user is trying: on-topic attempts can be 2-3 even with errors
+- Only use "failed" after repeated clear refusal/disrespect`,
+    intermediate: `- Mood baseline: professional but encouraging
+- Progress should reflect relevance and cooperation, not grammar perfection
+- Use "failed" when disrespect/refusal is sustained`,
+    advanced: `- Mood baseline: demanding and direct
+- Require coherent, relevant replies for progress >= 3
+- Repeated evasion/disrespect should drop progress to 1-2 and can fail the goal`,
+    impossible: `- Mood baseline: skeptical, hard to impress, often uncooperative
+- Keep progress conservative: usually 1-3, rarely 4, and 5 only for exceptional performance
+- Grant "achieved" only if the user is truly extraordinary for this level`,
   };
 
   return `You are ${conversation.npcName}, a character in a language learning roleplay.
@@ -63,6 +117,12 @@ RULES:
 LEVEL ADAPTATION (user is ${conversation.level}):
 ${levelRules[conversation.level]}
 
+CONVERSATION BOUNDARIES:
+${boundaryRulesByLevel[conversation.level]}
+
+DIFFICULTY-SCALED EVALUATION:
+${evaluationRulesByLevel[conversation.level]}
+
 SAFETY:
 - If the scenario involves anything unethical, reframe toward respectful communication
 - Focus on de-escalation and cultural appropriateness
@@ -70,8 +130,24 @@ SAFETY:
 
 Return a JSON object with:
 - "npcMessage": your response in ${conversation.language} (string)
-- "mood": your current emotional state (string, e.g. "skeptical", "amused", "annoyed", "friendly", "convinced", "furious")
+- "mood": your current emotional state (string, short label such as "patient", "skeptical", "amused", "annoyed", "friendly", "firm", "convinced", "furious")
 - "goalStatus": "ongoing" if the conversation should continue, "achieved" if the user achieved their goal, "failed" if the user has definitely failed (string)
+- "goalProgress": integer 1-5 indicating how close the user is to the goal:
+  - 1 = off-track, hostile, or refusing to engage
+  - 2 = partially engaged but weak relevance
+  - 3 = making real progress
+  - 4 = very close to the goal
+  - 5 = goal is within reach / effectively achieved
+  If goalStatus is "achieved", goalProgress must be 5. If goalStatus is "failed", goalProgress should be 1.
+- "evaluation": an object with pragmatic turn-level metrics:
+  - "cooperation": number 0..1 (user willingness to engage)
+  - "relevance": number 0..1 (how related the user message is to the scenario goal)
+  - "politeness": number 0..1 (respectful tone)
+  - "clarity": number 0..1 (how understandable the user's message is)
+  - "taskIntent": number 0..1 (intent to actually pursue the goal)
+  - "offTopic": boolean
+  - "refusal": boolean (user refuses to participate: repeated "no", refusal to answer, etc.)
+  - "hostile": boolean (insults, aggressive language, or disrespect)
 - "hints": array of 2-3 suggestions for what the user could say next, adapted to their level (string[])`;
 }
 
@@ -93,12 +169,10 @@ export async function generateNpcOpening(
   const content = response.choices[0]?.message?.content;
   if (!content) throw new Error("Failed to generate NPC opening");
 
-  const parsed = JSON.parse(content);
+  const parsed = createNpcResponseFromLlmSchema(1).parse(parseJsonSafely(content));
   return {
-    npcMessage: parsed.npcMessage || "...",
-    mood: parsed.mood || "neutral",
+    ...parsed,
     goalStatus: "ongoing",
-    hints: parsed.hints || [],
   };
 }
 
@@ -125,12 +199,21 @@ export async function generateNpcResponse(
   const content = response.choices[0]?.message?.content;
   if (!content) throw new Error("Failed to generate NPC response");
 
-  const parsed = JSON.parse(content);
+  const parsed = createNpcResponseFromLlmSchema(conversation.goalProgress).parse(
+    parseJsonSafely(content),
+  );
+
+  const goalStatus = parsed.goalStatus;
+  const goalProgress = resolveGoalProgress(
+    goalStatus,
+    parsed.goalProgress,
+    conversation.goalProgress,
+  );
+
   return {
-    npcMessage: parsed.npcMessage || "...",
-    mood: parsed.mood || "neutral",
-    goalStatus: parsed.goalStatus || "ongoing",
-    hints: parsed.hints || [],
+    ...parsed,
+    goalStatus,
+    goalProgress,
   };
 }
 
@@ -167,7 +250,6 @@ export async function* generateNpcResponseStream(
 
     accumulated += delta;
 
-    // Try to extract partial npcMessage from the accumulating JSON
     const extracted = extractPartialNpcMessage(accumulated);
     if (extracted && extracted !== lastExtracted) {
       const newText = extracted.slice(lastExtracted.length);
@@ -178,25 +260,71 @@ export async function* generateNpcResponseStream(
     }
   }
 
-  // Parse the final complete JSON
-  const parsed = JSON.parse(accumulated);
-  const data: NpcResponse = {
-    npcMessage: parsed.npcMessage || "...",
-    mood: parsed.mood || "neutral",
-    goalStatus: parsed.goalStatus || "ongoing",
-    hints: parsed.hints || [],
-  };
+  const parsed = createNpcResponseFromLlmSchema(conversation.goalProgress).parse(
+    parseJsonSafely(accumulated),
+  );
 
-  yield { type: "complete", data };
+  const goalStatus = parsed.goalStatus;
+  const goalProgress = resolveGoalProgress(
+    goalStatus,
+    parsed.goalProgress,
+    conversation.goalProgress,
+  );
+
+  yield {
+    type: "complete",
+    data: {
+      ...parsed,
+      goalStatus,
+      goalProgress,
+    },
+  };
+}
+
+function parseGoalProgress(
+  value: unknown,
+  fallback: GoalProgress | number,
+): GoalProgress {
+  const safeFallback = clampGoalProgress(fallback, 1);
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return safeFallback;
+  }
+
+  return clampGoalProgress(value, safeFallback);
+}
+
+function clampGoalProgress(
+  value: number,
+  fallback: GoalProgress,
+): GoalProgress {
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+  const rounded = Math.round(value);
+  const clamped = Math.min(5, Math.max(1, rounded));
+  return clamped as GoalProgress;
+}
+
+function resolveGoalProgress(
+  status: GoalStatus,
+  rawProgress: unknown,
+  fallback: GoalProgress,
+): GoalProgress {
+  if (status === "achieved") {
+    return 5;
+  }
+  if (status === "failed") {
+    return 1;
+  }
+  return parseGoalProgress(rawProgress, fallback);
 }
 
 function extractPartialNpcMessage(partial: string): string | null {
-  // Look for "npcMessage": " or "npcMessage":" and extract the value so far
   const key = '"npcMessage"';
   const keyIndex = partial.indexOf(key);
   if (keyIndex === -1) return null;
 
-  // Find the opening quote of the value
   const afterKey = partial.slice(keyIndex + key.length);
   const colonIndex = afterKey.indexOf(":");
   if (colonIndex === -1) return null;
@@ -204,9 +332,8 @@ function extractPartialNpcMessage(partial: string): string | null {
   const afterColon = afterKey.slice(colonIndex + 1).trimStart();
   if (!afterColon.startsWith('"')) return null;
 
-  // Extract string value, handling escape sequences
   let result = "";
-  let i = 1; // skip opening quote
+  let i = 1;
   while (i < afterColon.length) {
     const ch = afterColon[i];
     if (ch === "\\") {
@@ -223,25 +350,12 @@ function extractPartialNpcMessage(partial: string): string | null {
       }
       break;
     }
-    if (ch === '"') break; // closing quote
+    if (ch === '"') break;
     result += ch;
     i++;
   }
 
   return result || null;
-}
-
-export interface CustomScenario {
-  title: string;
-  description: string;
-  emoji: string;
-  scenario: string;
-  goals: {
-    beginner: string;
-    intermediate: string;
-    advanced: string;
-    impossible: string;
-  };
 }
 
 export async function generateCustomScenario(
@@ -277,7 +391,8 @@ The goals should escalate from straightforward to ridiculous. The impossible goa
 
   const content = response.choices[0]?.message?.content;
   if (!content) throw new Error("Failed to generate custom scenario");
-  return JSON.parse(content) as CustomScenario;
+
+  return customScenarioFromLlmSchema.parse(parseJsonSafely(content));
 }
 
 export async function generateDebrief(
@@ -317,10 +432,10 @@ Return JSON with:
   const content = response.choices[0]?.message?.content;
   if (!content) throw new Error("Failed to generate debrief");
 
-  const parsed = JSON.parse(content);
+  const parsed = debriefFromLlmSchema.parse(parseJsonSafely(content));
   return {
-    narrative: parsed.narrative || "The conversation has ended.",
-    keyPhrases: parsed.keyPhrases || [],
+    narrative: parsed.narrative,
+    keyPhrases: parsed.keyPhrases,
     goalAchieved: finalStatus === "achieved",
   };
 }

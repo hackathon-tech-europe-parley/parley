@@ -3,7 +3,7 @@ export class TTSPlayer {
   private audio: HTMLAudioElement | null = null;
   private endedHandler: (() => void) | null = null;
   private errorHandler: (() => void) | null = null;
-  private playing = false;
+
   private playPromise: Promise<void> | null = null;
 
   private cleanup(): void {
@@ -25,10 +25,10 @@ export class TTSPlayer {
     
     this.endedHandler = null;
     this.errorHandler = null;
-    this.playing = false;
+
   }
 
-  async play(text: string, cacheKey: string, languageCode?: string): Promise<void> {
+  async play(text: string, cacheKey: string, languageCode?: string, npcGender?: string): Promise<void> {
     // If there's already a play operation in progress, wait for it to complete
     if (this.playPromise) {
       await this.playPromise;
@@ -36,12 +36,12 @@ export class TTSPlayer {
 
     // Stop any currently playing audio first
     this.stop();
-    
+
     // Wait for the audio to fully stop and reset
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Create a promise for this play operation
-    this.playPromise = this._doPlay(text, cacheKey, languageCode);
+    this.playPromise = this._doPlay(text, cacheKey, languageCode, npcGender);
     
     try {
       await this.playPromise;
@@ -50,14 +50,14 @@ export class TTSPlayer {
     }
   }
 
-  private async _doPlay(text: string, cacheKey: string, languageCode?: string): Promise<void> {
+  private async _doPlay(text: string, cacheKey: string, languageCode?: string, npcGender?: string): Promise<void> {
 
     let url = this.cache.get(cacheKey);
     if (!url) {
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, languageCode }),
+        body: JSON.stringify({ text, languageCode, npcGender }),
       });
       if (!res.ok) throw new Error("TTS fetch failed");
       const blob = await res.blob();
@@ -72,11 +72,11 @@ export class TTSPlayer {
 
     // Set up event handlers
     this.endedHandler = () => {
-      this.playing = false;
+  
     };
     
     this.errorHandler = () => {
-      this.playing = false;
+  
     };
     
     this.audio.addEventListener('ended', this.endedHandler, { once: true });
@@ -85,7 +85,7 @@ export class TTSPlayer {
     // Set the source, load, and play
     this.audio.src = url;
     this.audio.load(); // Ensure the audio is properly loaded
-    this.playing = true;
+
     await this.audio.play();
   }
 

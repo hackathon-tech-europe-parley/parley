@@ -5,13 +5,22 @@ import {
 } from "@/lib/conversations";
 import { generateSceneImage } from "@/lib/fal";
 import { generateDebrief } from "@/lib/openai";
+import { idParamSchema, quitConversationResponseSchema } from "@/lib/types";
 
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await params;
-  const conversation = getConversation(id);
+  const rawParams = await params;
+  const parsedParams = idParamSchema.safeParse(rawParams.id);
+  if (!parsedParams.success) {
+    return NextResponse.json(
+      { error: "Invalid conversation id" },
+      { status: 400 },
+    );
+  }
+  const id = parsedParams.data;
+  const conversation = await getConversation(id);
 
   if (!conversation) {
     return NextResponse.json(
@@ -30,15 +39,15 @@ export async function POST(
 
     const history = [...conversation.history];
     const npcName = conversation.npcName;
-    deleteConversation(id);
+    await deleteConversation(id);
 
-    return NextResponse.json({
+    return NextResponse.json(quitConversationResponseSchema.parse({
       debrief,
       sceneImageUrl: finalImageUrl,
       npcName,
       goalStatus: "quit",
       conversationHistory: history,
-    });
+    }));
   } catch (error) {
     console.error("Failed to quit conversation:", error);
     return NextResponse.json(

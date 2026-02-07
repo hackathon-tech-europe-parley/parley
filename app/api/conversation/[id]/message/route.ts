@@ -1,19 +1,43 @@
-import { getConversation, setHints } from "@/lib/conversations";
+import { getConversation, setConversation, setHints } from "@/lib/conversations";
 import { generateSceneImage, updateNpcFaceImage } from "@/lib/fal";
 import { generateNpcResponseStream } from "@/lib/openai";
 import { generateDebrief } from "@/lib/openai";
-import { sendMessageSchema } from "@/lib/types";
+import { applyNpcPolicy } from "@/lib/npc-policy";
+import {
+  idParamSchema,
+  messageStreamCompletePayloadSchema,
+  messageStreamErrorPayloadSchema,
+  messageStreamTokenPayloadSchema,
+  sendMessageSchema,
+} from "@/lib/types";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await params;
-  const conversation = getConversation(id);
+  const rawParams = await params;
+  const parsedParams = idParamSchema.safeParse(rawParams.id);
+  if (!parsedParams.success) {
+    return new Response(
+      formatSSE(
+        "error",
+        messageStreamErrorPayloadSchema.parse({ error: "Invalid conversation id" }),
+      ),
+      {
+        status: 400,
+        headers: sseHeaders(),
+      },
+    );
+  }
+  const id = parsedParams.data;
+  const conversation = await getConversation(id);
 
   if (!conversation) {
     return new Response(
-      formatSSE("error", { error: "Conversation not found" }),
+      formatSSE(
+        "error",
+        messageStreamErrorPayloadSchema.parse({ error: "Conversation not found" }),
+      ),
       {
         status: 404,
         headers: sseHeaders(),
@@ -21,11 +45,26 @@ export async function POST(
     );
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (body === null) {
+    return new Response(
+      formatSSE(
+        "error",
+        messageStreamErrorPayloadSchema.parse({ error: "Invalid JSON body" }),
+      ),
+      {
+        status: 400,
+        headers: sseHeaders(),
+      },
+    );
+  }
   const parsed = sendMessageSchema.safeParse(body);
   if (!parsed.success) {
     return new Response(
-      formatSSE("error", { error: "Invalid input" }),
+      formatSSE(
+        "error",
+        messageStreamErrorPayloadSchema.parse({ error: "Invalid input" }),
+      ),
       {
         status: 400,
         headers: sseHeaders(),
@@ -44,18 +83,24 @@ export async function POST(
         for await (const event of generateNpcResponseStream(conversation)) {
           if (event.type === "token") {
             controller.enqueue(
-              encoder.encode(formatSSE("token", { text: event.text })),
+              encoder.encode(
+                formatSSE(
+                  "token",
+                  messageStreamTokenPayloadSchema.parse({ text: event.text }),
+                ),
+              ),
             );
           } else if (event.type === "complete") {
-            const npcResponse = event.data;
+            const npcResponse = applyNpcPolicy(conversation, event.data);
             conversation.history.push({
               role: "npc",
               text: npcResponse.npcMessage,
             });
             conversation.mood = npcResponse.mood;
+            conversation.goalProgress = npcResponse.goalProgress;
             conversation.messagesSinceImageRegen++;
 
-            setHints(id, npcResponse.hints);
+            await setHints(id, npcResponse.hints);
 
             // Update NPC face image based on new mood
             let npcFaceImageUrl = conversation.npcFaceImageUrl;
@@ -64,7 +109,6 @@ export async function POST(
                 npcFaceImageUrl = await updateNpcFaceImage(
                   conversation.npcFaceImageUrl,
                   npcResponse.mood,
-                  conversation.npcName,
                 );
                 conversation.npcFaceImageUrl = npcFaceImageUrl;
               }
@@ -81,17 +125,21 @@ export async function POST(
               conversation.messagesSinceImageRegen = 0;
             }
 
+            await setConversation(id, conversation);
+
             if (npcResponse.goalStatus === "ongoing") {
+              const completePayload = messageStreamCompletePayloadSchema.parse({
+                npcMessage: npcResponse.npcMessage,
+                mood: npcResponse.mood,
+                goalStatus: npcResponse.goalStatus,
+                goalProgress: npcResponse.goalProgress,
+                hints: npcResponse.hints,
+                sceneImageUrl,
+                npcFaceImageUrl,
+              });
               controller.enqueue(
                 encoder.encode(
-                  formatSSE("complete", {
-                    npcMessage: npcResponse.npcMessage,
-                    mood: npcResponse.mood,
-                    goalStatus: npcResponse.goalStatus,
-                    hints: npcResponse.hints,
-                    sceneImageUrl,
-                    npcFaceImageUrl,
-                  }),
+                  formatSSE("complete", completePayload),
                 ),
               );
             } else {
@@ -107,16 +155,19 @@ export async function POST(
               const finalImageUrl =
                 await generateSceneImage(finalImagePrompt);
 
+              const completePayload = messageStreamCompletePayloadSchema.parse({
+                npcMessage: npcResponse.npcMessage,
+                mood: npcResponse.mood,
+                goalStatus: npcResponse.goalStatus,
+                goalProgress: npcResponse.goalProgress,
+                hints: npcResponse.hints,
+                sceneImageUrl: finalImageUrl,
+                debrief,
+              });
+
               controller.enqueue(
                 encoder.encode(
-                  formatSSE("complete", {
-                    npcMessage: npcResponse.npcMessage,
-                    mood: npcResponse.mood,
-                    goalStatus: npcResponse.goalStatus,
-                    hints: npcResponse.hints,
-                    sceneImageUrl: finalImageUrl,
-                    debrief,
-                  }),
+                  formatSSE("complete", completePayload),
                 ),
               );
             }
@@ -127,7 +178,12 @@ export async function POST(
         const message =
           error instanceof Error ? error.message : "Unknown error";
         controller.enqueue(
-          encoder.encode(formatSSE("error", { error: message })),
+          encoder.encode(
+            formatSSE(
+              "error",
+              messageStreamErrorPayloadSchema.parse({ error: message }),
+            ),
+          ),
         );
       } finally {
         controller.close();
