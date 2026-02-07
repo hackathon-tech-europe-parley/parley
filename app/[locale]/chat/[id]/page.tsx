@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { consumeSSE } from "@/lib/sse-client";
+import { Link } from "@/i18n/navigation";
 import type { ConversationMessage, Debrief } from "@/lib/types";
 
 interface ConversationState {
@@ -27,6 +29,8 @@ interface DebriefState {
 
 export default function ChatPage() {
   const { id } = useParams<{ id: string }>();
+  const t = useTranslations("Chat");
+  const tDebrief = useTranslations("Debrief");
   const [state, setState] = useState<ConversationState | null>(null);
   const [debriefState, setDebriefState] = useState<DebriefState | null>(null);
   const [input, setInput] = useState("");
@@ -154,12 +158,12 @@ export default function ChatPage() {
 
   if (error && !state) {
     return (
-      <main className="flex min-h-screen items-center justify-center p-4">
+      <main className="flex flex-1 items-center justify-center p-4">
         <div className="rounded-xl bg-red-900/50 p-8 text-center">
           <p className="text-red-300">{error}</p>
-          <a href="/" className="mt-4 inline-block text-blue-400 underline">
-            Back to setup
-          </a>
+          <Link href="/" className="mt-4 inline-block text-blue-400 underline">
+            {t("backToSetup")}
+          </Link>
         </div>
       </main>
     );
@@ -167,7 +171,7 @@ export default function ChatPage() {
 
   if (!state) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
+      <main className="flex flex-1 items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-white" />
       </main>
     );
@@ -194,12 +198,14 @@ export default function ChatPage() {
               }`}
             >
               {debriefState.goalStatus === "achieved"
-                ? "Goal Achieved"
+                ? tDebrief("goalAchieved")
                 : debriefState.goalStatus === "failed"
-                  ? "Goal Failed"
-                  : "Quit Early"}
+                  ? tDebrief("goalFailed")
+                  : tDebrief("quitEarly")}
             </span>
-            <span className="text-slate-400">with {debriefState.npcName}</span>
+            <span className="text-slate-400">
+              {tDebrief("withNpc", { npcName: debriefState.npcName })}
+            </span>
           </div>
           <p className="text-slate-300 leading-relaxed">
             {debriefState.debrief.narrative}
@@ -207,7 +213,7 @@ export default function ChatPage() {
           {debriefState.debrief.keyPhrases.length > 0 && (
             <div>
               <h3 className="mb-2 text-sm font-semibold text-slate-400 uppercase tracking-wide">
-                Key Phrases
+                {tDebrief("keyPhrases")}
               </h3>
               <ul className="space-y-2">
                 {debriefState.debrief.keyPhrases.map((kp, i) => (
@@ -222,19 +228,19 @@ export default function ChatPage() {
             </div>
           )}
         </div>
-        <a
+        <Link
           href="/"
           className="inline-block rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-500"
         >
-          New Scenario
-        </a>
+          {tDebrief("newScenario")}
+        </Link>
       </main>
     );
   }
 
   // Conversation view
   return (
-    <main className="flex h-screen flex-col">
+    <main className="flex flex-1 flex-col min-h-0">
       {/* Header */}
       <div className="relative flex-shrink-0">
         <img
@@ -247,11 +253,35 @@ export default function ChatPage() {
           <span className="rounded-full bg-slate-900/80 px-3 py-1 text-xs text-slate-300">
             {state.language}
           </span>
-          <span className="rounded-full bg-slate-900/80 px-3 py-1 text-xs text-slate-300">
+          <span className={`rounded-full px-3 py-1 text-xs ${
+            state.level === "impossible"
+              ? "bg-red-900/80 text-red-300"
+              : "bg-slate-900/80 text-slate-300"
+          }`}>
             {state.level}
           </span>
           <span className="rounded-full bg-blue-900/80 px-3 py-1 text-xs text-blue-300">
             {state.mood}
+          </span>
+        </div>
+      </div>
+
+      {/* Goal banner */}
+      <div className={`flex-shrink-0 border-b px-4 py-2.5 ${
+        state.level === "impossible"
+          ? "border-red-900/50 bg-red-950/30"
+          : "border-slate-800 bg-slate-900/50"
+      }`}>
+        <div className="flex items-center gap-2 text-sm">
+          <span className={`font-medium ${
+            state.level === "impossible" ? "text-red-400" : "text-slate-400"
+          }`}>
+            {t("goalLabel")}
+          </span>
+          <span className={
+            state.level === "impossible" ? "text-red-300" : "text-slate-300"
+          }>
+            {state.goal}
           </span>
         </div>
       </div>
@@ -330,7 +360,7 @@ export default function ChatPage() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={`Message in ${state.language}...`}
+            placeholder={t("messagePlaceholder", { language: state.language })}
             disabled={sending}
             className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
           />
@@ -339,7 +369,7 @@ export default function ChatPage() {
             disabled={sending || !input.trim()}
             className="rounded-lg bg-blue-600 px-5 py-2.5 font-medium text-white hover:bg-blue-500 disabled:opacity-50"
           >
-            Send
+            {t("send")}
           </button>
           <button
             type="button"
@@ -347,7 +377,7 @@ export default function ChatPage() {
             disabled={sending || quitting}
             className="rounded-lg border border-slate-700 px-4 py-2.5 text-sm text-slate-400 hover:bg-slate-800 disabled:opacity-50"
           >
-            {quitting ? "..." : "Quit"}
+            {quitting ? "..." : t("quit")}
           </button>
         </form>
       </div>

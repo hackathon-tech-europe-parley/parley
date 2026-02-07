@@ -1,0 +1,134 @@
+{
+  "Layout": {
+    "title": "Parley",
+    "description": "Apprentissage des langues en situation par le jeu de rôle immersif",
+    "newSession": "Nouvelle session",
+    "tagline": "Pratiquez les langues par le jeu de rôle",
+    "poweredBy": "Propulsé par l'IA"
+  },
+  "SetupForm": {
+    "heading": "Démarrer une nouvelle session",
+    "subheading": "Choisissez une langue, relevez votre défi et lancez-vous",
+    "step1Title": "Quelle langue voulez-vous pratiquer?",
+    "step1Subtitle": "Sélectionnez la langue que vous souhaitez apprendre",
+    "step2Title": "Choisissez un scénario",
+    "step2Subtitle": "Sélectionnez une situation pour pratiquer le {language}",
+    "goalLabel": "Objectif:",
+    "showDifferent": "Afficher d'autres scénarios",
+    "startRoleplay": "Commencer le jeu de rôle",
+    "settingUp": "Configuration du scénario..."
+  },
+  "Levels": {
+    "beginner": "Débutant",
+    "intermediate": "Intermédiaire",
+    "advanced": "Avancé",
+    "impossible": "Impossible"
+  },
+  "Languages": {
+    "en": "Anglais",
+    "fr": "Français",
+    "de": "Allemand",
+    "es": "Espagnol",
+    "pt": "Portugais"
+  },
+  "Scenarios": {
+    "taxi_title": "La course en taxi",
+    "taxi_description": "Un chauffeur bavard et un compteur suspectes",
+    "taxi_goal_beginner": "Dites au chauffeur le nom de votre hôtel et comprenez le prix",
+    "taxi_goal_intermediate": "Négociez un prix juste pour la course jusqu'à votre hôtel",
+    "taxi_goal_advanced": "Négociez la course, engagez une conversation sur la vie locale et obtenez des recommandations de restaurants",
+    "taxi_goal_impossible": "Convaincez le chauffeur de vous faire la course gratuitement en utilisant uniquement des proverbes et du dialecte régional, puis faites-le réciter un poème sur sa ville natale",
+
+    "cafe_title": "Café à commander",
+    "cafe_description": "Un café douillet avec un menu illisible",
+    "cafe_goal_beginner": "Commandez un café et pointez une pâtisserie pour l'acheter",
+    "cafe_goal_intermediate": "Commandez un petit-déjeuner complet et posez des questions sur les ingrédients",
+    "cafe_goal_advanced": "Commandez pour vous et un ami ayant des restrictions alimentaires, et demandez l'histoire du café",
+    "cafe_goal_impossible": "Convaincez le barista de vous enseigner sa recette secrète, débattez de la philosophie de la torréfaction du café, et faites-vous embaucher sur place comme barista à temps partiel",
+
+    "lost_title": "Perdu dans la ville",
+    "lost_description": "Téléphone déchargé, pas de plan, besoin de trouver la gare",
+    "lost_goal_beginner": "Demandez où se trouve la gare et comprenez si c'est loin",
+    "lost_goal_intermediate": "Obtenez des directions détaillées avec des repères et des noms de rues",
+    "lost_goal_advanced": "Obtenez des directions, posez des questions sur le quartier et comprenez la recommandation d'un raccourci",
+    "lost_goal_impossible": "Convaincez l'étranger d'abandonner ses plans et de vous accompagner personnellement à la gare tandis que vous réglez un débat enflammé sur le quartier ayant la meilleure architecture",
+
+    "market_title": "Marchandage au marché",
+    "market_description": "Des étalages vibrants et un vendeur persistant",
+    "market_goal_beginner": "Demandez le prix et achetez un article",
+    "market_goal_intermediate": "Négociez le prix à la baisse et achetez un souvenir",
+    "market_goal_advanced": "Négociez un achat en gros, découvrez l'artisanat et faites en sorte que le vendeur vous donne un article bonus",
+    "market_goal_impossible": "Persuadez le vendeur de devenir votre associé en affaires, rédigez les conditions d'une coentreprise sur une serviette et convaincez-le que ses prix ont été erronés depuis le début",
+
+    "hotel_title": "Arrivée à l'hôtel",
+    "hotel_description": "Votre réservation a disparu du système",
+    "hotel_goal_beginner": "Dites votre nom et montrez votre confirmation de réservation",
+    "hotel_goal_intermediate": "Résolvez le problème de réservation et obtenez votre chambre",
+    "hotel_goal_advanced": "Résolvez l'erreur de réservation, négociez une amélioration de chambre pour le désagrément et posez des questions sur les équipements",
+    "hotel_goal_impossible": "Obtenez une amélioration gratuite à la suite présidentielle, convaincez le gérant que l'hôtel vous doit des dommages émotionnels et quittez les lieux avec une carte de fidélité à vie",
+
+    "doctor_title": "Visite médicale",
+    "doctor_description": "Vous vous sentez mal dans une clinique étrangère",
+    "doctor_goal_beginner": "Montrez où ça fait mal et comprenez si vous avez besoin de médicaments",
+    "doctor_goal_intermediate": "Décrivez clairement vos symptômes et comprenez le plan de traitement",
+    "doctor_goal_advanced": "Donnez des antécédents médicaux détaillés, discutez des options de traitement et posez des questions sur les effets secondaires",
+    "doctor_goal_impossible": "Diagnostiquez-vous plus précisément que le médecin en utilisant uniquement le jargon médical, puis convaincez-le de vous laisser faire ses rondes pendant la journée",
+
+    "friends_title": "Se faire des amis",
+    "friends_description": "Un habitant curieux lors d'un événement culturel",
+    "friends_goal_beginner": "Présentez-vous et dites d'où vous venez",
+    "friends_goal_intermediate": "Engagez une conversation amusante et échangez vos coordonnées",
+    "friends_goal_advanced": "Établissez une connexion sincère, discutez des différences culturelles et fixez une date pour vous revoir",
+    "friends_goal_impossible": "Convaincez-le que vous êtes un parent perdu depuis longtemps en utilisant une histoire élaborée, faites-vous inviter au dîner familial du dimanche et résolvez un conflit familial qu'il a depuis des années",
+
+    "interview_title": "L'entretien d'embauche",
+    "interview_description": "Test de vos compétences linguistiques pour un poste",
+    "interview_goal_beginner": "Présentez-vous et décrivez votre emploi actuel en termes simples",
+    "interview_goal_intermediate": "Répondez aux questions sur votre expérience et posez des questions sur le poste",
+    "interview_goal_advanced": "Livrez un argumentaire convaincant, répondez à des questions difficiles et négociez vos attentes salariales",
+    "interview_goal_impossible": "Inversez l'entretien — finissez par interviewer le PDG à la place, exposez un défaut dans son modèle commercial et obtenez le poste de vice-président",
+
+    "restaurant_title": "Désastre au restaurant",
+    "restaurant_description": "Mauvais plat et vous avez des allergies",
+    "restaurant_goal_beginner": "Dites au serveur que ce n'est pas le bon plat et dites ce que vous ne pouvez pas manger",
+    "restaurant_goal_intermediate": "Obtenez le bon plat et expliquez clairement vos allergies alimentaires",
+    "restaurant_goal_advanced": "Résolvez le problème diplomatiquement, discutez des options sûres pour les allergies et demandez une recommandation du chef",
+    "restaurant_goal_impossible": "Entrez dans la cuisine, convaincez le chef que son plat signature a besoin d'améliorations, cuisinez-en une meilleure version vous-même et obtenez le repas gratuit",
+
+    "apartment_title": "Recherche d'appartement",
+    "apartment_description": "Visite avec un propriétaire bavard",
+    "apartment_goal_beginner": "Demandez le montant du loyer et quand vous pourrez emménager",
+    "apartment_goal_intermediate": "Obtenez tous les détails sur le prix, les services publics et négociez le loyer",
+    "apartment_goal_advanced": "Négociez les conditions, discutez de la flexibilité du bail, posez des questions sur les voisins et obtenez une réduction pour location à long terme",
+    "apartment_goal_impossible": "Convaincez le propriétaire de vous vendre l'immeuble à la place, faites en sorte qu'il inclue les meubles et faites-le s'excuser d'avoir facturé trop cher le loyer tout ce temps",
+
+    "train_title": "Problème de train",
+    "train_description": "Tableau des départs confus, mauvais quai",
+    "train_goal_beginner": "Demandez quel quai votre train part",
+    "train_goal_intermediate": "Trouvez le bon quai, confirmez l'horaire et achetez un billet",
+    "train_goal_advanced": "Naviguez un changement de train, comprenez les annonces de retard et organisez un transport alternative si nécessaire",
+    "train_goal_impossible": "Convaincez le chef de gare de vous laisser conduire le train, faites une annonce au micro qui impressionne les passagers et arrivez en avance",
+
+    "pharmacy_title": "La pharmacie",
+    "pharmacy_description": "Marques différentes, emballage non familier",
+    "pharmacy_goal_beginner": "Décrivez votre problème avec des mots simples et achetez des médicaments",
+    "pharmacy_goal_intermediate": "Obtenez les bons médicaments avec des instructions de dosage appropriées",
+    "pharmacy_goal_advanced": "Expliquez votre situation complète, comparez les options, posez des questions sur les interactions avec d'autres médicaments et comprenez complètement les conseils du pharmacien",
+    "pharmacy_goal_impossible": "Surpassez le pharmacien dans un débat sur les interactions médicamenteuses, faites-lui admettre que vous en savez plus qu'lui et partez avec une note d'excuses manuscrite"
+  },
+  "Chat": {
+    "backToSetup": "Retour à la configuration",
+    "goalLabel": "Objectif:",
+    "messagePlaceholder": "Message en {language}...",
+    "send": "Envoyer",
+    "quit": "Quitter"
+  },
+  "Debrief": {
+    "goalAchieved": "Objectif atteint",
+    "goalFailed": "Objectif échoué",
+    "quitEarly": "Arrêt prématuré",
+    "withNpc": "avec {npcName}",
+    "keyPhrases": "Phrases clés",
+    "newScenario": "Nouveau scénario"
+  }
+}
