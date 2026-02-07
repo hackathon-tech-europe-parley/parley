@@ -34,8 +34,15 @@ Next.js 15 App Router with two pages:
 ### Key Directories
 
 - `app/` — Pages, layout (global header), and API route handlers
-- `lib/` — Shared library (types, OpenAI, FAL, conversations store, SSE client)
-- `components/` — React components (setup-form)
+- `lib/` — Shared library organized by domain:
+  - `lib/ai/` — LLM integration (OpenAI), image generation (FAL), prompt engineering, response parsing
+  - `lib/audio/` — Text-to-speech (Gradium API), client-side TTS playback, microphone recording
+  - `lib/game/` — NPC conversation policy engine, NPC face asset mapping
+  - `lib/storage/` — Conversation persistence (PostgreSQL or in-memory)
+  - `lib/types/` — TypeScript types, Zod schemas, constants, LLM response schemas
+  - `lib/env.ts` — Environment variable validation
+  - `lib/sse-client.ts` — Client-side SSE stream consumer
+- `components/` — React components (setup-form, chat)
 
 ### Layout
 

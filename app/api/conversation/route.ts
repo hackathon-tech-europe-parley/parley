@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { createConversationResponseSchema, createConversationSchema } from "@/lib/types";
 import type { Conversation } from "@/lib/types";
-import { generateId, setConversation, setHints } from "@/lib/conversations";
-import { generateSceneImage } from "@/lib/fal";
-import { getNpcFaceAssetUrl } from "@/lib/npc-assets";
-import { generateNpcProfile, generateNpcOpening } from "@/lib/openai";
+import { generateId, setConversation, setHints } from "@/lib/storage";
+import { generateSceneImage, generateNpcProfile, generateNpcOpening } from "@/lib/ai";
+import { getNpcFaceAssetUrl } from "@/lib/game";
 
 export async function POST(request: Request) {
   try {
