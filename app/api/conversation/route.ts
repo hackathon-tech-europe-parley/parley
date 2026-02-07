@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { createConversationResponseSchema, createConversationSchema } from "@/lib/types";
 import type { Conversation } from "@/lib/types";
 import { generateId, setConversation, setHints } from "@/lib/conversations";
-import { generateSceneImage, generateNpcFaceImage } from "@/lib/fal";
+import { generateSceneImage } from "@/lib/fal";
+import { getNpcFaceAssetUrl } from "@/lib/npc-assets";
 import { generateNpcProfile, generateNpcOpening } from "@/lib/openai";
 
 export async function POST(request: Request) {
@@ -59,12 +60,7 @@ export async function POST(request: Request) {
     conversation.mood = opening.mood;
     conversation.goalProgress = opening.goalProgress;
 
-    // Generate initial NPC face image
-    const npcFaceImageUrl = await generateNpcFaceImage(
-      scenario,
-      npcProfile.name,
-      npcProfile.personality,
-    );
+    const npcFaceImageUrl = getNpcFaceAssetUrl(scenarioKey ?? "__custom__", npcProfile.gender, opening.mood);
     conversation.npcFaceImageUrl = npcFaceImageUrl;
 
     await setConversation(conversationId, conversation);
