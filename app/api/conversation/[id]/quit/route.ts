@@ -20,7 +20,7 @@ export async function POST(
     );
   }
   const id = parsedParams.data;
-  const conversation = getConversation(id);
+  const conversation = await getConversation(id);
 
   if (!conversation) {
     return NextResponse.json(
@@ -39,7 +39,7 @@ export async function POST(
 
     const history = [...conversation.history];
     const npcName = conversation.npcName;
-    deleteConversation(id);
+    await deleteConversation(id);
 
     return NextResponse.json(quitConversationResponseSchema.parse({
       debrief,

@@ -67,8 +67,8 @@ export async function POST(request: Request) {
     );
     conversation.npcFaceImageUrl = npcFaceImageUrl;
 
-    setConversation(conversationId, conversation);
-    setHints(conversationId, opening.hints);
+    await setConversation(conversationId, conversation);
+    await setHints(conversationId, opening.hints);
 
     return NextResponse.json(createConversationResponseSchema.parse({
       conversationId,
