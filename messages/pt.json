@@ -125,7 +125,12 @@
     "goalLabel": "Objetivo:",
     "messagePlaceholder": "Mensagem em {language}...",
     "send": "Enviar",
-    "quit": "Sair"
+    "quit": "Sair",
+    "replaySpeaker": "Reproduzir áudio",
+    "startRecording": "Iniciar gravação",
+    "stopRecording": "Parar gravação",
+    "recording": "Gravando... clique no microfone para parar",
+    "transcribing": "Transcrevendo..."
   },
   "Debrief": {
     "goalAchieved": "Objetivo Alcançado",
