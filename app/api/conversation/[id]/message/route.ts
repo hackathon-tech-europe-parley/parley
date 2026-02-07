@@ -1,4 +1,4 @@
-import { getConversation, setHints } from "@/lib/conversations";
+import { getConversation, setConversation, setHints } from "@/lib/conversations";
 import { generateSceneImage, updateNpcFaceImage } from "@/lib/fal";
 import { generateNpcResponseStream } from "@/lib/openai";
 import { generateDebrief } from "@/lib/openai";
@@ -30,7 +30,7 @@ export async function POST(
     );
   }
   const id = parsedParams.data;
-  const conversation = getConversation(id);
+  const conversation = await getConversation(id);
 
   if (!conversation) {
     return new Response(
@@ -100,7 +100,7 @@ export async function POST(
             conversation.goalProgress = npcResponse.goalProgress;
             conversation.messagesSinceImageRegen++;
 
-            setHints(id, npcResponse.hints);
+            await setHints(id, npcResponse.hints);
 
             // Update NPC face image based on new mood
             let npcFaceImageUrl = conversation.npcFaceImageUrl;
@@ -124,6 +124,8 @@ export async function POST(
               conversation.sceneImageUrl = sceneImageUrl;
               conversation.messagesSinceImageRegen = 0;
             }
+
+            await setConversation(id, conversation);
 
             if (npcResponse.goalStatus === "ongoing") {
               const completePayload = messageStreamCompletePayloadSchema.parse({
