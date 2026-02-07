@@ -107,16 +107,26 @@ export default function ChatPage() {
   }, []);
 
   const autoPlayTts = useCallback((text: string, messageIndex: number, langCode?: string) => {
-    ttsPlayerRef.current?.play(text, `msg-${messageIndex}`, langCode).then(() => {
+    if (!ttsPlayerRef.current) return;
+    setTtsPlaying(messageIndex);
+    ttsPlayerRef.current.play(text, `msg-${messageIndex}`, langCode).then(() => {
       setTtsPlaying(null);
-    }).catch(() => {
+    }).catch((err) => {
+      console.error("TTS autoplay failed:", err);
       setTtsPlaying(null);
     });
-    setTtsPlaying(messageIndex);
   }, []);
 
   // Auto-play opening message on hydration
   const hasAutoPlayed = useRef(false);
+  const lastHistoryLength = useRef(0);
+  
+  useEffect(() => {
+    if (state) {
+      lastHistoryLength.current = state.history.length;
+    }
+  }, [state]);
+
   useEffect(() => {
     if (state && state.history.length > 0 && !hasAutoPlayed.current) {
       hasAutoPlayed.current = true;
@@ -126,6 +136,18 @@ export default function ChatPage() {
       }
     }
   }, [state, autoPlayTts]);
+
+  // Auto-play new NPC messages
+  useEffect(() => {
+    if (state && state.history.length > lastHistoryLength.current) {
+      const lastMessage = state.history[state.history.length - 1];
+      if (lastMessage?.role === "npc") {
+        const messageIndex = state.history.length - 1;
+        autoPlayTts(lastMessage.text, messageIndex, state.languageCode);
+      }
+      lastHistoryLength.current = state.history.length;
+    }
+  }, [state?.history, state, autoPlayTts]);
 
   // Auto-send transcribed speech
   useEffect(() => {
@@ -210,8 +232,6 @@ export default function ChatPage() {
               ...s.history,
               { role: "npc" as const, text: npcText },
             ];
-            // Auto-play TTS for new NPC message
-            autoPlayTts(npcText, newHistory.length - 1, s.languageCode);
             return {
               ...s,
               history: newHistory,
