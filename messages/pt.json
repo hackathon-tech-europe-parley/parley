@@ -130,7 +130,11 @@
     "startRecording": "Iniciar gravação",
     "stopRecording": "Parar gravação",
     "recording": "Gravando... clique no microfone para parar",
-    "transcribing": "Transcrevendo..."
+    "transcribing": "Transcrevendo...",
+    "mute": "Silenciar áudio do NPC",
+    "unmute": "Ativar áudio do NPC",
+    "clickNewScenario": "Clique para começar um novo cenário",
+    "clickForDebrief": "Clique para ver seu resumo"
   },
   "Debrief": {
     "goalAchieved": "Objetivo Alcançado",
