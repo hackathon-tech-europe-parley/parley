@@ -2,6 +2,7 @@ import { getConversation, setHints } from "@/lib/conversations";
 import { generateSceneImage, updateNpcFaceImage } from "@/lib/fal";
 import { generateNpcResponseStream } from "@/lib/openai";
 import { generateDebrief } from "@/lib/openai";
+import { applyNpcPolicy } from "@/lib/npc-policy";
 import { sendMessageSchema } from "@/lib/types";
 
 export async function POST(
@@ -47,12 +48,13 @@ export async function POST(
               encoder.encode(formatSSE("token", { text: event.text })),
             );
           } else if (event.type === "complete") {
-            const npcResponse = event.data;
+            const npcResponse = applyNpcPolicy(conversation, event.data);
             conversation.history.push({
               role: "npc",
               text: npcResponse.npcMessage,
             });
             conversation.mood = npcResponse.mood;
+            conversation.goalProgress = npcResponse.goalProgress;
             conversation.messagesSinceImageRegen++;
 
             setHints(id, npcResponse.hints);
@@ -64,7 +66,6 @@ export async function POST(
                 npcFaceImageUrl = await updateNpcFaceImage(
                   conversation.npcFaceImageUrl,
                   npcResponse.mood,
-                  conversation.npcName,
                 );
                 conversation.npcFaceImageUrl = npcFaceImageUrl;
               }
@@ -88,6 +89,7 @@ export async function POST(
                     npcMessage: npcResponse.npcMessage,
                     mood: npcResponse.mood,
                     goalStatus: npcResponse.goalStatus,
+                    goalProgress: npcResponse.goalProgress,
                     hints: npcResponse.hints,
                     sceneImageUrl,
                     npcFaceImageUrl,
@@ -113,6 +115,7 @@ export async function POST(
                     npcMessage: npcResponse.npcMessage,
                     mood: npcResponse.mood,
                     goalStatus: npcResponse.goalStatus,
+                    goalProgress: npcResponse.goalProgress,
                     hints: npcResponse.hints,
                     sceneImageUrl: finalImageUrl,
                     debrief,

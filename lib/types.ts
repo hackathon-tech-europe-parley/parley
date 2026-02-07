@@ -22,14 +22,26 @@ export interface ConversationMessage {
   text: string;
 }
 
+export type ConversationLevel =
+  | "beginner"
+  | "intermediate"
+  | "advanced"
+  | "impossible";
+export type GoalStatus = "ongoing" | "achieved" | "failed";
+export type GoalProgress = 1 | 2 | 3 | 4 | 5;
+
 export interface Conversation {
   scenario: string;
   language: string;
-  level: "beginner" | "intermediate" | "advanced" | "impossible";
+  level: ConversationLevel;
   goal: string;
   npcName: string;
   npcPersonality: string;
   mood: string;
+  goalProgress: GoalProgress;
+  hostilityStreak: number;
+  disengagedStreak: number;
+  constructiveStreak: number;
   history: ConversationMessage[];
   messagesSinceImageRegen: number;
   sceneImageUrl: string;
@@ -38,10 +50,23 @@ export interface Conversation {
   languageCode?: string;
 }
 
+export interface NpcEvaluation {
+  cooperation: number;
+  relevance: number;
+  politeness: number;
+  clarity: number;
+  taskIntent: number;
+  offTopic: boolean;
+  refusal: boolean;
+  hostile: boolean;
+}
+
 export interface NpcResponse {
   npcMessage: string;
   mood: string;
-  goalStatus: "ongoing" | "achieved" | "failed";
+  goalStatus: GoalStatus;
+  goalProgress: GoalProgress;
+  evaluation: NpcEvaluation;
   hints: string[];
 }
 
@@ -64,6 +89,7 @@ export interface ConversationSnapshot {
   goal: string;
   npcName: string;
   mood: string;
+  goalProgress: GoalProgress;
   sceneImageUrl: string;
   npcFaceImageUrl: string;
   history: ConversationMessage[];

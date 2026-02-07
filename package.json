@@ -5,7 +5,7 @@
   "description": "Situational language learning through immersive roleplay",
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -13,7 +13,7 @@
   "dependencies": {
     "@confiture-ai/gradium-sdk-js": "^0.1.1",
     "@fal-ai/client": "^1.2.1",
-    "next": "^15.3.3",
+    "next": "15.5.12",
     "next-intl": "^4.8.2",
     "openai": "^5.8.2",
     "react": "^19.1.0",
