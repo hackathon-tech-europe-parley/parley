@@ -1,5 +1,5 @@
-import type { NpcGender } from "./types";
-import { getGradiumApiKey } from "./env";
+import type { NpcGender } from "../types";
+import { getGradiumApiKey } from "../env";
 
 // Serialize TTS requests to avoid Gradium concurrency limit (max 2 sessions)
 let pending: Promise<unknown> = Promise.resolve();

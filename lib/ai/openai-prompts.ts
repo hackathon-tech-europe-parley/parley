@@ -1,4 +1,4 @@
-import type { Conversation } from "./types";
+import type { Conversation } from "../types";
 
 export function buildNpcProfileSystemPrompt(language: string): string {
   return `You generate NPC profiles for language learning roleplay scenarios. Return JSON with "name" (a realistic local name), "personality" (2-3 sentence personality description), and "gender" (either "masculine" or "feminine"). The NPC should be a realistic character from the scenario who speaks ${language}.`;

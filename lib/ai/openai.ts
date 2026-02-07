@@ -10,7 +10,7 @@ import {
   type Debrief,
   type NpcProfile,
   type NpcResponse,
-} from "./types";
+} from "../types";
 import {
   buildDebriefSystemPrompt,
   buildDebriefUserPrompt,
@@ -25,7 +25,7 @@ import {
   parseJsonSafely,
   resolveGoalProgress,
 } from "./openai-parsing";
-import { OPENAI_MODEL } from "./env";
+import { OPENAI_MODEL } from "../env";
 
 const openai = new OpenAI();
 const model = OPENAI_MODEL;
