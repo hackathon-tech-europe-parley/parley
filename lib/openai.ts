@@ -1,16 +1,30 @@
 import OpenAI from "openai";
 import type {
   Conversation,
-  NpcResponse,
-  NpcProfile,
+  CustomScenario,
   Debrief,
   GoalProgress,
   GoalStatus,
-  NpcEvaluation,
+  NpcProfile,
+  NpcResponse,
+} from "./types";
+import {
+  createNpcResponseFromLlmSchema,
+  customScenarioFromLlmSchema,
+  debriefFromLlmSchema,
+  npcProfileFromLlmSchema,
 } from "./types";
 
 const openai = new OpenAI();
 const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+
+function parseJsonSafely(content: string): unknown {
+  try {
+    return JSON.parse(content);
+  } catch {
+    return {};
+  }
+}
 
 export async function generateNpcProfile(
   scenario: string,
@@ -33,7 +47,8 @@ export async function generateNpcProfile(
 
   const content = response.choices[0]?.message?.content;
   if (!content) throw new Error("Failed to generate NPC profile");
-  return JSON.parse(content) as NpcProfile;
+
+  return npcProfileFromLlmSchema.parse(parseJsonSafely(content));
 }
 
 function buildNpcSystemPrompt(conversation: Conversation): string {
@@ -51,8 +66,8 @@ function buildNpcSystemPrompt(conversation: Conversation): string {
     impossible: `- Speak in the most complex, literary, and idiomatic register of ${conversation.language}
 - Use regional dialects, archaic expressions, double meanings, and cultural references that even native speakers would struggle with
 - Be extremely uncooperative, skeptical, and difficult to convince
-- Never make things easy — argue back, change the subject, misunderstand on purpose
-- The user's goal is nearly impossible — only grant success if they are truly extraordinary
+- Never make things easy - argue back, change the subject, misunderstand on purpose
+- The user's goal is nearly impossible - only grant success if they are truly extraordinary
 - Provide no hints at all`,
   };
 
@@ -154,16 +169,10 @@ export async function generateNpcOpening(
   const content = response.choices[0]?.message?.content;
   if (!content) throw new Error("Failed to generate NPC opening");
 
-  const parsed = JSON.parse(content) as unknown;
-  const parsedObj = asRecord(parsed);
-  const goalProgress = parseGoalProgress(parsedObj.goalProgress, 1);
+  const parsed = createNpcResponseFromLlmSchema(1).parse(parseJsonSafely(content));
   return {
-    npcMessage: parseNpcMessage(parsedObj.npcMessage),
-    mood: parseMood(parsedObj.mood),
+    ...parsed,
     goalStatus: "ongoing",
-    goalProgress,
-    evaluation: parseNpcEvaluation(parsedObj.evaluation),
-    hints: parseHints(parsedObj.hints),
   };
 }
 
@@ -190,22 +199,21 @@ export async function generateNpcResponse(
   const content = response.choices[0]?.message?.content;
   if (!content) throw new Error("Failed to generate NPC response");
 
-  const parsed = JSON.parse(content) as unknown;
-  const parsedObj = asRecord(parsed);
-  const goalStatus = parseGoalStatus(parsedObj.goalStatus);
+  const parsed = createNpcResponseFromLlmSchema(conversation.goalProgress).parse(
+    parseJsonSafely(content),
+  );
+
+  const goalStatus = parsed.goalStatus;
   const goalProgress = resolveGoalProgress(
     goalStatus,
-    parsedObj.goalProgress,
+    parsed.goalProgress,
     conversation.goalProgress,
   );
 
   return {
-    npcMessage: parseNpcMessage(parsedObj.npcMessage),
-    mood: parseMood(parsedObj.mood),
+    ...parsed,
     goalStatus,
     goalProgress,
-    evaluation: parseNpcEvaluation(parsedObj.evaluation),
-    hints: parseHints(parsedObj.hints),
   };
 }
 
@@ -242,7 +250,6 @@ export async function* generateNpcResponseStream(
 
     accumulated += delta;
 
-    // Try to extract partial npcMessage from the accumulating JSON
     const extracted = extractPartialNpcMessage(accumulated);
     if (extracted && extracted !== lastExtracted) {
       const newText = extracted.slice(lastExtracted.length);
@@ -253,53 +260,25 @@ export async function* generateNpcResponseStream(
     }
   }
 
-  // Parse the final complete JSON
-  const parsed = JSON.parse(accumulated) as unknown;
-  const parsedObj = asRecord(parsed);
-  const goalStatus = parseGoalStatus(parsedObj.goalStatus);
+  const parsed = createNpcResponseFromLlmSchema(conversation.goalProgress).parse(
+    parseJsonSafely(accumulated),
+  );
+
+  const goalStatus = parsed.goalStatus;
   const goalProgress = resolveGoalProgress(
     goalStatus,
-    parsedObj.goalProgress,
+    parsed.goalProgress,
     conversation.goalProgress,
   );
-  const data: NpcResponse = {
-    npcMessage: parseNpcMessage(parsedObj.npcMessage),
-    mood: parseMood(parsedObj.mood),
-    goalStatus,
-    goalProgress,
-    evaluation: parseNpcEvaluation(parsedObj.evaluation),
-    hints: parseHints(parsedObj.hints),
+
+  yield {
+    type: "complete",
+    data: {
+      ...parsed,
+      goalStatus,
+      goalProgress,
+    },
   };
-
-  yield { type: "complete", data };
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return {};
-}
-
-function parseNpcMessage(value: unknown): string {
-  if (typeof value === "string" && value.trim().length > 0) {
-    return value;
-  }
-  return "...";
-}
-
-function parseMood(value: unknown): string {
-  if (typeof value === "string" && value.trim().length > 0) {
-    return value.trim();
-  }
-  return "neutral";
-}
-
-function parseGoalStatus(value: unknown): GoalStatus {
-  if (value === "achieved" || value === "failed" || value === "ongoing") {
-    return value;
-  }
-  return "ongoing";
 }
 
 function parseGoalProgress(
@@ -335,55 +314,17 @@ function resolveGoalProgress(
   if (status === "achieved") {
     return 5;
   }
+  if (status === "failed") {
+    return 1;
+  }
   return parseGoalProgress(rawProgress, fallback);
 }
 
-function parseHints(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value.filter((hint): hint is string => typeof hint === "string");
-}
-
-function parseNpcEvaluation(value: unknown): NpcEvaluation {
-  const parsedObj = asRecord(value);
-  return {
-    cooperation: parseUnitScore(parsedObj.cooperation, 0.5),
-    relevance: parseUnitScore(parsedObj.relevance, 0.5),
-    politeness: parseUnitScore(parsedObj.politeness, 0.5),
-    clarity: parseUnitScore(parsedObj.clarity, 0.5),
-    taskIntent: parseUnitScore(parsedObj.taskIntent, 0.5),
-    offTopic: parseBoolean(parsedObj.offTopic),
-    refusal: parseBoolean(parsedObj.refusal),
-    hostile: parseBoolean(parsedObj.hostile),
-  };
-}
-
-function parseUnitScore(value: unknown, fallback: number): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return fallback;
-  }
-  return Math.min(1, Math.max(0, value));
-}
-
-function parseBoolean(value: unknown): boolean {
-  if (typeof value === "boolean") {
-    return value;
-  }
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    return normalized === "true";
-  }
-  return false;
-}
-
 function extractPartialNpcMessage(partial: string): string | null {
-  // Look for "npcMessage": " or "npcMessage":" and extract the value so far
   const key = '"npcMessage"';
   const keyIndex = partial.indexOf(key);
   if (keyIndex === -1) return null;
 
-  // Find the opening quote of the value
   const afterKey = partial.slice(keyIndex + key.length);
   const colonIndex = afterKey.indexOf(":");
   if (colonIndex === -1) return null;
@@ -391,9 +332,8 @@ function extractPartialNpcMessage(partial: string): string | null {
   const afterColon = afterKey.slice(colonIndex + 1).trimStart();
   if (!afterColon.startsWith('"')) return null;
 
-  // Extract string value, handling escape sequences
   let result = "";
-  let i = 1; // skip opening quote
+  let i = 1;
   while (i < afterColon.length) {
     const ch = afterColon[i];
     if (ch === "\\") {
@@ -410,25 +350,12 @@ function extractPartialNpcMessage(partial: string): string | null {
       }
       break;
     }
-    if (ch === '"') break; // closing quote
+    if (ch === '"') break;
     result += ch;
     i++;
   }
 
   return result || null;
-}
-
-export interface CustomScenario {
-  title: string;
-  description: string;
-  emoji: string;
-  scenario: string;
-  goals: {
-    beginner: string;
-    intermediate: string;
-    advanced: string;
-    impossible: string;
-  };
 }
 
 export async function generateCustomScenario(
@@ -464,7 +391,8 @@ The goals should escalate from straightforward to ridiculous. The impossible goa
 
   const content = response.choices[0]?.message?.content;
   if (!content) throw new Error("Failed to generate custom scenario");
-  return JSON.parse(content) as CustomScenario;
+
+  return customScenarioFromLlmSchema.parse(parseJsonSafely(content));
 }
 
 export async function generateDebrief(
@@ -504,10 +432,10 @@ Return JSON with:
   const content = response.choices[0]?.message?.content;
   if (!content) throw new Error("Failed to generate debrief");
 
-  const parsed = JSON.parse(content);
+  const parsed = debriefFromLlmSchema.parse(parseJsonSafely(content));
   return {
-    narrative: parsed.narrative || "The conversation has ended.",
-    keyPhrases: parsed.keyPhrases || [],
+    narrative: parsed.narrative,
+    keyPhrases: parsed.keyPhrases,
     goalAchieved: finalStatus === "achieved",
   };
 }

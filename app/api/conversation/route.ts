@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createConversationSchema } from "@/lib/types";
+import { createConversationResponseSchema, createConversationSchema } from "@/lib/types";
 import type { Conversation } from "@/lib/types";
 import { generateId, setConversation, setHints } from "@/lib/conversations";
 import { generateSceneImage, generateNpcFaceImage } from "@/lib/fal";
@@ -7,7 +7,14 @@ import { generateNpcProfile, generateNpcOpening } from "@/lib/openai";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
+    if (body === null) {
+      return NextResponse.json(
+        { error: "Invalid JSON body" },
+        { status: 400 },
+      );
+    }
+
     const parsed = createConversationSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
@@ -62,7 +69,7 @@ export async function POST(request: Request) {
     setConversation(conversationId, conversation);
     setHints(conversationId, opening.hints);
 
-    return NextResponse.json({
+    return NextResponse.json(createConversationResponseSchema.parse({
       conversationId,
       sceneImageUrl,
       npcFaceImageUrl,
@@ -75,7 +82,7 @@ export async function POST(request: Request) {
       goal,
       language,
       level,
-    });
+    }));
   } catch (error) {
     console.error("Failed to create conversation:", error);
     return NextResponse.json(
