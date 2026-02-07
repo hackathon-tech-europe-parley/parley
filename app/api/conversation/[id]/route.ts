@@ -19,7 +19,7 @@ export async function GET(
     );
   }
   const id = parsedParams.data;
-  const conversation = getConversation(id);
+  const conversation = await getConversation(id);
 
   if (!conversation) {
     return NextResponse.json(
@@ -41,7 +41,7 @@ export async function GET(
     npcFaceImageUrl: conversation.npcFaceImageUrl,
     npcGender: conversation.npcGender,
     history: conversation.history,
-    hints: getHints(id),
+    hints: await getHints(id),
     scenarioKey: conversation.scenarioKey,
     languageCode: conversation.languageCode,
   };
