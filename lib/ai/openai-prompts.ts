@@ -1,4 +1,5 @@
 import type { Conversation } from "../types";
+import { getLevelPromptConfig } from "./level-prompts";
 
 function getInPersonContext(conversation: Conversation): string {
   switch (conversation.scenarioKey) {
@@ -41,73 +42,21 @@ export function buildNpcProfileUserPrompt(scenario: string): string {
 
 export function buildNpcOpeningUserPrompt(conversation: Conversation): string {
   const inPersonContext = getInPersonContext(conversation);
-  return [
-    `Start the roleplay with a short, neutral, generic greeting in ${conversation.language}.`,
-    "Ask one simple question about what the user needs.",
-    'Keep mood neutral and goalStatus "ongoing".',
-    `Physical context: ${inPersonContext}`,
-    "Speak like a real person meeting them there, not a remote assistant.",
-  ].join(" ");
+  const config = getLevelPromptConfig(
+    conversation.level,
+    conversation.language,
+    inPersonContext,
+  );
+  return config.openingInstruction;
 }
 
 export function buildNpcSystemPrompt(conversation: Conversation): string {
   const inPersonContext = getInPersonContext(conversation);
-  const replySuggestionRules = {
-    beginner: `- Generate exactly 4 "replySuggestions": full sentences in ${conversation.language} the user could say next. Keep them simple and varied (one polite, one direct, one asking a question, one playful). These are dialogue choices like in a visual novel.`,
-    intermediate: `- Generate exactly 3 "replySuggestions": natural sentences in ${conversation.language} the user could say next. Vary tone and approach. These are dialogue choices like in a visual novel.`,
-    advanced: `- Generate exactly 1 "replySuggestions": a single natural sentence in ${conversation.language} as a possible reply. This is a dialogue choice hint.`,
-    impossible: `- Do NOT generate any "replySuggestions" (empty array). The user gets no help at this level.`,
-  };
-
-  const levelRules = {
-    beginner: `- Use very simple, short sentences in ${conversation.language}
-- Be patient and forgiving with grammar mistakes
-${replySuggestionRules.beginner}`,
-    intermediate: `- Speak naturally in ${conversation.language} but avoid very dense idioms
-- Be moderately tolerant of mistakes
-${replySuggestionRules.intermediate}`,
-    advanced: `- Speak naturally with idioms and colloquial phrasing in ${conversation.language}
-- Be demanding and realistic
-${replySuggestionRules.advanced}`,
-    impossible: `- Speak in a very complex and idiomatic register of ${conversation.language}
-- Be skeptical and hard to convince
-- Keep progress conservative
-${replySuggestionRules.impossible}`,
-  };
-
-  const boundaryRulesByLevel = {
-    beginner: `- Keep tone respectful by default
-- If the user is rude, become firm first; only use rude wording when mood is "annoyed" or "angry"
-- If taboo words/topics appear, react strongly and move mood to annoyed/angry
-- If hostility/taboo behavior repeats for 4 turns, set "goalStatus" to "failed"`,
-    intermediate: `- Keep tone respectful by default
-- If the user is rude, set clear boundaries and become curt when mood is "annoyed"
-- If taboo words/topics appear, react strongly and move mood to annoyed/angry
-- If hostility/taboo behavior repeats for 2 turns, set "goalStatus" to "failed"`,
-    advanced: `- Keep tone professional by default
-- If the user is rude or hostile, become blunt and confrontational only when mood is "annoyed" or "angry"
-- If taboo words/topics appear, react strongly and treat it as severe hostility
-- At this level, severe hostility/taboo can fail in 1 turn; repeated hostility/taboo should fail quickly`,
-    impossible: `- Default tone is skeptical and difficult, but not constantly abusive
-- Use openly rude language only in "annoyed" or "angry" mood
-- Any taboo words/topics should sharply reduce progress and push mood to angry
-- A single clear hostility/taboo turn can fail the goal`,
-  };
-
-  const evaluationRulesByLevel = {
-    beginner: `- Mood baseline: neutral to friendly
-- Keep progress optimistic if user is trying
-- Use "failed" only after repeated refusal/disrespect/taboo violations`,
-    intermediate: `- Mood baseline: neutral/professional
-- Progress should reflect relevance and cooperation over grammar perfection
-- Use "failed" when disrespect or taboo violations are sustained`,
-    advanced: `- Mood baseline: demanding and direct
-- Require coherent, relevant replies for progress >= 3
-- Repeated evasion/disrespect/taboo violations should fail`,
-    impossible: `- Mood baseline: skeptical
-- Keep progress mostly in 1-3, rarely 4, and 5 only for exceptional performance
-- Grant "achieved" only for truly outstanding turns`,
-  };
+  const config = getLevelPromptConfig(
+    conversation.level,
+    conversation.language,
+    inPersonContext,
+  );
 
   return `You are ${conversation.npcName}, a character in a language-learning roleplay.
 
@@ -116,10 +65,7 @@ Scenario: ${conversation.scenario}
 Current mood: ${conversation.mood}
 
 Context:
-- The scenario has already started, but do not force conflict every turn.
-- Start from the current mood. Default conversation style should stay respectful unless mood shifts.
-- Physical encounter context: ${inPersonContext}
-- Speak as someone physically present with the user in this place (real-world interaction, not chatbot support).
+${config.contextBehavior}
 
 Rules:
 - Respond only in ${conversation.language}
@@ -158,13 +104,13 @@ French register note:
 - When mood is happy in French, a light playful/flirty vibe is allowed if natural to the scene.
 
 Level adaptation (user is ${conversation.level}):
-${levelRules[conversation.level]}
+${config.languageRules}
 
 Conversation boundaries:
-${boundaryRulesByLevel[conversation.level]}
+${config.boundaryRules}
 
 Difficulty-scaled evaluation:
-${evaluationRulesByLevel[conversation.level]}
+${config.evaluationRules}
 
 Safety:
 - Reframe unsafe requests toward respectful communication
