@@ -40,8 +40,12 @@ export async function GET(
     sceneImageUrl: conversation.sceneImageUrl,
     npcFaceImageUrl: conversation.npcFaceImageUrl,
     npcGender: conversation.npcGender,
+    goalStatus: conversation.goalStatus ?? "ongoing",
+    debrief: conversation.debrief,
     history: conversation.history,
     hints: await getHints(id),
+    evaluationHistory: conversation.evaluationHistory ?? [],
+    objectiveHistory: conversation.objectiveHistory ?? [],
     scenarioKey: conversation.scenarioKey,
     languageCode: conversation.languageCode,
   };

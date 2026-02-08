@@ -1,6 +1,10 @@
 import { z } from "zod";
 import type { GoalProgress } from "./constants";
-import type { NpcEvaluation } from "./models";
+import type {
+  NpcEvaluation,
+  ObjectiveAssessment,
+  NpcSafetyAssessment,
+} from "./models";
 import { goalStatusSchema, npcGenderSchema } from "./schemas";
 
 const DEFAULT_NPC_EVALUATION: NpcEvaluation = {
@@ -12,6 +16,19 @@ const DEFAULT_NPC_EVALUATION: NpcEvaluation = {
   offTopic: false,
   refusal: false,
   hostile: false,
+};
+
+const DEFAULT_OBJECTIVE_ASSESSMENT: ObjectiveAssessment = {
+  objectiveScore: 0.1,
+  objectiveMet: false,
+  confidence: 0.5,
+  checkpoints: [],
+  blockers: [],
+};
+
+const DEFAULT_NPC_SAFETY_ASSESSMENT: NpcSafetyAssessment = {
+  badWordsUsed: false,
+  tabooTopicUsed: false,
 };
 
 const unitScoreFromUnknownSchema = z.coerce
@@ -53,6 +70,67 @@ export const npcEvaluationFromLlmSchema = z
     hostile: booleanFromUnknownSchema.catch(false),
   })
   .catch(DEFAULT_NPC_EVALUATION);
+
+export const objectiveAssessmentFromLlmSchema = z
+  .object({
+    objectiveScore: unitScoreFromUnknownSchema.catch(0.1),
+    objectiveMet: booleanFromUnknownSchema.catch(false),
+    confidence: unitScoreFromUnknownSchema.catch(0.5),
+    checkpoints: z
+      .array(
+        z
+          .object({
+            id: z.string().trim().min(1).catch("checkpoint"),
+            met: booleanFromUnknownSchema.catch(false),
+          })
+          .transform((value) => ({
+            id: value.id,
+            met: value.met,
+          })),
+      )
+      .catch([]),
+    blockers: z
+      .array(z.string())
+      .transform((blockers) =>
+        blockers.map((value) => value.trim()).filter(Boolean),
+      )
+      .catch([]),
+  })
+  .transform((value) => ({
+    ...value,
+    objectiveScore: value.objectiveMet
+      ? Math.max(value.objectiveScore, 0.9)
+      : value.objectiveScore,
+  }))
+  .catch(DEFAULT_OBJECTIVE_ASSESSMENT);
+
+export const npcSafetyFromLlmSchema = z
+  .preprocess((raw) => {
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      const candidate = raw as Record<string, unknown>;
+      return {
+        badWordsUsed:
+          candidate.badWordsUsed ??
+          candidate.badLanguage ??
+          candidate.toxicLanguage ??
+          candidate.profanity ??
+          candidate.insultDetected ??
+          false,
+        tabooTopicUsed:
+          candidate.tabooTopicUsed ??
+          candidate.tabooTopic ??
+          candidate.disallowedTopic ??
+          candidate.forbiddenTopic ??
+          candidate.sensitiveTopic ??
+          false,
+      };
+    }
+    return raw;
+  }, z.object({
+    badWordsUsed: booleanFromUnknownSchema.catch(false),
+    tabooTopicUsed: booleanFromUnknownSchema.catch(false),
+  }))
+  .catch(DEFAULT_NPC_SAFETY_ASSESSMENT);
 
 export const npcProfileFromLlmSchema = z
   .object({
@@ -171,6 +249,8 @@ export function createNpcResponseFromLlmSchema(fallbackProgress: GoalProgress) {
         .transform((value) => clampGoalProgress(value, fallbackProgress))
         .catch(fallbackProgress),
       evaluation: npcEvaluationFromLlmSchema,
+      objective: objectiveAssessmentFromLlmSchema,
+      safety: npcSafetyFromLlmSchema,
       hints: hintsFromUnknownSchema,
     })
     .catch({
@@ -179,6 +259,8 @@ export function createNpcResponseFromLlmSchema(fallbackProgress: GoalProgress) {
       goalStatus: "ongoing",
       goalProgress: fallbackProgress,
       evaluation: DEFAULT_NPC_EVALUATION,
+      objective: DEFAULT_OBJECTIVE_ASSESSMENT,
+      safety: DEFAULT_NPC_SAFETY_ASSESSMENT,
       hints: [],
     });
 }

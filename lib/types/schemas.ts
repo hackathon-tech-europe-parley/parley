@@ -97,6 +97,30 @@ export const npcEvaluationSchema = z
   })
   .strict();
 
+export const objectiveCheckpointSchema = z
+  .object({
+    id: nonEmptyStringSchema,
+    met: z.boolean(),
+  })
+  .strict();
+
+export const objectiveAssessmentSchema = z
+  .object({
+    objectiveScore: z.number().min(0).max(1),
+    objectiveMet: z.boolean(),
+    confidence: z.number().min(0).max(1),
+    checkpoints: z.array(objectiveCheckpointSchema),
+    blockers: z.array(nonEmptyStringSchema),
+  })
+  .strict();
+
+export const npcSafetyAssessmentSchema = z
+  .object({
+    badWordsUsed: z.boolean(),
+    tabooTopicUsed: z.boolean(),
+  })
+  .strict();
+
 export const npcResponseSchema = z
   .object({
     npcMessage: nonEmptyStringSchema,
@@ -104,6 +128,8 @@ export const npcResponseSchema = z
     goalStatus: goalStatusSchema,
     goalProgress: goalProgressSchema,
     evaluation: npcEvaluationSchema,
+    objective: objectiveAssessmentSchema,
+    safety: npcSafetyAssessmentSchema,
     hints: z.array(nonEmptyStringSchema),
   })
   .strict();
@@ -128,6 +154,30 @@ export const debriefSchema = z
     narrative: nonEmptyStringSchema,
     keyPhrases: z.array(debriefPhraseSchema),
     goalAchieved: z.boolean(),
+    metrics: z
+      .object({
+        turnsAnalyzed: z.number().int().min(0),
+        evaluationAverages: z
+          .object({
+            cooperation: z.number().min(0).max(1),
+            relevance: z.number().min(0).max(1),
+            politeness: z.number().min(0).max(1),
+            clarity: z.number().min(0).max(1),
+            taskIntent: z.number().min(0).max(1),
+          })
+          .strict(),
+        objective: z
+          .object({
+            score: z.number().min(0).max(1),
+            confidence: z.number().min(0).max(1),
+            met: z.boolean(),
+            checkpoints: z.array(objectiveCheckpointSchema),
+            blockers: z.array(nonEmptyStringSchema),
+          })
+          .strict(),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 
@@ -166,6 +216,12 @@ export const conversationSchema = z
     sceneImageUrl: nonEmptyStringSchema,
     npcFaceImageUrl: z.string(),
     npcGender: npcGenderSchema,
+    goalStatus: goalStatusSchema.optional(),
+    debrief: debriefSchema.optional(),
+    turnCount: z.number().int().min(0).optional(),
+    tabooStrike: z.number().int().min(0).optional(),
+    evaluationHistory: z.array(npcEvaluationSchema).optional(),
+    objectiveHistory: z.array(objectiveAssessmentSchema).optional(),
     scenarioKey: nonEmptyStringSchema.optional(),
     languageCode: languageCodeSchema.optional(),
   })
@@ -184,8 +240,12 @@ export const conversationSnapshotSchema = z
     sceneImageUrl: nonEmptyStringSchema,
     npcFaceImageUrl: z.string(),
     npcGender: npcGenderSchema,
+    goalStatus: goalStatusSchema.optional(),
+    debrief: debriefSchema.optional(),
     history: z.array(conversationMessageSchema),
     hints: z.array(nonEmptyStringSchema),
+    evaluationHistory: z.array(npcEvaluationSchema).optional(),
+    objectiveHistory: z.array(objectiveAssessmentSchema).optional(),
     scenarioKey: nonEmptyStringSchema.optional(),
     languageCode: languageCodeSchema.optional(),
   })
@@ -238,6 +298,8 @@ export const messageStreamCompletePayloadSchema = z
     mood: nonEmptyStringSchema,
     goalStatus: goalStatusSchema,
     goalProgress: goalProgressSchema,
+    evaluation: npcEvaluationSchema,
+    objective: objectiveAssessmentSchema,
     hints: z.array(nonEmptyStringSchema),
     sceneImageUrl: nonEmptyStringSchema,
     npcFaceImageUrl: z.string().optional(),

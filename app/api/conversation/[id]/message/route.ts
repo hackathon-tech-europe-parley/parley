@@ -2,12 +2,15 @@ import { getConversation, setConversation, setHints } from "@/lib/storage";
 import { generateSceneImage, generateNpcResponseStream, generateDebrief } from "@/lib/ai";
 import { getNpcFaceAssetUrl, applyNpcPolicy } from "@/lib/game";
 import {
+  type GoalStatus,
   idParamSchema,
   messageStreamCompletePayloadSchema,
   messageStreamErrorPayloadSchema,
   messageStreamTokenPayloadSchema,
   sendMessageSchema,
 } from "@/lib/types";
+
+const MAX_USER_TURNS = 15;
 
 export async function POST(
   request: Request,
@@ -42,6 +45,21 @@ export async function POST(
       },
     );
   }
+  const currentGoalStatus = conversation.goalStatus ?? "ongoing";
+  if (currentGoalStatus !== "ongoing") {
+    return new Response(
+      formatSSE(
+        "error",
+        messageStreamErrorPayloadSchema.parse({
+          error: "Conversation has already ended",
+        }),
+      ),
+      {
+        status: 409,
+        headers: sseHeaders(),
+      },
+    );
+  }
 
   const body = await request.json().catch(() => null);
   if (body === null) {
@@ -72,6 +90,13 @@ export async function POST(
 
   const { message } = parsed.data;
   conversation.history.push({ role: "user", text: message });
+  const previousTurnCount = Number.isFinite(conversation.turnCount)
+    ? Number(conversation.turnCount)
+    : 0;
+  conversation.turnCount = previousTurnCount + 1;
+  conversation.goalStatus = "ongoing";
+  conversation.debrief = undefined;
+  await setConversation(id, conversation);
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -89,7 +114,31 @@ export async function POST(
               ),
             );
           } else if (event.type === "complete") {
-            const npcResponse = applyNpcPolicy(conversation, event.data);
+            let npcResponse = applyNpcPolicy(conversation, event.data);
+            const exceededTurnLimit =
+              conversation.turnCount !== undefined &&
+              conversation.turnCount >= MAX_USER_TURNS &&
+              npcResponse.goalStatus === "ongoing";
+            if (exceededTurnLimit) {
+              npcResponse = {
+                ...npcResponse,
+                goalStatus: "failed",
+                goalProgress: 1,
+                mood: conversation.level === "beginner" ? "annoyed" : "skeptical",
+                objective: {
+                  ...npcResponse.objective,
+                  objectiveMet: false,
+                  objectiveScore: Math.min(npcResponse.objective.objectiveScore, 0.25),
+                  blockers: Array.from(
+                    new Set([
+                      ...npcResponse.objective.blockers,
+                      "turn_limit_reached",
+                    ]),
+                  ),
+                },
+                hints: [],
+              };
+            }
 
             const npcFaceImageUrl = getNpcFaceAssetUrl(
               conversation.scenarioKey ?? "__custom__",
@@ -105,27 +154,36 @@ export async function POST(
             });
             conversation.mood = npcResponse.mood;
             conversation.goalProgress = npcResponse.goalProgress;
-            conversation.messagesSinceImageRegen++;
             conversation.npcFaceImageUrl = npcFaceImageUrl;
+            conversation.evaluationHistory = [
+              ...(conversation.evaluationHistory ?? []),
+              npcResponse.evaluation,
+            ];
+            conversation.objectiveHistory = [
+              ...(conversation.objectiveHistory ?? []),
+              npcResponse.objective,
+            ];
 
             await setHints(id, npcResponse.hints);
 
-            let sceneImageUrl = conversation.sceneImageUrl;
-            if (conversation.messagesSinceImageRegen >= 3) {
-              const moodPrompt = `Photorealistic background scene: ${conversation.scenario}. No people, just the environment and setting. First-person perspective.`;
-              sceneImageUrl = await generateSceneImage(moodPrompt);
+            if (npcResponse.goalStatus === "ongoing") {
+              const moodPrompt = buildScenePrompt(conversation.scenario, npcResponse.mood);
+              const sceneImageUrl = await generateSceneImageSafely(
+                moodPrompt,
+                conversation.sceneImageUrl,
+              );
               conversation.sceneImageUrl = sceneImageUrl;
               conversation.messagesSinceImageRegen = 0;
-            }
-
-            await setConversation(id, conversation);
-
-            if (npcResponse.goalStatus === "ongoing") {
+              conversation.goalStatus = "ongoing";
+              conversation.debrief = undefined;
+              await setConversation(id, conversation);
               const completePayload = messageStreamCompletePayloadSchema.parse({
                 npcMessage: npcResponse.npcMessage,
                 mood: npcResponse.mood,
                 goalStatus: npcResponse.goalStatus,
                 goalProgress: npcResponse.goalProgress,
+                evaluation: npcResponse.evaluation,
+                objective: npcResponse.objective,
                 hints: npcResponse.hints,
                 sceneImageUrl,
                 npcFaceImageUrl,
@@ -136,25 +194,37 @@ export async function POST(
                 ),
               );
             } else {
-              // Goal achieved or failed — generate debrief
+              const finalStatus = npcResponse.goalStatus;
               const debrief = await generateDebrief(
                 conversation,
-                npcResponse.goalStatus,
+                finalStatus,
               );
-              const finalImagePrompt =
-                npcResponse.goalStatus === "achieved"
-                  ? `Photorealistic background scene: ${conversation.scenario}. No people, just the environment and setting. First-person perspective.`
-                  : `Photorealistic background scene: ${conversation.scenario}. No people, just the environment and setting. First-person perspective.`;
-              const finalImageUrl =
-                await generateSceneImage(finalImagePrompt);
+              const finalImagePrompt = buildScenePrompt(
+                conversation.scenario,
+                npcResponse.mood,
+                finalStatus,
+              );
+              const finalImageUrl = await generateSceneImageSafely(
+                finalImagePrompt,
+                conversation.sceneImageUrl,
+              );
+
+              conversation.goalStatus = finalStatus;
+              conversation.debrief = debrief;
+              conversation.sceneImageUrl = finalImageUrl;
+              conversation.messagesSinceImageRegen = 0;
+              await setConversation(id, conversation);
 
               const completePayload = messageStreamCompletePayloadSchema.parse({
                 npcMessage: npcResponse.npcMessage,
                 mood: npcResponse.mood,
                 goalStatus: npcResponse.goalStatus,
                 goalProgress: npcResponse.goalProgress,
+                evaluation: npcResponse.evaluation,
+                objective: npcResponse.objective,
                 hints: npcResponse.hints,
                 sceneImageUrl: finalImageUrl,
+                npcFaceImageUrl,
                 debrief,
               });
 
@@ -197,4 +267,62 @@ function sseHeaders(): HeadersInit {
 
 function formatSSE(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
+function buildScenePrompt(
+  scenario: string,
+  mood: string,
+  outcome?: GoalStatus,
+): string {
+  const moodTone = describeMoodTone(mood);
+  const outcomeTone =
+    outcome === "achieved"
+      ? "The scene should feel resolved and calmer than before."
+      : outcome === "failed"
+        ? "The scene should feel tense, unresolved, and emotionally heavy."
+        : "";
+
+  return [
+    `Photorealistic background scene: ${scenario}.`,
+    "No people, just the environment and setting. First-person perspective.",
+    `Atmosphere: ${moodTone}.`,
+    outcomeTone,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function describeMoodTone(mood: string): string {
+  switch (mood) {
+    case "happy":
+      return "uplifting and optimistic";
+    case "friendly":
+      return "welcoming and calm";
+    case "neutral":
+      return "balanced and realistic";
+    case "skeptical":
+      return "wary and uncertain";
+    case "annoyed":
+      return "frustrated and tense";
+    case "angry":
+      return "hostile and intense";
+    case "sad":
+      return "somber and subdued";
+    case "surprised":
+      return "suddenly tense and alert";
+    default:
+      return "balanced and realistic";
+  }
+}
+
+async function generateSceneImageSafely(
+  prompt: string,
+  fallbackImageUrl: string,
+): Promise<string> {
+  try {
+    return await generateSceneImage(prompt);
+  } catch (error) {
+    console.error("Scene image regeneration failed, using previous background.", error);
+    return fallbackImageUrl;
+  }
 }

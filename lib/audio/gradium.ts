@@ -1,5 +1,5 @@
 import type { NpcGender } from "../types";
-import { getGradiumApiKey } from "../env";
+import { getGradiumApiKey, getGradiumTtsPaddingBonus } from "../env";
 
 // Serialize TTS requests to avoid Gradium concurrency limit (max 2 sessions)
 let pending: Promise<unknown> = Promise.resolve();
@@ -35,19 +35,40 @@ export function synthesizeSpeech(
 ): Promise<ArrayBuffer> {
   return enqueue(async () => {
     const apiKey = getGradiumApiKey();
-    const res = await fetch("https://eu.api.gradium.ai/api/post/speech/tts", {
+    const basePayload = {
+      text,
+      voice_id: getVoiceId(languageCode, gender),
+      output_format: "wav",
+      only_audio: true,
+    };
+    const fastPayload = {
+      ...basePayload,
+      // Gradium expects json_config as a JSON-encoded string.
+      json_config: JSON.stringify({
+        // Lower padding_bonus makes delivery faster.
+        padding_bonus: getGradiumTtsPaddingBonus(),
+      }),
+    };
+    let res = await fetch("https://eu.api.gradium.ai/api/post/speech/tts", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
       },
-      body: JSON.stringify({
-        text,
-        voice_id: getVoiceId(languageCode, gender),
-        output_format: "wav",
-        only_audio: true,
-      }),
+      body: JSON.stringify(fastPayload),
     });
+
+    // If this voice/model does not support padding_bonus, retry with plain payload.
+    if (!res.ok && (res.status === 400 || res.status === 422)) {
+      res = await fetch("https://eu.api.gradium.ai/api/post/speech/tts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+        },
+        body: JSON.stringify(basePayload),
+      });
+    }
 
     if (!res.ok) {
       const body = await res.text().catch(() => "");
