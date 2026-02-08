@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { DM_Sans, JetBrains_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
@@ -51,10 +52,13 @@ export default async function LocaleLayout({ children, params }: Props) {
           <header className="sticky top-0 z-40 flex-shrink-0 border-b border-slate-800/50 bg-slate-950/90 backdrop-blur-xl">
             <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-3 sm:px-4 md:px-6">
               <Link href="/" className="group flex items-center gap-2.5">
-                <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all group-hover:shadow-blue-500/40 group-hover:scale-105">
-                  P
-                  <div className="absolute inset-0 rounded-lg bg-white/10 opacity-0 transition-opacity group-hover:opacity-100" />
-                </div>
+                <Image
+                  src="/assets/logo.png"
+                  alt="Parley"
+                  width={32}
+                  height={32}
+                  className="rounded-lg shadow-lg shadow-blue-600/20 transition-all group-hover:shadow-blue-500/40 group-hover:scale-105"
+                />
                 <span className="text-base font-semibold tracking-tight text-white sm:text-lg">
                   Parley
                 </span>
