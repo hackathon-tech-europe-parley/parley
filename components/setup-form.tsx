@@ -283,16 +283,19 @@ export function SetupForm() {
                       <span className="mt-1 h-4 w-4 flex-shrink-0 animate-spin rounded-full border-2 border-blue-400/30 border-t-blue-400" />
                     )}
                   </div>
-                  <div className={`mt-1 rounded-lg px-3 py-2 text-xs leading-relaxed transition-all duration-300 ${
+                  <div className={`mt-3 rounded-lg border px-3 py-2.5 text-sm leading-relaxed transition-all duration-300 ${
                     isSelected
                       ? level === "impossible"
-                        ? "bg-red-600/15 text-red-300"
-                        : "bg-blue-600/15 text-blue-300"
+                        ? "border-red-500/40 bg-red-600/20 text-red-200"
+                        : "border-blue-500/40 bg-blue-600/20 text-blue-200"
                       : level === "impossible"
-                        ? "bg-red-900/20 text-red-400/70"
-                        : "bg-slate-800/50 text-slate-500"
+                        ? "border-red-800/30 bg-red-900/25 text-red-300/90"
+                        : "border-blue-800/30 bg-blue-900/25 text-blue-300/90"
                   }`}>
-                    <span className="font-medium">{t("goalLabel")}</span> {goal}
+                    <div>
+                      <span className="font-semibold">{t("goalLabel")} </span>
+                      <span className="font-medium">{goal}</span>
+                    </div>
                   </div>
                 </button>
               );
@@ -324,16 +327,19 @@ export function SetupForm() {
                     <div className="text-sm text-slate-400">{customScenario.description}</div>
                   </div>
                 </div>
-                <div className={`mt-1 rounded-lg px-3 py-2 text-xs leading-relaxed transition-all duration-300 ${
+                <div className={`mt-3 rounded-lg border px-3 py-2.5 text-sm leading-relaxed transition-all duration-300 ${
                   selectedScenario?.key === "__custom__"
                     ? level === "impossible"
-                      ? "bg-red-600/15 text-red-300"
-                      : "bg-blue-600/15 text-blue-300"
+                      ? "border-red-500/40 bg-red-600/20 text-red-200"
+                      : "border-blue-500/40 bg-blue-600/20 text-blue-200"
                     : level === "impossible"
-                      ? "bg-red-900/20 text-red-400/70"
-                      : "bg-slate-800/50 text-slate-500"
+                      ? "border-red-800/30 bg-red-900/25 text-red-300/90"
+                      : "border-blue-800/30 bg-blue-900/25 text-blue-300/90"
                 }`}>
-                  <span className="font-medium">{t("goalLabel")}</span> {customScenario.goals[level]}
+                  <div>
+                    <span className="font-semibold">{t("goalLabel")} </span>
+                    <span className="font-medium">{customScenario.goals[level]}</span>
+                  </div>
                 </div>
               </button>
             )}
