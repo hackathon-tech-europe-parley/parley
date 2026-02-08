@@ -150,12 +150,15 @@ export function ChatPageClient() {
         return;
       }
       setTtsPlaying(messageIndex);
-      // Determine TTS gender: policeman uses masculine, policewoman uses feminine
+      // Determine TTS gender: use opposite of main NPC gender for police officer
       let ttsGender: NpcGender = gender || "feminine";
-      if (specialPersonType === "policeman") {
-        ttsGender = "masculine";
-      } else if (specialPersonType === "policewoman") {
-        ttsGender = "feminine";
+      if (specialPersonType) {
+        // Police officer should have opposite voice of main character
+        // If main NPC is feminine, police officer is masculine (policeman)
+        // If main NPC is masculine, police officer is feminine (policewoman)
+        // Use the main NPC's gender (passed as 'gender' parameter) to determine opposite
+        const mainNpcGender = gender || "feminine";
+        ttsGender = mainNpcGender === "masculine" ? "feminine" : "masculine";
       }
       ttsPlayerRef.current
         .play(text, `msg-${messageIndex}`, langCode, ttsGender, ttsSpeed)
@@ -179,8 +182,11 @@ export function ChatPageClient() {
       hasAutoPlayed.current = true;
       const firstNpc = state.history[0];
       if (firstNpc?.role === "npc") {
-        const isSpecialPerson = firstNpc.speakerName === state.specialPerson?.name;
-        const specialPersonType = isSpecialPerson ? state.specialPerson?.type : undefined;
+        // Check if this is a special person message by comparing speakerName
+        const isSpecialPerson = firstNpc.speakerName && 
+          (firstNpc.speakerName === state.specialPerson?.name || 
+           (firstNpc.speakerName === "Officer" && firstNpc.speakerName !== state.npcName));
+        const specialPersonType = isSpecialPerson ? (state.specialPerson?.type || "policeman") : undefined;
         autoPlayTts(firstNpc.text, 0, state.languageCode, state.npcGender, specialPersonType);
         lastProcessedIndex.current = 0;
       }
@@ -197,8 +203,12 @@ export function ChatPageClient() {
       for (let i = lastProcessedIndex.current + 1; i <= currentLastIndex; i++) {
         const message = state.history[i];
         if (message?.role === "npc") {
-          const isSpecialPerson = message.speakerName === state.specialPerson?.name;
-          const specialPersonType = isSpecialPerson ? state.specialPerson?.type : undefined;
+          // Check if this is a special person message by comparing speakerName
+          // This works even if state.specialPerson isn't set yet
+          const isSpecialPerson = message.speakerName && 
+            (message.speakerName === state.specialPerson?.name || 
+             (message.speakerName === "Officer" && message.speakerName !== state.npcName));
+          const specialPersonType = isSpecialPerson ? (state.specialPerson?.type || "policeman") : undefined;
           autoPlayTts(message.text, i, state.languageCode, state.npcGender, specialPersonType);
         }
       }
@@ -240,8 +250,11 @@ export function ChatPageClient() {
 
   function handleReplay(messageIndex: number, text: string) {
     const message = state?.history[messageIndex];
-    const isSpecialPerson = message?.speakerName === state?.specialPerson?.name;
-    const specialPersonType = isSpecialPerson ? state?.specialPerson?.type : undefined;
+    // Check if this is a special person message by comparing speakerName
+    const isSpecialPerson = message?.speakerName && 
+      (message.speakerName === state?.specialPerson?.name || 
+       (message.speakerName === "Officer" && message.speakerName !== state?.npcName));
+    const specialPersonType = isSpecialPerson ? (state?.specialPerson?.type || "policeman") : undefined;
     autoPlayTts(text, messageIndex, state?.languageCode, state?.npcGender, specialPersonType);
   }
 
@@ -378,14 +391,16 @@ export function ChatPageClient() {
         const preloads: Promise<void>[] = [];
 
         if (ttsPlayerRef.current && !ttsPlayerRef.current.muted) {
-          // Determine TTS gender based on special person type if applicable
+          // Determine TTS gender: use opposite of main NPC gender for police officer
           let ttsGender: NpcGender = state.npcGender || "feminine";
-          if (state.specialPerson) {
-            // Check if this message is from special person by comparing speakerName
-            const isSpecialPersonMessage = data.speakerName === state.specialPerson.name;
-            if (isSpecialPersonMessage) {
-              ttsGender = state.specialPerson.type === "policeman" ? "masculine" : "feminine";
-            }
+          // Check if this message is from special person by comparing speakerName
+          // This works even if state.specialPerson isn't set yet (e.g., first police officer message)
+          const isSpecialPersonMessage = data.speakerName && 
+            (data.speakerName === state.specialPerson?.name || 
+             (data.speakerName === "Officer" && data.speakerName !== state.npcName));
+          if (isSpecialPersonMessage) {
+            // Police officer should have opposite voice of main character
+            ttsGender = state.npcGender === "masculine" ? "feminine" : "masculine";
           }
           preloads.push(
             ttsPlayerRef.current.prefetch(data.npcMessage, cacheKey, state.languageCode, ttsGender, ttsSpeed),
