@@ -44,6 +44,7 @@ export async function GET(
     hints: await getHints(id),
     scenarioKey: conversation.scenarioKey,
     languageCode: conversation.languageCode,
+    specialPerson: conversation.specialPerson,
   };
 
   return NextResponse.json(conversationSnapshotSchema.parse(snapshot));

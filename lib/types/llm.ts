@@ -172,6 +172,7 @@ export function createNpcResponseFromLlmSchema(fallbackProgress: GoalProgress) {
         .catch(fallbackProgress),
       evaluation: npcEvaluationFromLlmSchema,
       hints: hintsFromUnknownSchema,
+      shouldCallPoliceman: booleanFromUnknownSchema.catch(false),
     })
     .catch({
       npcMessage: "...",
@@ -180,5 +181,6 @@ export function createNpcResponseFromLlmSchema(fallbackProgress: GoalProgress) {
       goalProgress: fallbackProgress,
       evaluation: DEFAULT_NPC_EVALUATION,
       hints: [],
+      shouldCallPoliceman: false,
     });
 }

@@ -31,6 +31,7 @@ export const conversationMessageSchema = z
     text: nonEmptyStringSchema,
     mood: nonEmptyStringSchema.optional(),
     npcFaceImageUrl: z.string().optional(),
+    speakerName: nonEmptyStringSchema.optional(),
   })
   .strict();
 
@@ -169,6 +170,14 @@ export const conversationSchema = z
     npcGender: npcGenderSchema,
     scenarioKey: nonEmptyStringSchema.optional(),
     languageCode: languageCodeSchema.optional(),
+    specialPerson: z
+      .object({
+        name: nonEmptyStringSchema,
+        type: nonEmptyStringSchema,
+        mood: nonEmptyStringSchema,
+        faceImageUrl: nonEmptyStringSchema,
+      })
+      .optional(),
   })
   .strict();
 
@@ -189,6 +198,14 @@ export const conversationSnapshotSchema = z
     hints: z.array(nonEmptyStringSchema),
     scenarioKey: nonEmptyStringSchema.optional(),
     languageCode: languageCodeSchema.optional(),
+    specialPerson: z
+      .object({
+        name: nonEmptyStringSchema,
+        type: nonEmptyStringSchema,
+        mood: nonEmptyStringSchema,
+        faceImageUrl: nonEmptyStringSchema,
+      })
+      .optional(),
   })
   .strict();
 
@@ -242,6 +259,7 @@ export const messageStreamCompletePayloadSchema = z
     hints: z.array(nonEmptyStringSchema),
     sceneImageUrl: nonEmptyStringSchema,
     npcFaceImageUrl: z.string().optional(),
+    speakerName: nonEmptyStringSchema.optional(),
     debrief: debriefSchema.optional(),
   })
   .strict();

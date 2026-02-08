@@ -1,9 +1,10 @@
 import { getConversation, setConversation, setHints } from "@/lib/conversations";
 import { generateSceneImage } from "@/lib/fal";
-import { getNpcFaceAssetUrl } from "@/lib/npc-assets";
-import { generateNpcResponseStream } from "@/lib/openai";
+import { getNpcFaceAssetUrl, getSpecialPersonFaceAssetUrl } from "@/lib/npc-assets";
+import { generateNpcResponseStream, generateSpecialPersonResponseStream } from "@/lib/openai";
 import { generateDebrief } from "@/lib/openai";
 import { applyNpcPolicy } from "@/lib/npc-policy";
+import { normalizeToMoodState } from "@/lib/types";
 import {
   idParamSchema,
   messageStreamCompletePayloadSchema,
@@ -81,7 +82,35 @@ export async function POST(
       try {
         const encoder = new TextEncoder();
 
-        for await (const event of generateNpcResponseStream(conversation)) {
+        // Determine who should respond based on context
+        // If special person exists, check last speaker to alternate
+        let shouldUseSpecialPerson = false;
+        if (conversation.specialPerson) {
+          const lastMessage = conversation.history[conversation.history.length - 1];
+          if (lastMessage?.role === "user") {
+            // Alternate: if last NPC message was from original NPC, use officer; otherwise use NPC
+            const lastNpcMessage = [...conversation.history].reverse().find(msg => msg.role === "npc");
+            shouldUseSpecialPerson = lastNpcMessage?.speakerName === conversation.npcName;
+          } else if (lastMessage?.speakerName === conversation.npcName) {
+            shouldUseSpecialPerson = true; // Last was NPC, now use officer
+          } else if (lastMessage?.speakerName === conversation.specialPerson.name) {
+            shouldUseSpecialPerson = false; // Last was officer, now use NPC
+          } else {
+            // Default: use officer if available
+            shouldUseSpecialPerson = true;
+          }
+        }
+
+        // Use special person or regular NPC based on context
+        const responseStream = (conversation.specialPerson && shouldUseSpecialPerson)
+          ? generateSpecialPersonResponseStream(
+              conversation,
+              conversation.specialPerson.type,
+              conversation.specialPerson.name,
+            )
+          : generateNpcResponseStream(conversation);
+
+        for await (const event of responseStream) {
           if (event.type === "token") {
             controller.enqueue(
               encoder.encode(
@@ -94,22 +123,123 @@ export async function POST(
           } else if (event.type === "complete") {
             const npcResponse = applyNpcPolicy(conversation, event.data);
 
-            const npcFaceImageUrl = getNpcFaceAssetUrl(
-              conversation.scenarioKey ?? "__custom__",
-              conversation.npcGender,
-              npcResponse.mood,
-            );
+            // Check if NPC wants to call the police (only if special person not already called)
+            const shouldCallPoliceman = !conversation.specialPerson && npcResponse.shouldCallPoliceman === true;
+
+            // Determine if this response is from special person or regular NPC
+            // This should match what we determined at the start of the stream
+            const isSpecialPerson = conversation.specialPerson && shouldUseSpecialPerson;
+            
+            let faceImageUrl: string;
+            let speakerName: string;
+            
+            if (isSpecialPerson && conversation.specialPerson) {
+              // Special person response
+              faceImageUrl = getSpecialPersonFaceAssetUrl(
+                conversation.specialPerson.type,
+                npcResponse.mood,
+              );
+              speakerName = conversation.specialPerson.name;
+              conversation.specialPerson.mood = npcResponse.mood;
+              conversation.specialPerson.faceImageUrl = faceImageUrl;
+            } else {
+              // Regular NPC response
+              faceImageUrl = getNpcFaceAssetUrl(
+                conversation.scenarioKey ?? "__custom__",
+                conversation.npcGender,
+                npcResponse.mood,
+              );
+              speakerName = conversation.npcName;
+              conversation.mood = npcResponse.mood;
+              conversation.npcFaceImageUrl = faceImageUrl;
+            }
 
             conversation.history.push({
               role: "npc",
               text: npcResponse.npcMessage,
               mood: npcResponse.mood,
-              npcFaceImageUrl,
+              npcFaceImageUrl: faceImageUrl,
+              speakerName,
             });
-            conversation.mood = npcResponse.mood;
             conversation.goalProgress = npcResponse.goalProgress;
             conversation.messagesSinceImageRegen++;
-            conversation.npcFaceImageUrl = npcFaceImageUrl;
+
+            // If NPC indicated they want to call police, initialize special person and generate introduction
+            // IMPORTANT: The NPC's message above is already saved with the NPC's name
+            if (shouldCallPoliceman) {
+              const specialPersonType = "policeman";
+              const specialPersonName = "Officer"; // Could be made dynamic based on language
+              const initialMood = "neutral";
+              
+              conversation.specialPerson = {
+                name: specialPersonName,
+                type: specialPersonType,
+                mood: initialMood,
+                faceImageUrl: getSpecialPersonFaceAssetUrl(specialPersonType, initialMood),
+              };
+
+              await setConversation(id, conversation);
+
+              // Generate policeman's introduction message
+              const policemanIntroStream = generateSpecialPersonResponseStream(
+                conversation,
+                specialPersonType,
+                specialPersonName,
+              );
+
+              // Stream the introduction message
+              let introText = "";
+              let introMood = initialMood;
+              
+              for await (const introEvent of policemanIntroStream) {
+                if (introEvent.type === "token") {
+                  introText += introEvent.text;
+                  controller.enqueue(
+                    encoder.encode(
+                      formatSSE(
+                        "token",
+                        messageStreamTokenPayloadSchema.parse({ text: introEvent.text }),
+                      ),
+                    ),
+                  );
+                } else if (introEvent.type === "complete") {
+                  introMood = introEvent.data.mood;
+                  introText = introEvent.data.npcMessage;
+                  
+                  const introFaceUrl = getSpecialPersonFaceAssetUrl(specialPersonType, introMood);
+                  conversation.specialPerson!.mood = introMood;
+                  conversation.specialPerson!.faceImageUrl = introFaceUrl;
+                  
+                  conversation.history.push({
+                    role: "npc",
+                    text: introText,
+                    mood: introMood,
+                    npcFaceImageUrl: introFaceUrl,
+                    speakerName: specialPersonName,
+                  });
+                  
+                  await setConversation(id, conversation);
+                  
+                  // Send complete event for introduction
+                  const introPayload = messageStreamCompletePayloadSchema.parse({
+                    npcMessage: introText,
+                    mood: introMood,
+                    goalStatus: "ongoing",
+                    goalProgress: conversation.goalProgress,
+                    hints: [],
+                    sceneImageUrl: conversation.sceneImageUrl,
+                    npcFaceImageUrl: introFaceUrl,
+                    speakerName: specialPersonName,
+                  });
+                  
+                  controller.enqueue(
+                    encoder.encode(
+                      formatSSE("complete", introPayload),
+                    ),
+                  );
+                }
+              }
+            }
 
             await setHints(id, npcResponse.hints);
 
@@ -131,7 +261,8 @@ export async function POST(
                 goalProgress: npcResponse.goalProgress,
                 hints: npcResponse.hints,
                 sceneImageUrl,
-                npcFaceImageUrl,
+                npcFaceImageUrl: faceImageUrl,
+                speakerName,
               });
               controller.enqueue(
                 encoder.encode(
@@ -158,6 +289,8 @@ export async function POST(
                 goalProgress: npcResponse.goalProgress,
                 hints: npcResponse.hints,
                 sceneImageUrl: finalImageUrl,
+                npcFaceImageUrl: faceImageUrl,
+                speakerName,
                 debrief,
               });
 
