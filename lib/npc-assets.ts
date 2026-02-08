@@ -48,7 +48,8 @@ export function getNpcFaceAssetUrl(
   return `/assets/${scenarioKey}/${gender}_${resolvedMood}.webp`;
 }
 
-// Get special person (e.g., policeman) face image based on mood
+// Get special person (e.g., policeman/policewoman) face image based on mood
+// type should be "policeman" or "policewoman"
 export function getSpecialPersonFaceAssetUrl(
   type: string,
   mood: string,
@@ -59,4 +60,14 @@ export function getSpecialPersonFaceAssetUrl(
     : MOOD_FALLBACK[normalizedMood] ?? DEFAULT_MOOD;
 
   return `/assets/special/${type}/${type}_${resolvedMood}.png`;
+}
+
+// Determine police officer type based on NPC gender (opposite gender)
+export function getPoliceOfficerType(npcGender: NpcGender): "policeman" | "policewoman" {
+  return npcGender === "masculine" ? "policewoman" : "policeman";
+}
+
+// Get police officer name based on type
+export function getPoliceOfficerName(type: "policeman" | "policewoman"): string {
+  return type === "policeman" ? "Officer" : "Officer";
 }

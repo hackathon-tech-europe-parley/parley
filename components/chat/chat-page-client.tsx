@@ -145,13 +145,18 @@ export function ChatPageClient() {
   }, []);
 
   const autoPlayTts = useCallback(
-    (text: string, messageIndex: number, langCode?: string, gender?: NpcGender, isSpecialPerson?: boolean) => {
+    (text: string, messageIndex: number, langCode?: string, gender?: NpcGender, specialPersonType?: string) => {
       if (!ttsPlayerRef.current || ttsPlayerRef.current.muted) {
         return;
       }
       setTtsPlaying(messageIndex);
-      // Special person always uses masculine voice
-      const ttsGender = isSpecialPerson ? "masculine" : gender;
+      // Determine TTS gender: policeman uses masculine, policewoman uses feminine
+      let ttsGender: NpcGender = gender || "feminine";
+      if (specialPersonType === "policeman") {
+        ttsGender = "masculine";
+      } else if (specialPersonType === "policewoman") {
+        ttsGender = "feminine";
+      }
       ttsPlayerRef.current
         .play(text, `msg-${messageIndex}`, langCode, ttsGender, ttsSpeed)
         .then(() => setTtsPlaying(null))
@@ -175,7 +180,8 @@ export function ChatPageClient() {
       const firstNpc = state.history[0];
       if (firstNpc?.role === "npc") {
         const isSpecialPerson = firstNpc.speakerName === state.specialPerson?.name;
-        autoPlayTts(firstNpc.text, 0, state.languageCode, state.npcGender, isSpecialPerson);
+        const specialPersonType = isSpecialPerson ? state.specialPerson?.type : undefined;
+        autoPlayTts(firstNpc.text, 0, state.languageCode, state.npcGender, specialPersonType);
         lastProcessedIndex.current = 0;
       }
     }
@@ -192,7 +198,8 @@ export function ChatPageClient() {
         const message = state.history[i];
         if (message?.role === "npc") {
           const isSpecialPerson = message.speakerName === state.specialPerson?.name;
-          autoPlayTts(message.text, i, state.languageCode, state.npcGender, isSpecialPerson);
+          const specialPersonType = isSpecialPerson ? state.specialPerson?.type : undefined;
+          autoPlayTts(message.text, i, state.languageCode, state.npcGender, specialPersonType);
         }
       }
       lastProcessedIndex.current = currentLastIndex;
@@ -234,7 +241,8 @@ export function ChatPageClient() {
   function handleReplay(messageIndex: number, text: string) {
     const message = state?.history[messageIndex];
     const isSpecialPerson = message?.speakerName === state?.specialPerson?.name;
-    autoPlayTts(text, messageIndex, state?.languageCode, state?.npcGender, isSpecialPerson);
+    const specialPersonType = isSpecialPerson ? state?.specialPerson?.type : undefined;
+    autoPlayTts(text, messageIndex, state?.languageCode, state?.npcGender, specialPersonType);
   }
 
   function handleSpeedChange(speed: number) {
@@ -370,10 +378,15 @@ export function ChatPageClient() {
         const preloads: Promise<void>[] = [];
 
         if (ttsPlayerRef.current && !ttsPlayerRef.current.muted) {
-          // Check if this is a special person message (will be determined from state after update)
-          // For now, use state.specialPerson to determine gender
-          const isSpecialPerson = !!state.specialPerson;
-          const ttsGender = isSpecialPerson ? "masculine" : state.npcGender;
+          // Determine TTS gender based on special person type if applicable
+          let ttsGender: NpcGender = state.npcGender || "feminine";
+          if (state.specialPerson) {
+            // Check if this message is from special person by comparing speakerName
+            const isSpecialPersonMessage = data.speakerName === state.specialPerson.name;
+            if (isSpecialPersonMessage) {
+              ttsGender = state.specialPerson.type === "policeman" ? "masculine" : "feminine";
+            }
+          }
           preloads.push(
             ttsPlayerRef.current.prefetch(data.npcMessage, cacheKey, state.languageCode, ttsGender, ttsSpeed),
           );

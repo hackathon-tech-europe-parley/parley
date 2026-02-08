@@ -1,10 +1,9 @@
 import { getConversation, setConversation, setHints } from "@/lib/conversations";
 import { generateSceneImage } from "@/lib/fal";
-import { getNpcFaceAssetUrl, getSpecialPersonFaceAssetUrl } from "@/lib/npc-assets";
+import { getNpcFaceAssetUrl, getSpecialPersonFaceAssetUrl, getPoliceOfficerType, getPoliceOfficerName } from "@/lib/npc-assets";
 import { generateNpcResponseStream, generateSpecialPersonResponseStream } from "@/lib/openai";
 import { generateDebrief } from "@/lib/openai";
 import { applyNpcPolicy } from "@/lib/npc-policy";
-import { normalizeToMoodState } from "@/lib/types";
 import {
   idParamSchema,
   messageStreamCompletePayloadSchema,
@@ -123,8 +122,27 @@ export async function POST(
           } else if (event.type === "complete") {
             const npcResponse = applyNpcPolicy(conversation, event.data);
 
-            // Check if NPC wants to call the police (only if special person not already called)
-            const shouldCallPoliceman = !conversation.specialPerson && npcResponse.shouldCallPoliceman === true;
+            // Check if NPC message contains any mention of police (in any language)
+            // Normalize the message to handle accents and variations
+            const npcMessageLower = npcResponse.npcMessage.toLowerCase()
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, ""); // Remove accents for matching
+            const npcMessageOriginal = npcResponse.npcMessage.toLowerCase();
+            
+            const mentionsCallingPolice = !conversation.specialPerson && (
+              npcMessageLower.includes("policia") || // Matches both "policía" and "policia" after normalization
+              npcMessageOriginal.includes("policía") ||
+              npcMessageOriginal.includes("policia") ||
+              npcMessageLower.includes("police") ||
+              npcMessageLower.includes("polizei") ||
+              npcMessageLower.includes("officer") ||
+              npcMessageLower.includes("oficial")
+            );
+
+            // Check if NPC wants to call the police (flag OR text detection)
+            const shouldCallPoliceman = !conversation.specialPerson && (
+              npcResponse.shouldCallPoliceman === true || mentionsCallingPolice
+            );
 
             // Determine if this response is from special person or regular NPC
             // This should match what we determined at the start of the stream
@@ -164,83 +182,6 @@ export async function POST(
             conversation.goalProgress = npcResponse.goalProgress;
             conversation.messagesSinceImageRegen++;
 
-            // If NPC indicated they want to call police, initialize special person and generate introduction
-            // IMPORTANT: The NPC's message above is already saved with the NPC's name
-            if (shouldCallPoliceman) {
-              const specialPersonType = "policeman";
-              const specialPersonName = "Officer"; // Could be made dynamic based on language
-              const initialMood = "neutral";
-              
-              conversation.specialPerson = {
-                name: specialPersonName,
-                type: specialPersonType,
-                mood: initialMood,
-                faceImageUrl: getSpecialPersonFaceAssetUrl(specialPersonType, initialMood),
-              };
-
-              await setConversation(id, conversation);
-
-              // Generate policeman's introduction message
-              const policemanIntroStream = generateSpecialPersonResponseStream(
-                conversation,
-                specialPersonType,
-                specialPersonName,
-              );
-
-              // Stream the introduction message
-              let introText = "";
-              let introMood = initialMood;
-              
-              for await (const introEvent of policemanIntroStream) {
-                if (introEvent.type === "token") {
-                  introText += introEvent.text;
-                  controller.enqueue(
-                    encoder.encode(
-                      formatSSE(
-                        "token",
-                        messageStreamTokenPayloadSchema.parse({ text: introEvent.text }),
-                      ),
-                    ),
-                  );
-                } else if (introEvent.type === "complete") {
-                  introMood = introEvent.data.mood;
-                  introText = introEvent.data.npcMessage;
-                  
-                  const introFaceUrl = getSpecialPersonFaceAssetUrl(specialPersonType, introMood);
-                  conversation.specialPerson!.mood = introMood;
-                  conversation.specialPerson!.faceImageUrl = introFaceUrl;
-                  
-                  conversation.history.push({
-                    role: "npc",
-                    text: introText,
-                    mood: introMood,
-                    npcFaceImageUrl: introFaceUrl,
-                    speakerName: specialPersonName,
-                  });
-                  
-                  await setConversation(id, conversation);
-                  
-                  // Send complete event for introduction
-                  const introPayload = messageStreamCompletePayloadSchema.parse({
-                    npcMessage: introText,
-                    mood: introMood,
-                    goalStatus: "ongoing",
-                    goalProgress: conversation.goalProgress,
-                    hints: [],
-                    sceneImageUrl: conversation.sceneImageUrl,
-                    npcFaceImageUrl: introFaceUrl,
-                    speakerName: specialPersonName,
-                  });
-                  
-                  controller.enqueue(
-                    encoder.encode(
-                      formatSSE("complete", introPayload),
-                    ),
-                  );
-                }
-              }
-            }
-
             await setHints(id, npcResponse.hints);
 
             let sceneImageUrl = conversation.sceneImageUrl;
@@ -253,6 +194,7 @@ export async function POST(
 
             await setConversation(id, conversation);
 
+            // Send NPC's complete event FIRST
             if (npcResponse.goalStatus === "ongoing") {
               const completePayload = messageStreamCompletePayloadSchema.parse({
                 npcMessage: npcResponse.npcMessage,
@@ -299,6 +241,87 @@ export async function POST(
                   formatSSE("complete", completePayload),
                 ),
               );
+            }
+
+            // If NPC indicated they want to call police, IMMEDIATELY generate and send police officer's introduction
+            // This happens right after the NPC's complete event is sent
+            if (shouldCallPoliceman) {
+              console.log("[POLICE] Triggering police call. Message:", npcResponse.npcMessage.substring(0, 100));
+              console.log("[POLICE] Mentions police:", mentionsCallingPolice, "Flag:", npcResponse.shouldCallPoliceman);
+              
+              // Use opposite gender: if NPC is man, use policewoman; if NPC is woman, use policeman
+              const specialPersonType = getPoliceOfficerType(conversation.npcGender);
+              const specialPersonName = getPoliceOfficerName(specialPersonType);
+              const initialMood = "neutral";
+              
+              conversation.specialPerson = {
+                name: specialPersonName,
+                type: specialPersonType,
+                mood: initialMood,
+                faceImageUrl: getSpecialPersonFaceAssetUrl(specialPersonType, initialMood),
+              };
+
+              await setConversation(id, conversation);
+
+              // Generate police officer's introduction message
+              const policemanIntroStream = generateSpecialPersonResponseStream(
+                conversation,
+                specialPersonType,
+                specialPersonName,
+              );
+
+              // Stream the introduction message immediately
+              let introText = "";
+              let introMood = initialMood;
+              
+              for await (const introEvent of policemanIntroStream) {
+                if (introEvent.type === "token") {
+                  introText += introEvent.text;
+                  controller.enqueue(
+                    encoder.encode(
+                      formatSSE(
+                        "token",
+                        messageStreamTokenPayloadSchema.parse({ text: introEvent.text }),
+                      ),
+                    ),
+                  );
+                } else if (introEvent.type === "complete") {
+                  introMood = introEvent.data.mood;
+                  introText = introEvent.data.npcMessage;
+                  
+                  const introFaceUrl = getSpecialPersonFaceAssetUrl(specialPersonType, introMood);
+                  conversation.specialPerson!.mood = introMood;
+                  conversation.specialPerson!.faceImageUrl = introFaceUrl;
+                  
+                  conversation.history.push({
+                    role: "npc",
+                    text: introText,
+                    mood: introMood,
+                    npcFaceImageUrl: introFaceUrl,
+                    speakerName: specialPersonName,
+                  });
+                  
+                  await setConversation(id, conversation);
+                  
+                  // Send complete event for police officer's introduction
+                  const introPayload = messageStreamCompletePayloadSchema.parse({
+                    npcMessage: introText,
+                    mood: introMood,
+                    goalStatus: "ongoing",
+                    goalProgress: conversation.goalProgress,
+                    hints: [],
+                    sceneImageUrl: conversation.sceneImageUrl,
+                    npcFaceImageUrl: introFaceUrl,
+                    speakerName: specialPersonName,
+                  });
+                  
+                  controller.enqueue(
+                    encoder.encode(
+                      formatSSE("complete", introPayload),
+                    ),
+                  );
+                }
+              }
             }
           }
         }
