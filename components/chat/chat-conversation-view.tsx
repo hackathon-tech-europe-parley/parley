@@ -24,6 +24,7 @@ interface ChatConversationViewProps {
   transcribing: boolean;
   ttsPlaying: number | null;
   npcMuted: boolean;
+  ttsSpeed: number;
   endStatus: DebriefState | null;
   error: string | null;
   t: TranslateFn;
@@ -38,6 +39,7 @@ interface ChatConversationViewProps {
   onSubmit: () => void;
   onMicToggle: () => void;
   onMuteToggle: () => void;
+  onSpeedChange: (speed: number) => void;
   onEndStatusClick: () => void;
   onQuit: () => void;
 }
@@ -79,6 +81,7 @@ export function ChatConversationView({
   transcribing,
   ttsPlaying,
   npcMuted,
+  ttsSpeed,
   endStatus,
   error,
   t,
@@ -93,6 +96,7 @@ export function ChatConversationView({
   onSubmit,
   onMicToggle,
   onMuteToggle,
+  onSpeedChange,
   onEndStatusClick,
   onQuit,
 }: ChatConversationViewProps) {
@@ -400,13 +404,20 @@ export function ChatConversationView({
               key={i}
               className={`flex items-start gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end msg-user" : "justify-start msg-npc"}`}
             >
-              {msg.role === "npc" && (msg.npcFaceImageUrl || state.npcFaceImageUrl) && (
-                <img
-                  src={msg.npcFaceImageUrl || state.npcFaceImageUrl}
-                  alt={state.npcName}
-                  className="h-8 w-8 flex-shrink-0 rounded-full border-2 border-slate-700/40 object-cover object-top shadow-md sm:h-10 sm:w-10 md:h-12 md:w-12"
-                />
-              )}
+              {msg.role === "npc" && (() => {
+                const isSpecialPerson = msg.speakerName === state.specialPerson?.name;
+                const faceUrl = isSpecialPerson
+                  ? (msg.npcFaceImageUrl || state.specialPerson?.faceImageUrl)
+                  : (msg.npcFaceImageUrl || state.npcFaceImageUrl);
+
+                return faceUrl && faceUrl.trim() !== "" ? (
+                  <img
+                    src={faceUrl}
+                    alt={msg.speakerName || state.npcName}
+                    className="h-8 w-8 flex-shrink-0 rounded-full border-2 border-slate-700/40 object-cover object-top shadow-md sm:h-10 sm:w-10 md:h-12 md:w-12"
+                  />
+                ) : null;
+              })()}
               <div
                 className={`max-w-[85%] rounded-2xl px-3 py-2 shadow-lg sm:max-w-[80%] sm:px-4 sm:py-3 md:max-w-[75%] md:px-5 ${
                   msg.role === "user"
@@ -417,7 +428,7 @@ export function ChatConversationView({
                 {msg.role === "npc" && (
                   <div className="mb-1.5 flex items-center gap-2 sm:mb-2">
                     <span className="text-xs font-semibold uppercase tracking-wide text-blue-400">
-                      {state.npcName}
+                      {msg.speakerName || state.npcName}
                     </span>
                     <button
                       type="button"
@@ -583,6 +594,23 @@ export function ChatConversationView({
                 className="flex-1 rounded-xl border border-slate-700/50 bg-slate-800/40 px-3 py-2.5 text-sm text-white backdrop-blur-sm placeholder-slate-500 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:px-4 sm:py-3 sm:text-base md:px-5"
               />
               <div className="flex gap-2 sm:gap-3">
+                {/* Speed Control */}
+                <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/50 px-2 py-2.5 sm:px-3 sm:py-3">
+                  <svg className="h-4 w-4 flex-shrink-0 text-slate-400 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2.0"
+                    step="0.1"
+                    value={ttsSpeed}
+                    onChange={(e) => onSpeedChange(parseFloat(e.target.value))}
+                    title={`Speech speed: ${ttsSpeed.toFixed(1)}x`}
+                    className="h-1 w-16 cursor-pointer appearance-none rounded-lg bg-slate-700 accent-blue-500 sm:w-20"
+                  />
+                  <span className="w-8 text-xs text-slate-400 sm:w-10 sm:text-sm">{ttsSpeed.toFixed(1)}x</span>
+                </div>
                 <button
                   type="button"
                   onClick={onMuteToggle}

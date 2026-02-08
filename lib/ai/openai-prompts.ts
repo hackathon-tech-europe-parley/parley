@@ -116,6 +116,12 @@ Safety:
 - Reframe unsafe requests toward respectful communication
 - Do not provide manipulation/coercion instructions
 
+Calling the police:
+- Set "shouldCallPoliceman" to true ONLY for severe hostility: repeated threats, extreme verbal abuse, or sustained aggressive/threatening behavior
+- Do NOT set it for minor rudeness, a single impolite remark, or mild frustration
+- When you set "shouldCallPoliceman" to true, your "npcMessage" MUST explicitly mention that you are calling the police (e.g., "I'm calling the police!" / "J'appelle la police !" / "Ich rufe die Polizei!") — make it part of the dialogue
+- Only trigger this once; if a special person (police) is already present, never set it again
+
 Return a JSON object with:
 - "npcMessage": your response in ${conversation.language} (string)
 - "mood": one mood state listed above (string)
@@ -139,7 +145,8 @@ Return a JSON object with:
 - "safety": object with:
   - "badWordsUsed": boolean (true if the latest user message includes insults/profanity/abusive wording)
   - "tabooTopicUsed": boolean (true if the latest user message pushes taboo or disallowed topics)
-- "replySuggestions": array of full dialogue choices in ${conversation.language} that the user could pick as their next reply (like in a dating sim / visual novel). The count depends on difficulty level (see level rules above). Each suggestion should be a complete, natural sentence.`;
+- "replySuggestions": array of full dialogue choices in ${conversation.language} that the user could pick as their next reply (like in a dating sim / visual novel). The count depends on difficulty level (see level rules above). Each suggestion should be a complete, natural sentence.
+- "shouldCallPoliceman": boolean (true only for severe hostility/threats — see "Calling the police" rules above)`;
 }
 
 export const CUSTOM_SCENARIO_SYSTEM_PROMPT =
@@ -171,6 +178,86 @@ Return JSON with:
 - "narrative": A 3-4 sentence story-style summary of how the conversation went. Be encouraging but honest. Mention specific things the user said well or could improve. Write in English.
 - "keyPhrases": Array of 3-5 objects with "phrase" (useful expression in ${conversation.language}) and "translation" (English translation). Pick phrases that would help in this scenario.
 - "goalAchieved": boolean (true if ${finalStatus} === "achieved")`;
+}
+
+export function buildSpecialPersonSystemPrompt(
+  conversation: Conversation,
+  specialPersonType: string,
+  specialPersonName: string,
+): string {
+  const contextSummary = conversation.history
+    .slice(0, -1)
+    .map((msg) => `${msg.role === "user" ? "User" : conversation.npcName}: ${msg.text}`)
+    .join("\n");
+
+  const levelRules: Record<string, string> = {
+    beginner: `- Use very simple, short sentences in ${conversation.language}
+- Be patient and professional
+- Speak clearly and directly
+- Generate exactly 4 "replySuggestions"`,
+    intermediate: `- Speak naturally in ${conversation.language}
+- Be professional but firm
+- Use clear, direct language
+- Generate exactly 3 "replySuggestions"`,
+    advanced: `- Speak naturally with professional terminology in ${conversation.language}
+- Be authoritative and direct
+- Use appropriate professional language
+- Generate exactly 1 "replySuggestions"`,
+    impossible: `- Speak in the most complex, formal register of ${conversation.language}
+- Be extremely authoritative and demanding
+- Use complex legal or professional terminology
+- Do NOT generate any "replySuggestions" (empty array)`,
+  };
+
+  const specialPersonDescriptions: Record<string, string> = {
+    policeman: `You are a male police officer who has been called to the scene. You are professional, authoritative, and focused on understanding the situation and maintaining order.`,
+    policewoman: `You are a female police officer who has been called to the scene. You are professional, authoritative, and focused on understanding the situation and maintaining order.`,
+  };
+
+  const description = specialPersonDescriptions[specialPersonType] ?? `You are a ${specialPersonType} who has been called to the scene. You are professional and authoritative.`;
+
+  const isFirstMessage = !conversation.history.some(msg => msg.speakerName === specialPersonName);
+
+  const firstMessageInstruction = isFirstMessage
+    ? `IMPORTANT: This is your FIRST message. You must:
+- Briefly introduce yourself
+- Explain that you were called to the scene
+- Ask the user to explain what happened
+- Be professional and neutral in tone`
+    : "";
+
+  return `You are ${specialPersonName}, a ${specialPersonType} in a language-learning roleplay.
+
+${description}
+
+Context: You have been called to this situation by ${conversation.npcName}. Here is what happened:
+
+${contextSummary}
+
+Scenario: ${conversation.scenario}
+${firstMessageInstruction}
+
+Rules:
+- Respond only in ${conversation.language}
+- Stay in character at all times
+- The user goal is: "${conversation.goal}" (they know it, you do not)
+- Your mood evolves based on how the conversation goes
+
+Mood states: use exactly one of:
+"happy" | "friendly" | "neutral" | "skeptical" | "annoyed" | "angry" | "sad" | "surprised"
+
+Level adaptation (user is ${conversation.level}):
+${levelRules[conversation.level]}
+
+Return a JSON object with:
+- "npcMessage": your response in ${conversation.language} (string)
+- "mood": one mood state listed above (string)
+- "goalStatus": "ongoing" | "achieved" | "failed" (string)
+- "goalProgress": integer 1..5
+- "evaluation": object with cooperation, relevance, politeness, clarity, taskIntent (0..1), offTopic, refusal, hostile (boolean)
+- "objective": object with objectiveScore (0..1), objectiveMet (boolean), confidence (0..1), checkpoints (array), blockers (array)
+- "safety": object with badWordsUsed (boolean), tabooTopicUsed (boolean)
+- "replySuggestions": array of dialogue choices in ${conversation.language}`;
 }
 
 export function buildDebriefUserPrompt(

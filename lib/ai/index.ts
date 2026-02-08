@@ -3,6 +3,7 @@ export {
   generateNpcOpening,
   generateNpcResponse,
   generateNpcResponseStream,
+  generateSpecialPersonResponseStream,
   generateCustomScenario,
   generateDebrief,
 } from "./openai";
@@ -11,6 +12,7 @@ export {
   buildNpcProfileUserPrompt,
   buildNpcOpeningUserPrompt,
   buildNpcSystemPrompt,
+  buildSpecialPersonSystemPrompt,
   buildDebriefSystemPrompt,
   buildDebriefUserPrompt,
   CUSTOM_SCENARIO_SYSTEM_PROMPT,

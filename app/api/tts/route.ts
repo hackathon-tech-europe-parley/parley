@@ -21,6 +21,7 @@ export async function POST(request: Request) {
       parsed.data.text,
       parsed.data.languageCode,
       parsed.data.npcGender,
+      parsed.data.speed,
     );
     return new Response(wav, {
       headers: {

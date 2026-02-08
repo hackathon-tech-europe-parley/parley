@@ -12,6 +12,7 @@ export interface ConversationMessage {
   text: string;
   mood?: string;
   npcFaceImageUrl?: string;
+  speakerName?: string; // For special person messages
 }
 
 export interface Conversation {
@@ -39,6 +40,13 @@ export interface Conversation {
   objectiveHistory?: ObjectiveAssessment[];
   scenarioKey?: string;
   languageCode?: LanguageCode;
+  // Special person (e.g., policeman) that gets called when NPC becomes angry
+  specialPerson?: {
+    name: string;
+    type: string; // e.g., "policeman"
+    mood: string;
+    faceImageUrl: string;
+  };
 }
 
 export interface NpcEvaluation {
@@ -79,6 +87,7 @@ export interface NpcResponse {
   objective: ObjectiveAssessment;
   safety: NpcSafetyAssessment;
   replySuggestions: string[];
+  shouldCallPoliceman?: boolean;
 }
 
 export interface NpcProfile {
@@ -130,6 +139,12 @@ export interface ConversationSnapshot {
   objectiveHistory?: ObjectiveAssessment[];
   scenarioKey?: string;
   languageCode?: LanguageCode;
+  specialPerson?: {
+    name: string;
+    type: string;
+    mood: string;
+    faceImageUrl: string;
+  };
 }
 
 export interface CustomScenario {
@@ -179,5 +194,7 @@ export interface MessageStreamCompletePayload {
   replySuggestions: string[];
   sceneImageUrl: string;
   npcFaceImageUrl?: string;
+  speakerName?: string;
   debrief?: Debrief;
+  policeIntroAudioUrl?: string;
 }

@@ -252,6 +252,7 @@ export function createNpcResponseFromLlmSchema(fallbackProgress: GoalProgress) {
       objective: objectiveAssessmentFromLlmSchema,
       safety: npcSafetyFromLlmSchema,
       replySuggestions: replySuggestionsFromUnknownSchema,
+      shouldCallPoliceman: booleanFromUnknownSchema.catch(false),
     })
     .catch({
       npcMessage: "...",
@@ -262,5 +263,6 @@ export function createNpcResponseFromLlmSchema(fallbackProgress: GoalProgress) {
       objective: DEFAULT_OBJECTIVE_ASSESSMENT,
       safety: DEFAULT_NPC_SAFETY_ASSESSMENT,
       replySuggestions: [],
+      shouldCallPoliceman: false,
     });
 }
