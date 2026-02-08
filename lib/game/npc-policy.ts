@@ -9,7 +9,6 @@ import type {
   NpcResponse,
   NpcSafetyAssessment,
 } from "../types";
-import { normalizeToMoodState } from "../types";
 
 interface PolicyProfile {
   failDisengagedStreak: number;
@@ -18,12 +17,33 @@ interface PolicyProfile {
   cautionDisengagedStreak: number;
   achievedScoreMin: number;
   basePenalty: number;
+  tabooPenalty: number;
   minCooperation: number;
   minRelevance: number;
   minPoliteness: number;
 }
 
 type SupportedToneLanguage = "fr" | "en" | "de" | "es" | "pt";
+
+interface MoodThresholdProfile {
+  angryPolitenessMax: number;
+  angryCooperationMax: number;
+  annoyedRelevanceMax: number;
+  annoyedCooperationMax: number;
+  skepticalRelevanceMax: number;
+  skepticalTaskIntentMax: number;
+  skepticalScoreMax: number;
+  friendlyMin: number;
+  friendlyPolitenessMin: number;
+  happyMin: number;
+  happyObjectiveMin: number;
+  surprisedMin: number;
+  sadPolitenessMin: number;
+  sadCooperationMax: number;
+  sadTaskIntentMax: number;
+  neutralMin: number;
+  neutralMax: number;
+}
 
 const POLICY_BY_LEVEL: Record<ConversationLevel, PolicyProfile> = {
   beginner: {
@@ -33,6 +53,7 @@ const POLICY_BY_LEVEL: Record<ConversationLevel, PolicyProfile> = {
     cautionDisengagedStreak: 4,
     achievedScoreMin: 0.82,
     basePenalty: 0.03,
+    tabooPenalty: 0.28,
     minCooperation: 0.3,
     minRelevance: 0.3,
     minPoliteness: 0.12,
@@ -44,6 +65,7 @@ const POLICY_BY_LEVEL: Record<ConversationLevel, PolicyProfile> = {
     cautionDisengagedStreak: 2,
     achievedScoreMin: 0.88,
     basePenalty: 0.07,
+    tabooPenalty: 0.35,
     minCooperation: 0.4,
     minRelevance: 0.4,
     minPoliteness: 0.18,
@@ -55,6 +77,7 @@ const POLICY_BY_LEVEL: Record<ConversationLevel, PolicyProfile> = {
     cautionDisengagedStreak: 1,
     achievedScoreMin: 0.92,
     basePenalty: 0.11,
+    tabooPenalty: 0.45,
     minCooperation: 0.5,
     minRelevance: 0.5,
     minPoliteness: 0.24,
@@ -66,6 +89,7 @@ const POLICY_BY_LEVEL: Record<ConversationLevel, PolicyProfile> = {
     cautionDisengagedStreak: 1,
     achievedScoreMin: 0.96,
     basePenalty: 0.15,
+    tabooPenalty: 0.55,
     minCooperation: 0.6,
     minRelevance: 0.6,
     minPoliteness: 0.3,
@@ -103,6 +127,85 @@ const WEIGHTS_BY_LEVEL: Record<
     politeness: 0.25,
     clarity: 0.1,
     taskIntent: 0.15,
+  },
+};
+
+const MOOD_THRESHOLDS_BY_LEVEL: Record<ConversationLevel, MoodThresholdProfile> = {
+  beginner: {
+    angryPolitenessMax: 0.1,
+    angryCooperationMax: 0.15,
+    annoyedRelevanceMax: 0.45,
+    annoyedCooperationMax: 0.35,
+    skepticalRelevanceMax: 0.58,
+    skepticalTaskIntentMax: 0.55,
+    skepticalScoreMax: 0.52,
+    friendlyMin: 0.68,
+    friendlyPolitenessMin: 0.7,
+    happyMin: 0.82,
+    happyObjectiveMin: 0.75,
+    surprisedMin: 0.95,
+    sadPolitenessMin: 0.78,
+    sadCooperationMax: 0.32,
+    sadTaskIntentMax: 0.35,
+    neutralMin: 0.5,
+    neutralMax: 0.8,
+  },
+  intermediate: {
+    angryPolitenessMax: 0.16,
+    angryCooperationMax: 0.22,
+    annoyedRelevanceMax: 0.52,
+    annoyedCooperationMax: 0.42,
+    skepticalRelevanceMax: 0.64,
+    skepticalTaskIntentMax: 0.6,
+    skepticalScoreMax: 0.58,
+    friendlyMin: 0.72,
+    friendlyPolitenessMin: 0.74,
+    happyMin: 0.86,
+    happyObjectiveMin: 0.82,
+    surprisedMin: 0.94,
+    sadPolitenessMin: 0.82,
+    sadCooperationMax: 0.36,
+    sadTaskIntentMax: 0.4,
+    neutralMin: 0.54,
+    neutralMax: 0.82,
+  },
+  advanced: {
+    angryPolitenessMax: 0.22,
+    angryCooperationMax: 0.28,
+    annoyedRelevanceMax: 0.6,
+    annoyedCooperationMax: 0.5,
+    skepticalRelevanceMax: 0.7,
+    skepticalTaskIntentMax: 0.68,
+    skepticalScoreMax: 0.64,
+    friendlyMin: 0.78,
+    friendlyPolitenessMin: 0.8,
+    happyMin: 0.9,
+    happyObjectiveMin: 0.88,
+    surprisedMin: 0.96,
+    sadPolitenessMin: 0.84,
+    sadCooperationMax: 0.4,
+    sadTaskIntentMax: 0.45,
+    neutralMin: 0.58,
+    neutralMax: 0.84,
+  },
+  impossible: {
+    angryPolitenessMax: 0.3,
+    angryCooperationMax: 0.35,
+    annoyedRelevanceMax: 0.68,
+    annoyedCooperationMax: 0.6,
+    skepticalRelevanceMax: 0.78,
+    skepticalTaskIntentMax: 0.75,
+    skepticalScoreMax: 0.7,
+    friendlyMin: 0.84,
+    friendlyPolitenessMin: 0.86,
+    happyMin: 0.94,
+    happyObjectiveMin: 0.92,
+    surprisedMin: 0.97,
+    sadPolitenessMin: 0.86,
+    sadCooperationMax: 0.42,
+    sadTaskIntentMax: 0.5,
+    neutralMin: 0.62,
+    neutralMax: 0.86,
   },
 };
 
@@ -181,7 +284,7 @@ export function applyNpcPolicy(
       (evaluation.offTopic ? 0.15 : 0) -
       (evaluation.refusal ? 0.15 : 0) -
       (hostileTurn ? 0.25 : 0) -
-      (tabooTurn ? 0.2 : 0),
+      (tabooTurn ? profile.tabooPenalty : 0),
   );
 
   const constructiveTurn =
@@ -264,11 +367,12 @@ export function applyNpcPolicy(
   const mood = decideMood({
     level: conversation.level,
     goalStatus,
+    evaluation,
+    objectiveScore,
     interactionScore,
     hostileTurn,
     tabooTurn,
     disengagedStreak: conversation.disengagedStreak,
-    llmMood: llmResponse.mood,
   });
   const npcMessage = enforceMoodTone({
     message: llmResponse.npcMessage,
@@ -293,34 +397,99 @@ export function applyNpcPolicy(
 function decideMood(args: {
   level: ConversationLevel;
   goalStatus: GoalStatus;
+  evaluation: NpcEvaluation;
+  objectiveScore: number;
   interactionScore: number;
   hostileTurn: boolean;
   tabooTurn: boolean;
   disengagedStreak: number;
-  llmMood: string;
 }): MoodState {
   if (args.goalStatus === "failed") {
     return args.level === "beginner" ? "annoyed" : "angry";
   }
+  const thresholds = MOOD_THRESHOLDS_BY_LEVEL[args.level];
+
+  // Heavy taboo penalty: always collapse to angry.
   if (args.tabooTurn) {
     return "angry";
   }
-  if (args.hostileTurn) {
-    return args.level === "beginner" ? "annoyed" : "angry";
+
+  // Specific metric combinations -> specific emotions.
+  if (
+    args.hostileTurn &&
+    (args.evaluation.politeness <= thresholds.angryPolitenessMax ||
+      args.evaluation.cooperation <= thresholds.angryCooperationMax ||
+      (args.evaluation.refusal && args.evaluation.relevance <= thresholds.annoyedRelevanceMax))
+  ) {
+    return "angry";
   }
-  if (args.disengagedStreak >= 2) {
-    return args.level === "impossible" ? "skeptical" : "annoyed";
+
+  // Polite but low intent/cooperation can read as discouraged.
+  if (
+    args.evaluation.politeness >= thresholds.sadPolitenessMin &&
+    args.evaluation.cooperation <= thresholds.sadCooperationMax &&
+    args.evaluation.taskIntent <= thresholds.sadTaskIntentMax &&
+    !args.evaluation.refusal &&
+    !args.hostileTurn
+  ) {
+    return "sad";
   }
-  if (args.interactionScore >= 0.85) {
-    return args.level === "impossible" ? "surprised" : "happy";
+
+  // Exceptional performance on impossible can surprise the NPC.
+  if (
+    args.level === "impossible" &&
+    allCoreMetricsAbove(args.evaluation, thresholds.surprisedMin) &&
+    args.objectiveScore >= thresholds.happyObjectiveMin
+  ) {
+    return "surprised";
   }
-  if (args.interactionScore >= 0.65) {
+
+  if (
+    allCoreMetricsAbove(args.evaluation, thresholds.happyMin) &&
+    args.objectiveScore >= thresholds.happyObjectiveMin
+  ) {
+    return "happy";
+  }
+
+  if (
+    args.evaluation.cooperation >= thresholds.friendlyMin &&
+    args.evaluation.relevance >= thresholds.friendlyMin &&
+    args.evaluation.politeness >= thresholds.friendlyPolitenessMin &&
+    args.evaluation.clarity >= thresholds.friendlyMin &&
+    args.evaluation.taskIntent >= thresholds.friendlyMin
+  ) {
+    return "friendly";
+  }
+
+  if (
+    args.evaluation.refusal ||
+    args.evaluation.offTopic ||
+    args.evaluation.cooperation <= thresholds.annoyedCooperationMax ||
+    args.evaluation.relevance <= thresholds.annoyedRelevanceMax
+  ) {
+    return "annoyed";
+  }
+
+  if (
+    args.evaluation.relevance <= thresholds.skepticalRelevanceMax ||
+    args.evaluation.taskIntent <= thresholds.skepticalTaskIntentMax ||
+    args.interactionScore <= thresholds.skepticalScoreMax ||
+    args.disengagedStreak >= 2
+  ) {
+    return "skeptical";
+  }
+
+  if (
+    args.interactionScore >= thresholds.neutralMin &&
+    args.interactionScore <= thresholds.neutralMax
+  ) {
     return "neutral";
   }
-  if (args.interactionScore <= 0.35) {
-    return args.level === "beginner" ? "neutral" : "skeptical";
+
+  if (args.interactionScore > thresholds.neutralMax) {
+    return "friendly";
   }
-  return normalizeMood(args.llmMood);
+  return "skeptical";
 }
 
 function objectiveScoreToProgress(score: number): GoalProgress {
@@ -342,11 +511,6 @@ function normalizeEvaluation(evaluation: NpcEvaluation): NpcEvaluation {
     refusal: Boolean(evaluation.refusal),
     hostile: Boolean(evaluation.hostile),
   };
-}
-
-function normalizeMood(value: string): MoodState {
-  const mood = value.trim();
-  return mood.length > 0 ? normalizeToMoodState(mood) : "neutral";
 }
 
 function normalizeObjective(value: ObjectiveAssessment): ObjectiveAssessment {
@@ -387,6 +551,16 @@ function pushUnique(values: string[], next: string): string[] {
     return values;
   }
   return [...values, next];
+}
+
+function allCoreMetricsAbove(evaluation: NpcEvaluation, min: number): boolean {
+  return (
+    evaluation.cooperation >= min &&
+    evaluation.relevance >= min &&
+    evaluation.politeness >= min &&
+    evaluation.clarity >= min &&
+    evaluation.taskIntent >= min
+  );
 }
 
 function enforceMoodTone(args: {
