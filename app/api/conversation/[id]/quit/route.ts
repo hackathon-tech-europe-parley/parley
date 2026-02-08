@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
-import {
-  getConversation,
-  deleteConversation,
-} from "@/lib/conversations";
-import { generateSceneImage } from "@/lib/fal";
-import { generateDebrief } from "@/lib/openai";
+import { getConversation, deleteConversation } from "@/lib/storage";
+import { generateSceneImage, generateDebrief } from "@/lib/ai";
 import { idParamSchema, quitConversationResponseSchema } from "@/lib/types";
 
 export async function POST(

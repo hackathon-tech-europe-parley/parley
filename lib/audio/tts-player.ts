@@ -3,6 +3,7 @@ export class TTSPlayer {
   private audio: HTMLAudioElement | null = null;
   private endedHandler: (() => void) | null = null;
   private errorHandler: (() => void) | null = null;
+  private _playResolve: (() => void) | null = null;
 
   private playPromise: Promise<void> | null = null;
   private _muted = false;
@@ -27,17 +28,22 @@ export class TTSPlayer {
       if (this.errorHandler) {
         this.audio.removeEventListener('error', this.errorHandler);
       }
-      
+
       // Stop and reset audio
       this.audio.pause();
       this.audio.currentTime = 0;
       this.audio.src = '';
       this.audio.load(); // Reset the audio element
     }
-    
+
     this.endedHandler = null;
     this.errorHandler = null;
 
+    // Resolve any pending play promise so callers awaiting play() aren't stuck
+    if (this._playResolve) {
+      this._playResolve();
+      this._playResolve = null;
+    }
   }
 
   async play(text: string, cacheKey: string, languageCode?: string, npcGender?: string, speed?: number): Promise<void> {
@@ -56,7 +62,7 @@ export class TTSPlayer {
 
     // Create a promise for this play operation
     this.playPromise = this._doPlay(text, cacheKey, languageCode, npcGender, speed);
-    
+
     try {
       await this.playPromise;
     } finally {
@@ -67,7 +73,7 @@ export class TTSPlayer {
   private async _doPlay(text: string, cacheKey: string, languageCode?: string, npcGender?: string, speed?: number): Promise<void> {
     // Include speed in cache key to cache different speeds separately
     const speedCacheKey = speed !== undefined ? `${cacheKey}-speed-${speed}` : cacheKey;
-    
+
     let url = this.cache.get(speedCacheKey);
     if (!url) {
       const res = await fetch("/api/tts", {
@@ -86,31 +92,56 @@ export class TTSPlayer {
       this.audio = new Audio();
     }
 
-    // Set up event handlers
-    this.endedHandler = () => {
-  
-    };
-    
-    this.errorHandler = () => {
-  
-    };
-    
-    this.audio.addEventListener('ended', this.endedHandler, { once: true });
-    this.audio.addEventListener('error', this.errorHandler, { once: true });
-    
-    // Set the source, load, and play
+    // Set the source and load
     this.audio.src = url;
-    this.audio.load(); // Ensure the audio is properly loaded
+    this.audio.load();
 
-    try {
-      await this.audio.play();
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "NotAllowedError") {
-        // Browser blocked autoplay — user hasn't interacted yet. Silently skip.
-        return;
-      }
-      throw err;
-    }
+    // Wait for playback to finish (ended event) or be interrupted (cleanup)
+    return new Promise<void>((resolve) => {
+      this._playResolve = resolve;
+
+      this.endedHandler = () => {
+        this._playResolve = null;
+        resolve();
+      };
+      this.errorHandler = () => {
+        this._playResolve = null;
+        resolve();
+      };
+
+      this.audio!.addEventListener('ended', this.endedHandler, { once: true });
+      this.audio!.addEventListener('error', this.errorHandler, { once: true });
+
+      this.audio!.play().catch((err) => {
+        if (err instanceof DOMException && err.name === "NotAllowedError") {
+          // Browser blocked autoplay — user hasn't interacted yet. Silently skip.
+          this._playResolve = null;
+          resolve();
+          return;
+        }
+        this._playResolve = null;
+        resolve(); // Resolve instead of reject to avoid unhandled errors
+      });
+    });
+  }
+
+  /** Fetch pre-generated audio from a URL and store in cache so play() is instant. */
+  prefetchFromUrl(url: string, cacheKey: string): Promise<void> {
+    if (this._muted) return Promise.resolve();
+    if (this.cache.has(cacheKey)) return Promise.resolve();
+    return fetch(url)
+      .then((res) => {
+        if (!res.ok) return;
+        return res.blob();
+      })
+      .then((blob) => {
+        if (blob && !this.cache.has(cacheKey)) {
+          this.cache.set(cacheKey, URL.createObjectURL(blob));
+        }
+      })
+      .catch(() => {
+        // Best-effort; play() will retry on miss.
+      });
   }
 
   /** Fetch TTS audio and store in cache so play() is instant. */

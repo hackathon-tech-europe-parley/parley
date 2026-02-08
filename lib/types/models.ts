@@ -32,6 +32,12 @@ export interface Conversation {
   sceneImageUrl: string;
   npcFaceImageUrl: string;
   npcGender: NpcGender;
+  goalStatus?: GoalStatus;
+  debrief?: Debrief;
+  turnCount?: number;
+  tabooStrike?: number;
+  evaluationHistory?: NpcEvaluation[];
+  objectiveHistory?: ObjectiveAssessment[];
   scenarioKey?: string;
   languageCode?: LanguageCode;
   // Special person (e.g., policeman) that gets called when NPC becomes angry
@@ -54,13 +60,33 @@ export interface NpcEvaluation {
   hostile: boolean;
 }
 
+export interface ObjectiveCheckpoint {
+  id: string;
+  met: boolean;
+}
+
+export interface ObjectiveAssessment {
+  objectiveScore: number;
+  objectiveMet: boolean;
+  confidence: number;
+  checkpoints: ObjectiveCheckpoint[];
+  blockers: string[];
+}
+
+export interface NpcSafetyAssessment {
+  badWordsUsed: boolean;
+  tabooTopicUsed: boolean;
+}
+
 export interface NpcResponse {
   npcMessage: string;
   mood: string;
   goalStatus: GoalStatus;
   goalProgress: GoalProgress;
   evaluation: NpcEvaluation;
-  hints: string[];
+  objective: ObjectiveAssessment;
+  safety: NpcSafetyAssessment;
+  replySuggestions: string[];
   shouldCallPoliceman?: boolean;
 }
 
@@ -74,6 +100,23 @@ export interface Debrief {
   narrative: string;
   keyPhrases: Array<{ phrase: string; translation: string }>;
   goalAchieved: boolean;
+  metrics?: {
+    turnsAnalyzed: number;
+    evaluationAverages: {
+      cooperation: number;
+      relevance: number;
+      politeness: number;
+      clarity: number;
+      taskIntent: number;
+    };
+    objective: {
+      score: number;
+      confidence: number;
+      met: boolean;
+      checkpoints: ObjectiveCheckpoint[];
+      blockers: string[];
+    };
+  };
 }
 
 export interface ConversationSnapshot {
@@ -88,8 +131,12 @@ export interface ConversationSnapshot {
   sceneImageUrl: string;
   npcFaceImageUrl: string;
   npcGender: NpcGender;
+  goalStatus?: GoalStatus;
+  debrief?: Debrief;
   history: ConversationMessage[];
-  hints: string[];
+  replySuggestions: string[];
+  evaluationHistory?: NpcEvaluation[];
+  objectiveHistory?: ObjectiveAssessment[];
   scenarioKey?: string;
   languageCode?: LanguageCode;
   specialPerson?: {
@@ -122,7 +169,7 @@ export interface CreateConversationResponse {
   npcOpeningMessage: string;
   npcOpeningMood: string;
   npcOpeningGoalProgress: GoalProgress;
-  hints: string[];
+  replySuggestions: string[];
   scenario: string;
   goal: string;
   language: string;
@@ -142,9 +189,12 @@ export interface MessageStreamCompletePayload {
   mood: string;
   goalStatus: GoalStatus;
   goalProgress: GoalProgress;
-  hints: string[];
+  evaluation: NpcEvaluation;
+  objective: ObjectiveAssessment;
+  replySuggestions: string[];
   sceneImageUrl: string;
   npcFaceImageUrl?: string;
   speakerName?: string;
   debrief?: Debrief;
+  policeIntroAudioUrl?: string;
 }

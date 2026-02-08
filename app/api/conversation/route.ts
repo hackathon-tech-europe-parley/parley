@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { createConversationResponseSchema, createConversationSchema } from "@/lib/types";
 import type { Conversation } from "@/lib/types";
-import { generateId, setConversation, setHints } from "@/lib/conversations";
-import { generateSceneImage } from "@/lib/fal";
-import { getNpcFaceAssetUrl } from "@/lib/npc-assets";
-import { generateNpcProfile, generateNpcOpening } from "@/lib/openai";
+import { generateId, setConversation, setReplySuggestions } from "@/lib/storage";
+import { generateSceneImage, generateNpcProfile, generateNpcOpening } from "@/lib/ai";
+import { getNpcFaceAssetUrl } from "@/lib/game";
 
 export async function POST(request: Request) {
   try {
@@ -48,9 +47,14 @@ export async function POST(request: Request) {
       disengagedStreak: 0,
       constructiveStreak: 0,
       history: [],
+      evaluationHistory: [],
+      objectiveHistory: [],
       messagesSinceImageRegen: 0,
       sceneImageUrl,
       npcFaceImageUrl: "", // Will be set after generating opening
+      goalStatus: "ongoing",
+      turnCount: 0,
+      tabooStrike: 0,
       scenarioKey,
       languageCode,
     };
@@ -69,7 +73,7 @@ export async function POST(request: Request) {
     conversation.npcFaceImageUrl = npcFaceImageUrl;
 
     await setConversation(conversationId, conversation);
-    await setHints(conversationId, opening.hints);
+    await setReplySuggestions(conversationId, opening.replySuggestions);
 
     return NextResponse.json(createConversationResponseSchema.parse({
       conversationId,
@@ -80,7 +84,7 @@ export async function POST(request: Request) {
       npcOpeningMessage: opening.npcMessage,
       npcOpeningMood: opening.mood,
       npcOpeningGoalProgress: opening.goalProgress,
-      hints: opening.hints,
+      replySuggestions: opening.replySuggestions,
       scenario,
       goal,
       language,
