@@ -1,5 +1,5 @@
 import { fal } from "@fal-ai/client";
-import { FAL_IMAGE_MODEL } from "./env";
+import { FAL_IMAGE_MODEL } from "../env";
 
 const imageModel = FAL_IMAGE_MODEL;
 

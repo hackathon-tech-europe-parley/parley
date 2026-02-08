@@ -1,5 +1,5 @@
-import type { Conversation } from "./types";
-import { DATABASE_URL } from "./env";
+import type { Conversation } from "../types";
+import { DATABASE_URL } from "../env";
 
 const usePostgres = Boolean(DATABASE_URL);
 
@@ -27,15 +27,15 @@ function getSQL(): SQL {
 
 const globalStore = globalThis as unknown as {
   __parleyConversations?: Map<string, Conversation>;
-  __parleyHints?: Map<string, string[]>;
+  __parleyReplySuggestions?: Map<string, string[]>;
 };
 
 if (!usePostgres) {
   if (!globalStore.__parleyConversations) {
     globalStore.__parleyConversations = new Map<string, Conversation>();
   }
-  if (!globalStore.__parleyHints) {
-    globalStore.__parleyHints = new Map<string, string[]>();
+  if (!globalStore.__parleyReplySuggestions) {
+    globalStore.__parleyReplySuggestions = new Map<string, string[]>();
   }
 }
 
@@ -76,31 +76,31 @@ export async function deleteConversation(id: string): Promise<void> {
     return;
   }
   globalStore.__parleyConversations!.delete(id);
-  globalStore.__parleyHints!.delete(id);
+  globalStore.__parleyReplySuggestions!.delete(id);
 }
 
-export async function getHints(id: string): Promise<string[]> {
+export async function getReplySuggestions(id: string): Promise<string[]> {
   if (usePostgres) {
     const sql = getSQL();
-    const rows = await sql`SELECT hints FROM conversations WHERE id = ${id}`;
+    const rows = await sql`SELECT data->'replySuggestions' AS suggestions FROM conversations WHERE id = ${id}`;
     if (rows.length === 0) return [];
-    return rows[0].hints as string[];
+    return (rows[0].suggestions as string[]) ?? [];
   }
-  return globalStore.__parleyHints!.get(id) ?? [];
+  return globalStore.__parleyReplySuggestions!.get(id) ?? [];
 }
 
-export async function setHints(
+export async function setReplySuggestions(
   id: string,
-  hints: string[],
+  suggestions: string[],
 ): Promise<void> {
   if (usePostgres) {
     const sql = getSQL();
     await sql`
-      UPDATE conversations SET hints = ${sql.json(hints)} WHERE id = ${id}
+      UPDATE conversations SET data = jsonb_set(data, '{replySuggestions}', ${sql.json(suggestions)}) WHERE id = ${id}
     `;
     return;
   }
-  globalStore.__parleyHints!.set(id, hints);
+  globalStore.__parleyReplySuggestions!.set(id, suggestions);
 }
 
 export function generateId(): string {

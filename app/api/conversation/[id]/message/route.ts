@@ -1,16 +1,16 @@
-import { getConversation, setConversation, setHints } from "@/lib/conversations";
-import { generateSceneImage } from "@/lib/fal";
-import { getNpcFaceAssetUrl, getSpecialPersonFaceAssetUrl, getPoliceOfficerType, getPoliceOfficerName } from "@/lib/npc-assets";
-import { generateNpcResponseStream, generateSpecialPersonResponseStream } from "@/lib/openai";
-import { generateDebrief } from "@/lib/openai";
-import { applyNpcPolicy } from "@/lib/npc-policy";
+import { getConversation, setConversation, setReplySuggestions } from "@/lib/storage";
+import { generateSceneImage, generateNpcResponseStream, generateSpecialPersonResponseStream, generateDebrief } from "@/lib/ai";
+import { getNpcFaceAssetUrl, getSpecialPersonFaceAssetUrl, getPoliceOfficerType, getPoliceOfficerName, getPoliceIntroMessage, getPoliceCallingLine, applyNpcPolicy } from "@/lib/game";
 import {
+  type GoalStatus,
   idParamSchema,
   messageStreamCompletePayloadSchema,
   messageStreamErrorPayloadSchema,
   messageStreamTokenPayloadSchema,
   sendMessageSchema,
 } from "@/lib/types";
+
+const MAX_USER_TURNS = 15;
 
 export async function POST(
   request: Request,
@@ -45,6 +45,21 @@ export async function POST(
       },
     );
   }
+  const currentGoalStatus = conversation.goalStatus ?? "ongoing";
+  if (currentGoalStatus !== "ongoing") {
+    return new Response(
+      formatSSE(
+        "error",
+        messageStreamErrorPayloadSchema.parse({
+          error: "Conversation has already ended",
+        }),
+      ),
+      {
+        status: 409,
+        headers: sseHeaders(),
+      },
+    );
+  }
 
   const body = await request.json().catch(() => null);
   if (body === null) {
@@ -75,6 +90,13 @@ export async function POST(
 
   const { message } = parsed.data;
   conversation.history.push({ role: "user", text: message });
+  const previousTurnCount = Number.isFinite(conversation.turnCount)
+    ? Number(conversation.turnCount)
+    : 0;
+  conversation.turnCount = previousTurnCount + 1;
+  conversation.goalStatus = "ongoing";
+  conversation.debrief = undefined;
+  await setConversation(id, conversation);
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -120,7 +142,31 @@ export async function POST(
               ),
             );
           } else if (event.type === "complete") {
-            const npcResponse = applyNpcPolicy(conversation, event.data);
+            let npcResponse = applyNpcPolicy(conversation, event.data);
+            const exceededTurnLimit =
+              conversation.turnCount !== undefined &&
+              conversation.turnCount >= MAX_USER_TURNS &&
+              npcResponse.goalStatus === "ongoing";
+            if (exceededTurnLimit) {
+              npcResponse = {
+                ...npcResponse,
+                goalStatus: "failed",
+                goalProgress: 1,
+                mood: conversation.level === "beginner" ? "annoyed" : "skeptical",
+                objective: {
+                  ...npcResponse.objective,
+                  objectiveMet: false,
+                  objectiveScore: Math.min(npcResponse.objective.objectiveScore, 0.25),
+                  blockers: Array.from(
+                    new Set([
+                      ...npcResponse.objective.blockers,
+                      "turn_limit_reached",
+                    ]),
+                  ),
+                },
+                replySuggestions: [],
+              };
+            }
 
             // Check if NPC message contains any mention of police (in any language)
             // Normalize the message to handle accents and variations
@@ -143,6 +189,35 @@ export async function POST(
             const shouldCallPoliceman = !conversation.specialPerson && (
               npcResponse.shouldCallPoliceman === true || mentionsCallingPolice
             );
+
+            // If police is being called but tone enforcement stripped the mention, append it
+            if (shouldCallPoliceman && !mentionsCallingPolice) {
+              npcResponse = {
+                ...npcResponse,
+                npcMessage: npcResponse.npcMessage + " " + getPoliceCallingLine(conversation.languageCode ?? "en"),
+              };
+            }
+
+            // Police being called means the goal is failed
+            if (shouldCallPoliceman) {
+              npcResponse = {
+                ...npcResponse,
+                goalStatus: "failed",
+                goalProgress: 1,
+                objective: {
+                  ...npcResponse.objective,
+                  objectiveMet: false,
+                  objectiveScore: Math.min(npcResponse.objective.objectiveScore, 0.1),
+                  blockers: Array.from(
+                    new Set([
+                      ...npcResponse.objective.blockers,
+                      "police_called",
+                    ]),
+                  ),
+                },
+                replySuggestions: [],
+              };
+            }
 
             // Determine if this response is from special person or regular NPC
             // This should match what we determined at the start of the stream
@@ -181,27 +256,117 @@ export async function POST(
             });
             conversation.goalProgress = npcResponse.goalProgress;
             conversation.messagesSinceImageRegen++;
+            conversation.evaluationHistory = [
+              ...(conversation.evaluationHistory ?? []),
+              npcResponse.evaluation,
+            ];
+            conversation.objectiveHistory = [
+              ...(conversation.objectiveHistory ?? []),
+              npcResponse.objective,
+            ];
 
-            await setHints(id, npcResponse.hints);
-
-            let sceneImageUrl = conversation.sceneImageUrl;
-            if (conversation.messagesSinceImageRegen >= 3) {
-              const moodPrompt = `Photorealistic background scene: ${conversation.scenario}. No people, just the environment and setting. First-person perspective.`;
-              sceneImageUrl = await generateSceneImage(moodPrompt);
-              conversation.sceneImageUrl = sceneImageUrl;
-              conversation.messagesSinceImageRegen = 0;
-            }
-
-            await setConversation(id, conversation);
+            await setReplySuggestions(id, npcResponse.replySuggestions);
 
             // Send NPC's complete event FIRST
-            if (npcResponse.goalStatus === "ongoing") {
+            if (shouldCallPoliceman) {
+              // Police sequence: NPC message is "ongoing" for the client (debrief goes on police intro)
+              const moodPrompt = buildScenePrompt(conversation.scenario, npcResponse.mood);
+              const sceneImageUrl = await generateSceneImageSafely(
+                moodPrompt,
+                conversation.sceneImageUrl,
+              );
+              conversation.sceneImageUrl = sceneImageUrl;
+              conversation.messagesSinceImageRegen = 0;
+              // Don't persist failed status yet — will be set after police intro
+              await setConversation(id, conversation);
+
+              const npcPayload = messageStreamCompletePayloadSchema.parse({
+                npcMessage: npcResponse.npcMessage,
+                mood: npcResponse.mood,
+                goalStatus: "ongoing",
+                goalProgress: npcResponse.goalProgress,
+                evaluation: npcResponse.evaluation,
+                objective: npcResponse.objective,
+                replySuggestions: [],
+                sceneImageUrl,
+                npcFaceImageUrl: faceImageUrl,
+                speakerName,
+              });
+              controller.enqueue(
+                encoder.encode(formatSSE("complete", npcPayload)),
+              );
+
+              // Generate debrief for the police intro payload
+              console.log("[POLICE] Triggering police call. Message:", npcResponse.npcMessage.substring(0, 100));
+              console.log("[POLICE] Flag:", npcResponse.shouldCallPoliceman);
+
+              const debrief = await generateDebrief(conversation, "failed");
+
+              const specialPersonType = getPoliceOfficerType(conversation.npcGender);
+              const specialPersonName = getPoliceOfficerName(specialPersonType);
+              const introMood = "firm";
+              const introFaceUrl = getSpecialPersonFaceAssetUrl(specialPersonType, introMood);
+              const introText = getPoliceIntroMessage(conversation.languageCode ?? "en");
+
+              conversation.specialPerson = {
+                name: specialPersonName,
+                type: specialPersonType,
+                mood: introMood,
+                faceImageUrl: introFaceUrl,
+              };
+              conversation.goalStatus = "failed";
+              conversation.debrief = debrief;
+
+              conversation.history.push({
+                role: "npc",
+                text: introText,
+                mood: introMood,
+                npcFaceImageUrl: introFaceUrl,
+                speakerName: specialPersonName,
+              });
+
+              await setConversation(id, conversation);
+
+              const langCode = conversation.languageCode ?? "en";
+              const policeIntroAudioUrl = `/api/police-audio?type=${specialPersonType}&lang=${langCode}`;
+
+              const introPayload = messageStreamCompletePayloadSchema.parse({
+                npcMessage: introText,
+                mood: introMood,
+                goalStatus: "failed",
+                goalProgress: 1,
+                evaluation: npcResponse.evaluation,
+                objective: npcResponse.objective,
+                replySuggestions: [],
+                sceneImageUrl: conversation.sceneImageUrl,
+                npcFaceImageUrl: introFaceUrl,
+                speakerName: specialPersonName,
+                policeIntroAudioUrl,
+                debrief,
+              });
+
+              controller.enqueue(
+                encoder.encode(formatSSE("complete", introPayload)),
+              );
+            } else if (npcResponse.goalStatus === "ongoing") {
+              const moodPrompt = buildScenePrompt(conversation.scenario, npcResponse.mood);
+              const sceneImageUrl = await generateSceneImageSafely(
+                moodPrompt,
+                conversation.sceneImageUrl,
+              );
+              conversation.sceneImageUrl = sceneImageUrl;
+              conversation.messagesSinceImageRegen = 0;
+              conversation.goalStatus = "ongoing";
+              conversation.debrief = undefined;
+              await setConversation(id, conversation);
               const completePayload = messageStreamCompletePayloadSchema.parse({
                 npcMessage: npcResponse.npcMessage,
                 mood: npcResponse.mood,
                 goalStatus: npcResponse.goalStatus,
                 goalProgress: npcResponse.goalProgress,
-                hints: npcResponse.hints,
+                evaluation: npcResponse.evaluation,
+                objective: npcResponse.objective,
+                replySuggestions: npcResponse.replySuggestions,
                 sceneImageUrl,
                 npcFaceImageUrl: faceImageUrl,
                 speakerName,
@@ -212,24 +377,35 @@ export async function POST(
                 ),
               );
             } else {
-              // Goal achieved or failed — generate debrief
+              const finalStatus = npcResponse.goalStatus;
               const debrief = await generateDebrief(
                 conversation,
-                npcResponse.goalStatus,
+                finalStatus,
               );
-              const finalImagePrompt =
-                npcResponse.goalStatus === "achieved"
-                  ? `Photorealistic background scene: ${conversation.scenario}. No people, just the environment and setting. First-person perspective.`
-                  : `Photorealistic background scene: ${conversation.scenario}. No people, just the environment and setting. First-person perspective.`;
-              const finalImageUrl =
-                await generateSceneImage(finalImagePrompt);
+              const finalImagePrompt = buildScenePrompt(
+                conversation.scenario,
+                npcResponse.mood,
+                finalStatus,
+              );
+              const finalImageUrl = await generateSceneImageSafely(
+                finalImagePrompt,
+                conversation.sceneImageUrl,
+              );
+
+              conversation.goalStatus = finalStatus;
+              conversation.debrief = debrief;
+              conversation.sceneImageUrl = finalImageUrl;
+              conversation.messagesSinceImageRegen = 0;
+              await setConversation(id, conversation);
 
               const completePayload = messageStreamCompletePayloadSchema.parse({
                 npcMessage: npcResponse.npcMessage,
                 mood: npcResponse.mood,
                 goalStatus: npcResponse.goalStatus,
                 goalProgress: npcResponse.goalProgress,
-                hints: npcResponse.hints,
+                evaluation: npcResponse.evaluation,
+                objective: npcResponse.objective,
+                replySuggestions: npcResponse.replySuggestions,
                 sceneImageUrl: finalImageUrl,
                 npcFaceImageUrl: faceImageUrl,
                 speakerName,
@@ -241,87 +417,6 @@ export async function POST(
                   formatSSE("complete", completePayload),
                 ),
               );
-            }
-
-            // If NPC indicated they want to call police, IMMEDIATELY generate and send police officer's introduction
-            // This happens right after the NPC's complete event is sent
-            if (shouldCallPoliceman) {
-              console.log("[POLICE] Triggering police call. Message:", npcResponse.npcMessage.substring(0, 100));
-              console.log("[POLICE] Mentions police:", mentionsCallingPolice, "Flag:", npcResponse.shouldCallPoliceman);
-              
-              // Use opposite gender: if NPC is man, use policewoman; if NPC is woman, use policeman
-              const specialPersonType = getPoliceOfficerType(conversation.npcGender);
-              const specialPersonName = getPoliceOfficerName(specialPersonType);
-              const initialMood = "neutral";
-              
-              conversation.specialPerson = {
-                name: specialPersonName,
-                type: specialPersonType,
-                mood: initialMood,
-                faceImageUrl: getSpecialPersonFaceAssetUrl(specialPersonType, initialMood),
-              };
-
-              await setConversation(id, conversation);
-
-              // Generate police officer's introduction message
-              const policemanIntroStream = generateSpecialPersonResponseStream(
-                conversation,
-                specialPersonType,
-                specialPersonName,
-              );
-
-              // Stream the introduction message immediately
-              let introText = "";
-              let introMood = initialMood;
-              
-              for await (const introEvent of policemanIntroStream) {
-                if (introEvent.type === "token") {
-                  introText += introEvent.text;
-                  controller.enqueue(
-                    encoder.encode(
-                      formatSSE(
-                        "token",
-                        messageStreamTokenPayloadSchema.parse({ text: introEvent.text }),
-                      ),
-                    ),
-                  );
-                } else if (introEvent.type === "complete") {
-                  introMood = introEvent.data.mood;
-                  introText = introEvent.data.npcMessage;
-                  
-                  const introFaceUrl = getSpecialPersonFaceAssetUrl(specialPersonType, introMood);
-                  conversation.specialPerson!.mood = introMood;
-                  conversation.specialPerson!.faceImageUrl = introFaceUrl;
-                  
-                  conversation.history.push({
-                    role: "npc",
-                    text: introText,
-                    mood: introMood,
-                    npcFaceImageUrl: introFaceUrl,
-                    speakerName: specialPersonName,
-                  });
-                  
-                  await setConversation(id, conversation);
-                  
-                  // Send complete event for police officer's introduction
-                  const introPayload = messageStreamCompletePayloadSchema.parse({
-                    npcMessage: introText,
-                    mood: introMood,
-                    goalStatus: "ongoing",
-                    goalProgress: conversation.goalProgress,
-                    hints: [],
-                    sceneImageUrl: conversation.sceneImageUrl,
-                    npcFaceImageUrl: introFaceUrl,
-                    speakerName: specialPersonName,
-                  });
-                  
-                  controller.enqueue(
-                    encoder.encode(
-                      formatSSE("complete", introPayload),
-                    ),
-                  );
-                }
-              }
             }
           }
         }
@@ -356,4 +451,62 @@ function sseHeaders(): HeadersInit {
 
 function formatSSE(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
+function buildScenePrompt(
+  scenario: string,
+  mood: string,
+  outcome?: GoalStatus,
+): string {
+  const moodTone = describeMoodTone(mood);
+  const outcomeTone =
+    outcome === "achieved"
+      ? "The scene should feel resolved and calmer than before."
+      : outcome === "failed"
+        ? "The scene should feel tense, unresolved, and emotionally heavy."
+        : "";
+
+  return [
+    `Photorealistic background scene: ${scenario}.`,
+    "No people, just the environment and setting. First-person perspective.",
+    `Atmosphere: ${moodTone}.`,
+    outcomeTone,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function describeMoodTone(mood: string): string {
+  switch (mood) {
+    case "happy":
+      return "uplifting and optimistic";
+    case "friendly":
+      return "welcoming and calm";
+    case "neutral":
+      return "balanced and realistic";
+    case "skeptical":
+      return "wary and uncertain";
+    case "annoyed":
+      return "frustrated and tense";
+    case "angry":
+      return "hostile and intense";
+    case "sad":
+      return "somber and subdued";
+    case "surprised":
+      return "suddenly tense and alert";
+    default:
+      return "balanced and realistic";
+  }
+}
+
+async function generateSceneImageSafely(
+  prompt: string,
+  fallbackImageUrl: string,
+): Promise<string> {
+  try {
+    return await generateSceneImage(prompt);
+  } catch (error) {
+    console.error("Scene image regeneration failed, using previous background.", error);
+    return fallbackImageUrl;
+  }
 }

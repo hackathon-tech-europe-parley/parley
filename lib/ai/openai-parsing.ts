@@ -1,4 +1,4 @@
-import type { GoalProgress, GoalStatus } from "./types";
+import type { GoalProgress, GoalStatus } from "../types";
 
 export function parseJsonSafely(content: string): unknown {
   try {

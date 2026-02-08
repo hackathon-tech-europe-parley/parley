@@ -6,9 +6,9 @@ import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
-import { AudioRecorder } from "@/lib/audio-recorder";
+import { AudioRecorder } from "@/lib/audio/audio-recorder";
 import { consumeSSE } from "@/lib/sse-client";
-import { TTSPlayer } from "@/lib/tts-player";
+import { TTSPlayer } from "@/lib/audio/tts-player";
 import {
   conversationCacheSchema,
   conversationSnapshotSchema,
@@ -22,6 +22,15 @@ import {
 import { ChatConversationView } from "./chat-conversation-view";
 import { ChatDebriefView } from "./chat-debrief-view";
 import { fromCachedConversation, type ConversationState, type DebriefState } from "./chat-types";
+
+// Default TTS speed proportional to difficulty level:
+// beginner=1.0, intermediate≈1.33, advanced≈1.67, impossible=2.0
+const LEVEL_DEFAULT_SPEED: Record<string, number> = {
+  beginner: 1.0,
+  intermediate: 1.3,
+  advanced: 1.7,
+  impossible: 2.0,
+};
 
 function preloadImage(url: string): Promise<void> {
   return new Promise((resolve) => {
@@ -56,25 +65,36 @@ export function ChatPageClient() {
   const [pendingTranscription, setPendingTranscription] = useState<string | null>(null);
   const [ttsPlaying, setTtsPlaying] = useState<number | null>(null);
   const [npcMuted, setNpcMuted] = useState(false);
-  const [ttsSpeed, setTtsSpeed] = useState(() => {
-    // Load speed from localStorage or default to 1.0
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("parley:ttsSpeed");
-      if (saved) {
-        const parsed = parseFloat(saved);
-        if (!isNaN(parsed) && parsed >= 0.5 && parsed <= 2.0) {
-          return parsed;
-        }
-      }
-    }
-    return 1.0;
-  });
+  const [ttsSpeed, setTtsSpeed] = useState(1.0);
+  const hasSetLevelSpeed = useRef(false);
 
   const messagesEnd = useRef<HTMLDivElement>(null);
   const recorderRef = useRef<AudioRecorder | null>(null);
   const ttsPlayerRef = useRef<TTSPlayer | null>(null);
   const hasAutoPlayed = useRef(false);
   const lastProcessedIndex = useRef(-1);
+
+  useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, []);
+
+  // Set TTS speed based on difficulty level when state first loads
+  useEffect(() => {
+    if (state && !hasSetLevelSpeed.current) {
+      hasSetLevelSpeed.current = true;
+      const levelSpeed = LEVEL_DEFAULT_SPEED[state.level] ?? 1.0;
+      setTtsSpeed(levelSpeed);
+    }
+  }, [state]);
 
   useEffect(() => {
     if (!conversationId) {
@@ -109,25 +129,22 @@ export function ChatPageClient() {
         if (!parsed.success) {
           throw new Error("Malformed conversation payload");
         }
-        // Convert snapshot to ConversationState
+        const snapshot = parsed.data;
         setState({
-          conversationId: parsed.data.conversationId,
-          scenario: parsed.data.scenario,
-          language: parsed.data.language,
-          level: parsed.data.level,
-          goal: parsed.data.goal,
-          npcName: parsed.data.npcName,
-          npcGender: parsed.data.npcGender,
-          mood: parsed.data.mood,
-          goalProgress: parsed.data.goalProgress,
-          sceneImageUrl: parsed.data.sceneImageUrl,
-          npcFaceImageUrl: parsed.data.npcFaceImageUrl,
-          history: parsed.data.history,
-          hints: parsed.data.hints,
-          scenarioKey: parsed.data.scenarioKey,
-          languageCode: parsed.data.languageCode,
-          specialPerson: parsed.data.specialPerson,
+          ...snapshot,
+          evaluationHistory: snapshot.evaluationHistory ?? [],
+          objectiveHistory: snapshot.objectiveHistory ?? [],
         });
+        if (snapshot.goalStatus && snapshot.goalStatus !== "ongoing" && snapshot.debrief) {
+          setEndStatus({
+            debrief: snapshot.debrief,
+            sceneImageUrl: snapshot.sceneImageUrl,
+            npcName: snapshot.npcName,
+            goalStatus: snapshot.goalStatus,
+          });
+        } else {
+          setEndStatus(null);
+        }
       })
       .catch((fetchError) => setError(fetchError.message));
   }, [conversationId]);
@@ -179,6 +196,9 @@ export function ChatPageClient() {
 
   useEffect(() => {
     if (state && state.history.length > 0 && !hasAutoPlayed.current) {
+      if (state.history.length !== 1) {
+        return;
+      }
       hasAutoPlayed.current = true;
       const firstNpc = state.history[0];
       if (firstNpc?.role === "npc") {
@@ -260,10 +280,6 @@ export function ChatPageClient() {
 
   function handleSpeedChange(speed: number) {
     setTtsSpeed(speed);
-    // Save to localStorage for persistence
-    if (typeof window !== "undefined") {
-      localStorage.setItem("parley:ttsSpeed", speed.toString());
-    }
   }
 
   function handleMuteToggle() {
@@ -335,7 +351,7 @@ export function ChatPageClient() {
     }
 
     const msg = text ?? input.trim();
-    if (!msg || sending || !state) {
+    if (!msg || sending || !state || endStatus) {
       return;
     }
 
@@ -348,7 +364,7 @@ export function ChatPageClient() {
         ? {
             ...prev,
             history: [...prev.history, { role: "user", text: msg }],
-            hints: [],
+            replySuggestions: [],
           }
         : prev,
     );
@@ -364,7 +380,7 @@ export function ChatPageClient() {
         throw new Error("Failed to send message");
       }
 
-      let completeData: MessageStreamCompletePayload | null = null;
+      const completeEvents: MessageStreamCompletePayload[] = [];
 
       await consumeSSE<MessageStreamCompletePayload>(
         res,
@@ -373,7 +389,7 @@ export function ChatPageClient() {
             // Tokens are consumed but not displayed — we show a typing indicator instead
           },
           onComplete(data) {
-            completeData = data;
+            completeEvents.push(data);
           },
           onError(streamError) {
             setError(streamError);
@@ -382,9 +398,133 @@ export function ChatPageClient() {
         messageStreamCompletePayloadSchema,
       );
 
-      // Preload all assets before revealing the message
-      if (completeData) {
-        const data = completeData as MessageStreamCompletePayload;
+      // Police sequence: NPC speaks → 1s pause → 3s siren → police speaks
+      const hasPoliceIntro = completeEvents.length >= 2 &&
+        completeEvents[completeEvents.length - 1].policeIntroAudioUrl;
+
+      if (hasPoliceIntro) {
+        const npcData = completeEvents[0];
+        const policeData = completeEvents[completeEvents.length - 1];
+        const npcMsgIndex = state.history.length + 1;
+        const policeMsgIndex = state.history.length + 2;
+
+        // Prevent auto-play effects from triggering — we handle audio manually
+        lastProcessedIndex.current = state.history.length + 2;
+
+        // Prefetch all assets in parallel
+        const preloads: Promise<void>[] = [];
+        if (ttsPlayerRef.current && !ttsPlayerRef.current.muted) {
+          preloads.push(
+            ttsPlayerRef.current.prefetch(npcData.npcMessage, `msg-${npcMsgIndex}`, state.languageCode, state.npcGender, ttsSpeed),
+          );
+          if (policeData.policeIntroAudioUrl) {
+            preloads.push(
+              ttsPlayerRef.current.prefetchFromUrl(policeData.policeIntroAudioUrl, `msg-${policeMsgIndex}`),
+            );
+          }
+        }
+        if (npcData.sceneImageUrl && npcData.sceneImageUrl !== state.sceneImageUrl) {
+          preloads.push(preloadImage(npcData.sceneImageUrl));
+        }
+        if (npcData.npcFaceImageUrl) preloads.push(preloadImage(npcData.npcFaceImageUrl));
+        if (policeData.npcFaceImageUrl) preloads.push(preloadImage(policeData.npcFaceImageUrl));
+        await Promise.all(preloads);
+
+        // Step 1: Show NPC message and play TTS
+        setState((prev) => {
+          if (!prev) return prev;
+          const resolvedFaceUrl = npcData.npcFaceImageUrl || prev.npcFaceImageUrl;
+          const speakerName = npcData.speakerName || prev.npcName;
+          return {
+            ...prev,
+            history: [...prev.history, {
+              role: "npc" as const,
+              text: npcData.npcMessage,
+              mood: npcData.mood,
+              npcFaceImageUrl: resolvedFaceUrl,
+              speakerName,
+            }],
+            mood: npcData.mood,
+            goalProgress: npcData.goalProgress,
+            goalStatus: npcData.goalStatus,
+            replySuggestions: npcData.replySuggestions,
+            evaluationHistory: [...prev.evaluationHistory, npcData.evaluation],
+            objectiveHistory: [...prev.objectiveHistory, npcData.objective],
+            sceneImageUrl: npcData.sceneImageUrl,
+            npcFaceImageUrl: resolvedFaceUrl,
+          };
+        });
+
+        setSending(false);
+
+        // Play NPC TTS and wait for it to finish
+        if (ttsPlayerRef.current && !ttsPlayerRef.current.muted) {
+          setTtsPlaying(npcMsgIndex);
+          try {
+            await ttsPlayerRef.current.play(npcData.npcMessage, `msg-${npcMsgIndex}`, state.languageCode, state.npcGender, ttsSpeed);
+          } catch { /* TTS failed, continue sequence */ }
+          setTtsPlaying(null);
+        }
+
+        // Step 2: 1 second pause
+        await new Promise(r => setTimeout(r, 1000));
+
+        // Step 3: Play police siren for 3 seconds
+        const siren = new Audio("/assets/special/police_siren.mp3");
+        try {
+          await siren.play();
+          await new Promise(r => setTimeout(r, 3000));
+        } catch { /* siren blocked, continue */ }
+        siren.pause();
+        siren.src = "";
+
+        // Step 4: Show police intro and play TTS
+        setState((prev) => {
+          if (!prev) return prev;
+          const resolvedFaceUrl = policeData.npcFaceImageUrl || prev.npcFaceImageUrl;
+          const speakerName = policeData.speakerName || "Officer";
+          const policeType = prev.npcGender === "masculine" ? "policewoman" : "policeman";
+          return {
+            ...prev,
+            history: [...prev.history, {
+              role: "npc" as const,
+              text: policeData.npcMessage,
+              mood: policeData.mood,
+              npcFaceImageUrl: resolvedFaceUrl,
+              speakerName,
+            }],
+            goalStatus: policeData.goalStatus,
+            goalProgress: policeData.goalProgress,
+            debrief: policeData.debrief,
+            replySuggestions: policeData.replySuggestions,
+            evaluationHistory: [...prev.evaluationHistory, policeData.evaluation],
+            objectiveHistory: [...prev.objectiveHistory, policeData.objective],
+            sceneImageUrl: policeData.sceneImageUrl,
+            specialPerson: {
+              name: speakerName,
+              type: policeType,
+              mood: policeData.mood,
+              faceImageUrl: resolvedFaceUrl,
+            },
+          };
+        });
+
+        // Police TTS plays via auto-play effect (lastProcessedIndex is now behind)
+        lastProcessedIndex.current = policeMsgIndex - 1;
+
+        // Set end status after the full police sequence so debrief screen shows
+        if (policeData.debrief) {
+          setEndStatus({
+            debrief: policeData.debrief,
+            sceneImageUrl: policeData.sceneImageUrl,
+            npcName: state.npcName,
+            goalStatus: policeData.goalStatus,
+          });
+        }
+
+      } else if (completeEvents.length > 0) {
+        // Normal single-message flow
+        const data = completeEvents[completeEvents.length - 1];
         const npcMsgIndex = state.history.length + 1;
         const cacheKey = `msg-${npcMsgIndex}`;
 
@@ -393,13 +533,10 @@ export function ChatPageClient() {
         if (ttsPlayerRef.current && !ttsPlayerRef.current.muted) {
           // Determine TTS gender: use opposite of main NPC gender for police officer
           let ttsGender: NpcGender = state.npcGender || "feminine";
-          // Check if this message is from special person by comparing speakerName
-          // This works even if state.specialPerson isn't set yet (e.g., first police officer message)
-          const isSpecialPersonMessage = data.speakerName && 
-            (data.speakerName === state.specialPerson?.name || 
+          const isSpecialPersonMessage = data.speakerName &&
+            (data.speakerName === state.specialPerson?.name ||
              (data.speakerName === "Officer" && data.speakerName !== state.npcName));
           if (isSpecialPersonMessage) {
-            // Police officer should have opposite voice of main character
             ttsGender = state.npcGender === "masculine" ? "feminine" : "masculine";
           }
           preloads.push(
@@ -415,21 +552,15 @@ export function ChatPageClient() {
 
         await Promise.all(preloads);
 
-        // Commit everything in one render
         setState((prev) => {
-          if (!prev) {
-            return prev;
-          }
+          if (!prev) return prev;
           const resolvedFaceUrl = data.npcFaceImageUrl || prev.npcFaceImageUrl;
-          // Use speakerName from payload if available, otherwise determine from context
           const speakerName = data.speakerName || (prev.specialPerson && data.npcFaceImageUrl === prev.specialPerson.faceImageUrl ? prev.specialPerson.name : prev.npcName);
           const isSpecialPersonMessage = speakerName === prev.specialPerson?.name;
-          
-          // Update special person mood if it's a special person message
           const updatedSpecialPerson = isSpecialPersonMessage && prev.specialPerson
             ? { ...prev.specialPerson, mood: data.mood, faceImageUrl: resolvedFaceUrl }
             : prev.specialPerson;
-          
+
           return {
             ...prev,
             history: [...prev.history, {
@@ -439,11 +570,15 @@ export function ChatPageClient() {
               npcFaceImageUrl: resolvedFaceUrl,
               speakerName,
             }],
-            mood: isSpecialPersonMessage ? prev.mood : data.mood, // Only update NPC mood if not special person
+            mood: isSpecialPersonMessage ? prev.mood : data.mood,
             goalProgress: data.goalProgress,
-            hints: data.hints,
+            goalStatus: data.goalStatus,
+            debrief: data.debrief,
+            replySuggestions: data.replySuggestions,
+            evaluationHistory: [...prev.evaluationHistory, data.evaluation],
+            objectiveHistory: [...prev.objectiveHistory, data.objective],
             sceneImageUrl: data.sceneImageUrl,
-            npcFaceImageUrl: isSpecialPersonMessage ? prev.npcFaceImageUrl : resolvedFaceUrl, // Keep NPC face if special person
+            npcFaceImageUrl: isSpecialPersonMessage ? prev.npcFaceImageUrl : resolvedFaceUrl,
             specialPerson: updatedSpecialPerson,
           };
         });
@@ -503,9 +638,9 @@ export function ChatPageClient() {
   if (error && !state) {
     return (
       <main className="flex flex-1 items-center justify-center p-4">
-        <div className="rounded-xl bg-red-900/50 p-8 text-center">
+        <div className="animate-in rounded-xl border border-red-800/30 bg-red-900/30 p-8 text-center">
           <p className="text-red-300">{error}</p>
-          <Link href="/" className="mt-4 inline-block text-blue-400 underline">
+          <Link href="/" className="mt-4 inline-block text-blue-400 transition-colors hover:text-blue-300">
             {t("backToSetup")}
           </Link>
         </div>
@@ -516,7 +651,7 @@ export function ChatPageClient() {
   if (!state) {
     return (
       <main className="flex flex-1 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-white" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-blue-500" />
       </main>
     );
   }
@@ -541,7 +676,9 @@ export function ChatPageClient() {
         tScenarios={tScenarios}
         messagesEndRef={messagesEnd}
         onReplay={handleReplay}
-        onHintSelect={setInput}
+        onChoiceSelect={(choice: string) => {
+          void sendMessage(choice);
+        }}
         onInputChange={setInput}
         onSubmit={() => {
           void sendMessage();
