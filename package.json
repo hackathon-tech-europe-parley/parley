@@ -8,7 +8,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "generate-police-audio": "tsx scripts/generate-police-audio.ts"
   },
   "dependencies": {
     "@confiture-ai/gradium-sdk-js": "^0.1.1",

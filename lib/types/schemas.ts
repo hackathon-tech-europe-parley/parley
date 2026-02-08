@@ -31,6 +31,7 @@ export const conversationMessageSchema = z
     text: nonEmptyStringSchema,
     mood: nonEmptyStringSchema.optional(),
     npcFaceImageUrl: z.string().optional(),
+    speakerName: nonEmptyStringSchema.optional(),
   })
   .strict();
 
@@ -62,6 +63,7 @@ export const ttsRequestSchema = z
     text: nonEmptyStringSchema,
     languageCode: languageCodeSchema.optional(),
     npcGender: npcGenderSchema.optional(),
+    speed: z.number().min(0.5).max(2.0).optional(),
   })
   .strict();
 
@@ -224,6 +226,14 @@ export const conversationSchema = z
     objectiveHistory: z.array(objectiveAssessmentSchema).optional(),
     scenarioKey: nonEmptyStringSchema.optional(),
     languageCode: languageCodeSchema.optional(),
+    specialPerson: z
+      .object({
+        name: nonEmptyStringSchema,
+        type: nonEmptyStringSchema,
+        mood: nonEmptyStringSchema,
+        faceImageUrl: nonEmptyStringSchema,
+      })
+      .optional(),
   })
   .strict();
 
@@ -248,6 +258,14 @@ export const conversationSnapshotSchema = z
     objectiveHistory: z.array(objectiveAssessmentSchema).optional(),
     scenarioKey: nonEmptyStringSchema.optional(),
     languageCode: languageCodeSchema.optional(),
+    specialPerson: z
+      .object({
+        name: nonEmptyStringSchema,
+        type: nonEmptyStringSchema,
+        mood: nonEmptyStringSchema,
+        faceImageUrl: nonEmptyStringSchema,
+      })
+      .optional(),
   })
   .strict();
 
@@ -303,7 +321,9 @@ export const messageStreamCompletePayloadSchema = z
     replySuggestions: z.array(nonEmptyStringSchema),
     sceneImageUrl: nonEmptyStringSchema,
     npcFaceImageUrl: z.string().optional(),
+    speakerName: nonEmptyStringSchema.optional(),
     debrief: debriefSchema.optional(),
+    policeIntroAudioUrl: z.string().optional(),
   })
   .strict();
 

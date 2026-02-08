@@ -6,3 +6,5 @@ export {
   setReplySuggestions,
   generateId,
 } from "./conversations";
+
+export { getPoliceAudio, setPoliceAudio } from "./police-audio";

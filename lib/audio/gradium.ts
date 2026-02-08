@@ -10,7 +10,7 @@ function enqueue<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 // Flagship voices per language and gender
-const VOICE_MAP: Record<string, Record<NpcGender, string>> = {
+export const VOICE_MAP: Record<string, Record<NpcGender, string>> = {
   en: { feminine: "YTpq7expH9539ERJ", masculine: "LFZvm12tW_z0xfGo" }, // Emma / Kent
   fr: { feminine: "b35yykvVppLXyw_l", masculine: "axlOaUiFyOZhy4nv" }, // Elise / Leo
   de: { feminine: "-uP9MuGtBqAvEyxI", masculine: "0y1VZjPabOBU3rWy" }, // Mia / Maximilian
@@ -32,6 +32,7 @@ export function synthesizeSpeech(
   text: string,
   languageCode?: string,
   gender?: NpcGender,
+  speed?: number,
 ): Promise<ArrayBuffer> {
   return enqueue(async () => {
     const apiKey = getGradiumApiKey();
@@ -41,12 +42,18 @@ export function synthesizeSpeech(
       output_format: "wav",
       only_audio: true,
     };
+    // Convert speed (0.5-2.0) to padding_bonus:
+    // speed 0.5 (slowest) → padding_bonus 2.0
+    // speed 1.0 (normal) → padding_bonus 0.0
+    // speed 2.0 (fastest) → padding_bonus -2.0
+    // Falls back to env-configured value if no speed provided.
+    const paddingBonus = speed !== undefined
+      ? (1.0 - speed) * 2.0
+      : getGradiumTtsPaddingBonus();
     const fastPayload = {
       ...basePayload,
-      // Gradium expects json_config as a JSON-encoded string.
       json_config: JSON.stringify({
-        // Lower padding_bonus makes delivery faster.
-        padding_bonus: getGradiumTtsPaddingBonus(),
+        padding_bonus: paddingBonus,
       }),
     };
     let res = await fetch("https://eu.api.gradium.ai/api/post/speech/tts", {

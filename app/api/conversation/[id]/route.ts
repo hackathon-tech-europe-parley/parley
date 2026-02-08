@@ -48,6 +48,7 @@ export async function GET(
     objectiveHistory: conversation.objectiveHistory ?? [],
     scenarioKey: conversation.scenarioKey,
     languageCode: conversation.languageCode,
+    specialPerson: conversation.specialPerson,
   };
 
   return NextResponse.json(conversationSnapshotSchema.parse(snapshot));

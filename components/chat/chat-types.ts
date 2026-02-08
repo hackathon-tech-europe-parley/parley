@@ -31,6 +31,12 @@ export interface ConversationState {
   objectiveHistory: ObjectiveAssessment[];
   scenarioKey?: string;
   languageCode?: LanguageCode;
+  specialPerson?: {
+    name: string;
+    type: string;
+    mood: string;
+    faceImageUrl: string;
+  };
 }
 
 export interface DebriefState {
