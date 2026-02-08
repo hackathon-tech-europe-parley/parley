@@ -228,7 +228,8 @@ export function buildSpecialPersonSystemPrompt(
   };
 
   const specialPersonDescriptions: Record<string, string> = {
-    policeman: `You are a police officer who has been called to the scene. You are professional, authoritative, and focused on understanding the situation and maintaining order. You speak with authority and expect respect.`,
+    policeman: `You are a male police officer who has been called to the scene. You are professional, authoritative, and focused on understanding the situation and maintaining order. You speak with authority and expect respect.`,
+    policewoman: `You are a female police officer who has been called to the scene. You are professional, authoritative, and focused on understanding the situation and maintaining order. You speak with authority and expect respect.`,
   };
 
   const description = specialPersonDescriptions[specialPersonType] || `You are a ${specialPersonType} who has been called to the scene. You are professional and authoritative.`;
