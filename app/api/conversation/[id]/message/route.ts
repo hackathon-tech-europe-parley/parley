@@ -1,4 +1,4 @@
-import { getConversation, setConversation, setHints, setReplySuggestions } from "@/lib/storage";
+import { getConversation, setConversation, setReplySuggestions } from "@/lib/storage";
 import { generateSceneImage, generateNpcResponseStream, generateDebrief } from "@/lib/ai";
 import { getNpcFaceAssetUrl, applyNpcPolicy } from "@/lib/game";
 import {
@@ -136,7 +136,6 @@ export async function POST(
                     ]),
                   ),
                 },
-                hints: [],
                 replySuggestions: [],
               };
             }
@@ -165,7 +164,6 @@ export async function POST(
               npcResponse.objective,
             ];
 
-            await setHints(id, npcResponse.hints);
             await setReplySuggestions(id, npcResponse.replySuggestions);
 
             if (npcResponse.goalStatus === "ongoing") {
@@ -186,7 +184,6 @@ export async function POST(
                 goalProgress: npcResponse.goalProgress,
                 evaluation: npcResponse.evaluation,
                 objective: npcResponse.objective,
-                hints: npcResponse.hints,
                 replySuggestions: npcResponse.replySuggestions,
                 sceneImageUrl,
                 npcFaceImageUrl,
@@ -225,7 +222,6 @@ export async function POST(
                 goalProgress: npcResponse.goalProgress,
                 evaluation: npcResponse.evaluation,
                 objective: npcResponse.objective,
-                hints: npcResponse.hints,
                 replySuggestions: npcResponse.replySuggestions,
                 sceneImageUrl: finalImageUrl,
                 npcFaceImageUrl,
