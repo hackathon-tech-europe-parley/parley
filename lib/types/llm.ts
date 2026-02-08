@@ -56,6 +56,11 @@ const hintsFromUnknownSchema = z
   .transform((hints) => hints.map((hint) => hint.trim()).filter(Boolean))
   .catch([]);
 
+const replySuggestionsFromUnknownSchema = z
+  .array(z.string())
+  .transform((suggestions) => suggestions.map((s) => s.trim()).filter(Boolean))
+  .catch([]);
+
 const goalStatusFromUnknownSchema = goalStatusSchema.catch("ongoing");
 
 export const npcEvaluationFromLlmSchema = z
@@ -252,6 +257,7 @@ export function createNpcResponseFromLlmSchema(fallbackProgress: GoalProgress) {
       objective: objectiveAssessmentFromLlmSchema,
       safety: npcSafetyFromLlmSchema,
       hints: hintsFromUnknownSchema,
+      replySuggestions: replySuggestionsFromUnknownSchema,
     })
     .catch({
       npcMessage: "...",
@@ -262,5 +268,6 @@ export function createNpcResponseFromLlmSchema(fallbackProgress: GoalProgress) {
       objective: DEFAULT_OBJECTIVE_ASSESSMENT,
       safety: DEFAULT_NPC_SAFETY_ASSESSMENT,
       hints: [],
+      replySuggestions: [],
     });
 }

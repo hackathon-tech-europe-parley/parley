@@ -27,6 +27,7 @@ export interface ConversationState {
   debrief?: Debrief;
   history: ConversationMessage[];
   hints: string[];
+  replySuggestions: string[];
   evaluationHistory: NpcEvaluation[];
   objectiveHistory: ObjectiveAssessment[];
   scenarioKey?: string;
@@ -63,6 +64,7 @@ export function fromCachedConversation(
       npcFaceImageUrl: cached.npcFaceImageUrl,
     }],
     hints: cached.hints,
+    replySuggestions: cached.replySuggestions,
     evaluationHistory: [],
     objectiveHistory: [],
     scenarioKey: cached.scenarioKey,

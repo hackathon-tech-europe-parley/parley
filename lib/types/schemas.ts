@@ -131,6 +131,7 @@ export const npcResponseSchema = z
     objective: objectiveAssessmentSchema,
     safety: npcSafetyAssessmentSchema,
     hints: z.array(nonEmptyStringSchema),
+    replySuggestions: z.array(nonEmptyStringSchema),
   })
   .strict();
 
@@ -244,6 +245,7 @@ export const conversationSnapshotSchema = z
     debrief: debriefSchema.optional(),
     history: z.array(conversationMessageSchema),
     hints: z.array(nonEmptyStringSchema),
+    replySuggestions: z.array(nonEmptyStringSchema),
     evaluationHistory: z.array(npcEvaluationSchema).optional(),
     objectiveHistory: z.array(objectiveAssessmentSchema).optional(),
     scenarioKey: nonEmptyStringSchema.optional(),
@@ -262,6 +264,7 @@ export const createConversationResponseSchema = z
     npcOpeningMood: nonEmptyStringSchema,
     npcOpeningGoalProgress: goalProgressSchema,
     hints: z.array(nonEmptyStringSchema),
+    replySuggestions: z.array(nonEmptyStringSchema),
     scenario: nonEmptyStringSchema,
     goal: nonEmptyStringSchema,
     language: nonEmptyStringSchema,
@@ -301,6 +304,7 @@ export const messageStreamCompletePayloadSchema = z
     evaluation: npcEvaluationSchema,
     objective: objectiveAssessmentSchema,
     hints: z.array(nonEmptyStringSchema),
+    replySuggestions: z.array(nonEmptyStringSchema),
     sceneImageUrl: nonEmptyStringSchema,
     npcFaceImageUrl: z.string().optional(),
     debrief: debriefSchema.optional(),

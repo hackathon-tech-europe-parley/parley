@@ -28,6 +28,7 @@ function getSQL(): SQL {
 const globalStore = globalThis as unknown as {
   __parleyConversations?: Map<string, Conversation>;
   __parleyHints?: Map<string, string[]>;
+  __parleyReplySuggestions?: Map<string, string[]>;
 };
 
 if (!usePostgres) {
@@ -36,6 +37,9 @@ if (!usePostgres) {
   }
   if (!globalStore.__parleyHints) {
     globalStore.__parleyHints = new Map<string, string[]>();
+  }
+  if (!globalStore.__parleyReplySuggestions) {
+    globalStore.__parleyReplySuggestions = new Map<string, string[]>();
   }
 }
 
@@ -77,6 +81,7 @@ export async function deleteConversation(id: string): Promise<void> {
   }
   globalStore.__parleyConversations!.delete(id);
   globalStore.__parleyHints!.delete(id);
+  globalStore.__parleyReplySuggestions!.delete(id);
 }
 
 export async function getHints(id: string): Promise<string[]> {
@@ -101,6 +106,30 @@ export async function setHints(
     return;
   }
   globalStore.__parleyHints!.set(id, hints);
+}
+
+export async function getReplySuggestions(id: string): Promise<string[]> {
+  if (usePostgres) {
+    const sql = getSQL();
+    const rows = await sql`SELECT reply_suggestions FROM conversations WHERE id = ${id}`;
+    if (rows.length === 0) return [];
+    return (rows[0].reply_suggestions as string[]) ?? [];
+  }
+  return globalStore.__parleyReplySuggestions!.get(id) ?? [];
+}
+
+export async function setReplySuggestions(
+  id: string,
+  suggestions: string[],
+): Promise<void> {
+  if (usePostgres) {
+    const sql = getSQL();
+    await sql`
+      UPDATE conversations SET reply_suggestions = ${sql.json(suggestions)} WHERE id = ${id}
+    `;
+    return;
+  }
+  globalStore.__parleyReplySuggestions!.set(id, suggestions);
 }
 
 export function generateId(): string {
