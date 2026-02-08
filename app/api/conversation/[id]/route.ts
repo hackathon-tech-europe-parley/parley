@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getConversation, getHints } from "@/lib/storage";
+import { getConversation, getReplySuggestions } from "@/lib/storage";
 import {
   conversationSnapshotSchema,
   idParamSchema,
@@ -43,7 +43,7 @@ export async function GET(
     goalStatus: conversation.goalStatus ?? "ongoing",
     debrief: conversation.debrief,
     history: conversation.history,
-    hints: await getHints(id),
+    replySuggestions: await getReplySuggestions(id),
     evaluationHistory: conversation.evaluationHistory ?? [],
     objectiveHistory: conversation.objectiveHistory ?? [],
     scenarioKey: conversation.scenarioKey,
