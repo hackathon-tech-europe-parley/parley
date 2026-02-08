@@ -89,25 +89,26 @@ export function SetupForm() {
     }
   }
 
-  async function handleStart() {
-    if (!languageCode || !selectedScenario) return;
+  async function handleStart(scenario: ScenarioDef) {
+    if (!languageCode || !scenario) return;
+    setSelectedScenario(scenario);
     setLoading(true);
     setError(null);
 
-    const goal = selectedScenario.key === "__custom__" && customScenario
+    const goal = scenario.key === "__custom__" && customScenario
       ? customScenario.goals[level]
-      : tScenarios(`${selectedScenario.key}_goal_${level}`);
+      : tScenarios(`${scenario.key}_goal_${level}`);
 
     try {
       const res = await fetch("/api/conversation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          scenario: selectedScenario.scenario,
+          scenario: scenario.scenario,
           language: LANGUAGE_ENGLISH_NAMES[languageCode],
           level,
           goal,
-          scenarioKey: selectedScenario.key,
+          scenarioKey: scenario.key,
           languageCode,
         }),
       });
@@ -134,7 +135,7 @@ export function SetupForm() {
         `parley:${data.conversationId}`,
         JSON.stringify({
           ...data,
-          scenarioKey: selectedScenario.key,
+          scenarioKey: scenario.key,
           languageCode,
         }),
       );
@@ -260,19 +261,27 @@ export function SetupForm() {
               return (
                 <button
                   key={s.key}
-                  onClick={() => setSelectedScenario(s)}
+                  onClick={() => handleStart(s)}
+                  disabled={loading}
                   className={`btn-press group flex flex-col gap-2 rounded-xl border p-4 text-left transition-all duration-200 hover:scale-[1.02] ${
-                    isSelected
-                      ? "border-blue-500/50 bg-blue-600/10 shadow-lg shadow-blue-600/10"
-                      : "border-slate-700/40 bg-slate-900/40 hover:border-slate-600/60 hover:bg-slate-800/40"
+                    loading && selectedScenario?.key === s.key
+                      ? "border-blue-500/50 bg-blue-600/10 shadow-lg shadow-blue-600/10 opacity-80"
+                      : loading
+                        ? "border-slate-700/40 bg-slate-900/40 opacity-50 cursor-not-allowed"
+                        : isSelected
+                          ? "border-blue-500/50 bg-blue-600/10 shadow-lg shadow-blue-600/10"
+                          : "border-slate-700/40 bg-slate-900/40 hover:border-slate-600/60 hover:bg-slate-800/40"
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <span className="mt-0.5 text-2xl transition-transform duration-200 group-hover:scale-110">{s.emoji}</span>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="font-semibold text-white">{title}</div>
                       <div className="text-sm text-slate-400">{description}</div>
                     </div>
+                    {loading && selectedScenario?.key === s.key && (
+                      <span className="mt-1 h-4 w-4 flex-shrink-0 animate-spin rounded-full border-2 border-blue-400/30 border-t-blue-400" />
+                    )}
                   </div>
                   <div className={`mt-1 rounded-lg px-3 py-2 text-xs leading-relaxed transition-all duration-300 ${
                     isSelected
@@ -292,15 +301,20 @@ export function SetupForm() {
             {/* Generated custom scenario card */}
             {customScenario && (
               <button
-                onClick={() => setSelectedScenario({
+                onClick={() => handleStart({
                   key: "__custom__",
                   scenario: customScenario.scenario,
                   emoji: customScenario.emoji,
                 })}
+                disabled={loading}
                 className={`btn-press group flex flex-col gap-2 rounded-xl border p-4 text-left transition-all duration-200 hover:scale-[1.02] ${
-                  selectedScenario?.key === "__custom__"
-                    ? "border-blue-500/50 bg-blue-600/10 shadow-lg shadow-blue-600/10"
-                    : "border-slate-700/40 bg-slate-900/40 hover:border-slate-600/60 hover:bg-slate-800/40"
+                  loading && selectedScenario?.key === "__custom__"
+                    ? "border-blue-500/50 bg-blue-600/10 shadow-lg shadow-blue-600/10 opacity-80"
+                    : loading
+                      ? "border-slate-700/40 bg-slate-900/40 opacity-50 cursor-not-allowed"
+                      : selectedScenario?.key === "__custom__"
+                        ? "border-blue-500/50 bg-blue-600/10 shadow-lg shadow-blue-600/10"
+                        : "border-slate-700/40 bg-slate-900/40 hover:border-slate-600/60 hover:bg-slate-800/40"
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -372,7 +386,8 @@ export function SetupForm() {
           {/* Reshuffle button */}
           <button
             onClick={reshuffleScenarios}
-            className="btn-press mx-auto mt-4 flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-slate-400 transition-all hover:bg-slate-800/50 hover:text-slate-300"
+            disabled={loading}
+            className="btn-press mx-auto mt-4 flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-slate-400 transition-all hover:bg-slate-800/50 hover:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <svg className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -387,21 +402,13 @@ export function SetupForm() {
             </p>
           )}
 
-          {/* Start button */}
-          <button
-            onClick={handleStart}
-            disabled={!selectedScenario || loading}
-            className="btn-press mt-6 w-full rounded-xl bg-gradient-to-r from-blue-500 to-blue-700 px-4 py-3.5 font-semibold text-white shadow-lg shadow-blue-600/20 transition-all duration-300 hover:from-blue-500 hover:to-blue-600 hover:shadow-blue-500/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                {t("settingUp")}
-              </span>
-            ) : (
-              t("startRoleplay")
-            )}
-          </button>
+          {/* Loading indicator */}
+          {loading && (
+            <div className="mt-6 flex items-center justify-center gap-2 text-blue-300">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-400/30 border-t-blue-400" />
+              <span className="text-sm font-medium">{t("settingUp")}</span>
+            </div>
+          )}
         </div>
       )}
     </div>
