@@ -205,6 +205,18 @@ body::before {
   @apply transition-all active:scale-[0.97];
 }
 
+/* ─── Jail bars drop + fade sequence ─── */
+@keyframes jail-bars-sequence {
+  0%  { transform: translateY(-100%); opacity: 1; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  40% { transform: translateY(0); opacity: 1; }    /* Drop over 2s */
+  80% { transform: translateY(0); opacity: 1; animation-timing-function: ease-in; }    /* Stay 2s */
+  100% { transform: translateY(0); opacity: 0; }   /* Fade over 1s */
+}
+
+.animate-jail-bars-drop {
+  animation: jail-bars-sequence 5s forwards;
+}
+
 /* ─── Scrollbar styling ─── */
 .styled-scrollbar::-webkit-scrollbar {
   width: 6px;

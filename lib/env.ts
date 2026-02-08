@@ -14,7 +14,7 @@ const envSchema = z
 
 const env = envSchema.parse(process.env);
 
-export const OPENAI_MODEL = env.OPENAI_MODEL ?? "gpt-4o-mini";
+export const OPENAI_MODEL = env.OPENAI_MODEL ?? "gpt-4o-2024-08-06";
 export const FAL_IMAGE_MODEL = env.FAL_IMAGE_MODEL ?? "fal-ai/flux/schnell";
 
 export const DATABASE_URL = env.DATABASE_URL;
