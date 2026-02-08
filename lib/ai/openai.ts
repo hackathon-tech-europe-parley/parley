@@ -114,6 +114,7 @@ export async function generateNpcOpening(
 ): Promise<NpcResponse> {
   const response = await openai.chat.completions.create({
     model,
+    temperature: 1.2,
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: buildNpcSystemPrompt(conversation) },
@@ -185,6 +186,7 @@ export async function* generateNpcResponseStream(
 > {
   const stream = await openai.chat.completions.create({
     model,
+    temperature: 1.2,
     response_format: { type: "json_object" },
     messages: toCompletionMessages(conversation),
     stream: true,

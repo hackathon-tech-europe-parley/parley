@@ -66,6 +66,7 @@ export function ChatPageClient() {
   const [ttsPlaying, setTtsPlaying] = useState<number | null>(null);
   const [npcMuted, setNpcMuted] = useState(false);
   const [ttsSpeed, setTtsSpeed] = useState(1.0);
+  const [showJailBars, setShowJailBars] = useState(false);
   const hasSetLevelSpeed = useRef(false);
 
   const messagesEnd = useRef<HTMLDivElement>(null);
@@ -419,7 +420,7 @@ export function ChatPageClient() {
           );
           if (policeData.policeIntroAudioUrl) {
             preloads.push(
-              ttsPlayerRef.current.prefetchFromUrl(policeData.policeIntroAudioUrl, `msg-${policeMsgIndex}`),
+              ttsPlayerRef.current.prefetchFromUrl(policeData.policeIntroAudioUrl, `msg-${policeMsgIndex}`, ttsSpeed),
             );
           }
         }
@@ -466,17 +467,17 @@ export function ChatPageClient() {
           setTtsPlaying(null);
         }
 
-        // Step 2: 1 second pause
+        // 1 second pause
         await new Promise(r => setTimeout(r, 1000));
 
-        // Step 3: Play police siren for 3 seconds
-        const siren = new Audio("/assets/special/police_siren.mp3");
-        try {
-          await siren.play();
+        // Play police siren (use TTSPlayer for autoplay permission)
+        if (ttsPlayerRef.current && !ttsPlayerRef.current.muted) {
+          try {
+            await ttsPlayerRef.current.playUrl("/assets/special/police_siren.mp3", "sfx-siren");
+          } catch { /* siren blocked, continue */ }
+        } else {
           await new Promise(r => setTimeout(r, 3000));
-        } catch { /* siren blocked, continue */ }
-        siren.pause();
-        siren.src = "";
+        }
 
         // Step 4: Show police intro and play TTS
         setState((prev) => {
@@ -509,10 +510,30 @@ export function ChatPageClient() {
           };
         });
 
-        // Police TTS plays via auto-play effect (lastProcessedIndex is now behind)
-        lastProcessedIndex.current = policeMsgIndex - 1;
+        // Play police TTS manually and wait for it to finish
+        if (ttsPlayerRef.current && !ttsPlayerRef.current.muted) {
+          const policeGender: NpcGender = state.npcGender === "masculine" ? "feminine" : "masculine";
+          setTtsPlaying(policeMsgIndex);
+          try {
+            await ttsPlayerRef.current.play(policeData.npcMessage, `msg-${policeMsgIndex}`, state.languageCode, policeGender, ttsSpeed);
+          } catch { /* TTS failed, continue */ }
+          setTtsPlaying(null);
+        }
 
-        // Set end status after the full police sequence so debrief screen shows
+        // Jail bars: sound + drop animation (CSS animation = 5s: 2s drop, 2s hold, 1s fade)
+        setShowJailBars(true);
+        if (ttsPlayerRef.current && !ttsPlayerRef.current.muted) {
+          try {
+            await ttsPlayerRef.current.playUrl("/assets/special/jail_bars.mp3", "sfx-jail-bars");
+          } catch { /* blocked, continue */ }
+        } else {
+          await new Promise(r => setTimeout(r, 3000));
+        }
+        // Wait for the CSS fade-out to complete (sound ~3s, animation needs 2s more to fade)
+        await new Promise(r => setTimeout(r, 2000));
+        setShowJailBars(false);
+
+        // Show debrief screen
         if (policeData.debrief) {
           setEndStatus({
             debrief: policeData.debrief,
@@ -694,6 +715,15 @@ export function ChatPageClient() {
           void handleQuit();
         }}
       />
+      {showJailBars && (
+        <div className="fixed inset-0 z-50 pointer-events-none animate-jail-bars-drop">
+          <img
+            src="/assets/special/jail_bars.png"
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        </div>
+      )}
       {debriefState && (
         <ChatDebriefView
           debriefState={debriefState}
