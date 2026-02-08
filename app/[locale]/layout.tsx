@@ -48,7 +48,7 @@ export default async function LocaleLayout({ children, params }: Props) {
       <body className={`${dmSans.variable} ${jetBrainsMono.variable} font-[family-name:var(--font-dm-sans)] flex min-h-screen flex-col`}>
         <NextIntlClientProvider messages={messages}>
           {/* Header */}
-          <header className="flex-shrink-0 border-b border-slate-800/50 bg-slate-950/90 backdrop-blur-xl">
+          <header className="sticky top-0 z-40 flex-shrink-0 border-b border-slate-800/50 bg-slate-950/90 backdrop-blur-xl">
             <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-3 sm:px-4 md:px-6">
               <Link href="/" className="group flex items-center gap-2.5">
                 <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all group-hover:shadow-blue-500/40 group-hover:scale-105">
@@ -72,7 +72,7 @@ export default async function LocaleLayout({ children, params }: Props) {
           </header>
 
           {/* Content */}
-          <div className="flex flex-1 flex-col">{children}</div>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
         </NextIntlClientProvider>
       </body>
     </html>

@@ -47,9 +47,14 @@ export async function POST(request: Request) {
       disengagedStreak: 0,
       constructiveStreak: 0,
       history: [],
+      evaluationHistory: [],
+      objectiveHistory: [],
       messagesSinceImageRegen: 0,
       sceneImageUrl,
       npcFaceImageUrl: "", // Will be set after generating opening
+      goalStatus: "ongoing",
+      turnCount: 0,
+      tabooStrike: 0,
       scenarioKey,
       languageCode,
     };

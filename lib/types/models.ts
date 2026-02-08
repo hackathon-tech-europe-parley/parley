@@ -31,6 +31,12 @@ export interface Conversation {
   sceneImageUrl: string;
   npcFaceImageUrl: string;
   npcGender: NpcGender;
+  goalStatus?: GoalStatus;
+  debrief?: Debrief;
+  turnCount?: number;
+  tabooStrike?: number;
+  evaluationHistory?: NpcEvaluation[];
+  objectiveHistory?: ObjectiveAssessment[];
   scenarioKey?: string;
   languageCode?: LanguageCode;
 }
@@ -46,12 +52,32 @@ export interface NpcEvaluation {
   hostile: boolean;
 }
 
+export interface ObjectiveCheckpoint {
+  id: string;
+  met: boolean;
+}
+
+export interface ObjectiveAssessment {
+  objectiveScore: number;
+  objectiveMet: boolean;
+  confidence: number;
+  checkpoints: ObjectiveCheckpoint[];
+  blockers: string[];
+}
+
+export interface NpcSafetyAssessment {
+  badWordsUsed: boolean;
+  tabooTopicUsed: boolean;
+}
+
 export interface NpcResponse {
   npcMessage: string;
   mood: string;
   goalStatus: GoalStatus;
   goalProgress: GoalProgress;
   evaluation: NpcEvaluation;
+  objective: ObjectiveAssessment;
+  safety: NpcSafetyAssessment;
   hints: string[];
 }
 
@@ -65,6 +91,23 @@ export interface Debrief {
   narrative: string;
   keyPhrases: Array<{ phrase: string; translation: string }>;
   goalAchieved: boolean;
+  metrics?: {
+    turnsAnalyzed: number;
+    evaluationAverages: {
+      cooperation: number;
+      relevance: number;
+      politeness: number;
+      clarity: number;
+      taskIntent: number;
+    };
+    objective: {
+      score: number;
+      confidence: number;
+      met: boolean;
+      checkpoints: ObjectiveCheckpoint[];
+      blockers: string[];
+    };
+  };
 }
 
 export interface ConversationSnapshot {
@@ -79,8 +122,12 @@ export interface ConversationSnapshot {
   sceneImageUrl: string;
   npcFaceImageUrl: string;
   npcGender: NpcGender;
+  goalStatus?: GoalStatus;
+  debrief?: Debrief;
   history: ConversationMessage[];
   hints: string[];
+  evaluationHistory?: NpcEvaluation[];
+  objectiveHistory?: ObjectiveAssessment[];
   scenarioKey?: string;
   languageCode?: LanguageCode;
 }
@@ -127,6 +174,8 @@ export interface MessageStreamCompletePayload {
   mood: string;
   goalStatus: GoalStatus;
   goalProgress: GoalProgress;
+  evaluation: NpcEvaluation;
+  objective: ObjectiveAssessment;
   hints: string[];
   sceneImageUrl: string;
   npcFaceImageUrl?: string;

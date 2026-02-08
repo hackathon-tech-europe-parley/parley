@@ -17,6 +17,17 @@ export function ChatDebriefView({
   tDebrief,
   onClose,
 }: ChatDebriefViewProps) {
+  const metrics = debriefState.debrief.metrics;
+  const evaluationRows = metrics
+    ? [
+        { id: "cooperation", label: "Cooperation", value: metrics.evaluationAverages.cooperation },
+        { id: "relevance", label: "Relevance", value: metrics.evaluationAverages.relevance },
+        { id: "politeness", label: "Politeness", value: metrics.evaluationAverages.politeness },
+        { id: "clarity", label: "Clarity", value: metrics.evaluationAverages.clarity },
+        { id: "taskIntent", label: "Task intent", value: metrics.evaluationAverages.taskIntent },
+      ]
+    : [];
+
   return (
     <div className="animate-backdrop fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
       <div className="animate-modal relative max-h-[95vh] w-full overflow-y-auto rounded-t-2xl border border-slate-700/40 bg-slate-900 shadow-2xl styled-scrollbar sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl">
@@ -78,6 +89,58 @@ export function ChatDebriefView({
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/* Performance breakdown */}
+          {metrics && (
+            <div className="space-y-3 rounded-xl border border-slate-700/40 bg-slate-800/30 p-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Performance Breakdown
+                </h3>
+                <span className="text-xs text-slate-500">
+                  {metrics.turnsAnalyzed} turns
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {evaluationRows.map((row) => (
+                  <div key={row.id} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-300">{row.label}</span>
+                      <span className="font-[family-name:var(--font-mono)] text-slate-400">
+                        {Math.round(row.value * 100)}%
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-700/50">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all"
+                        style={{ width: `${Math.round(row.value * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-lg border border-slate-700/50 bg-slate-900/60 p-3 text-xs">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="font-semibold uppercase tracking-wide text-slate-400">Objective Score</span>
+                  <span className="font-[family-name:var(--font-mono)] text-slate-200">
+                    {Math.round(metrics.objective.score * 100)}%
+                  </span>
+                </div>
+                <p className={metrics.objective.met ? "text-emerald-400" : "text-amber-300"}>
+                  {metrics.objective.met ? "GO" : "NO-GO"}
+                  {" · "}
+                  confidence {Math.round(metrics.objective.confidence * 100)}%
+                </p>
+                {metrics.objective.blockers.length > 0 && (
+                  <p className="mt-1 text-slate-400">
+                    Blockers: {metrics.objective.blockers.join(", ")}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 

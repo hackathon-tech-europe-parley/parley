@@ -3,9 +3,12 @@ import {
   type ConversationLevel,
   type ConversationMessage,
   type Debrief,
+  type GoalStatus,
   type GoalProgress,
   type LanguageCode,
+  type NpcEvaluation,
   type NpcGender,
+  type ObjectiveAssessment,
 } from "@/lib/types";
 
 export interface ConversationState {
@@ -20,8 +23,12 @@ export interface ConversationState {
   goalProgress: GoalProgress;
   sceneImageUrl: string;
   npcFaceImageUrl: string;
+  goalStatus?: GoalStatus;
+  debrief?: Debrief;
   history: ConversationMessage[];
   hints: string[];
+  evaluationHistory: NpcEvaluation[];
+  objectiveHistory: ObjectiveAssessment[];
   scenarioKey?: string;
   languageCode?: LanguageCode;
 }
@@ -30,7 +37,7 @@ export interface DebriefState {
   debrief: Debrief;
   sceneImageUrl: string;
   npcName: string;
-  goalStatus: string;
+  goalStatus: GoalStatus | "quit";
 }
 
 export function fromCachedConversation(
@@ -48,6 +55,7 @@ export function fromCachedConversation(
     goalProgress: cached.npcOpeningGoalProgress,
     sceneImageUrl: cached.sceneImageUrl,
     npcFaceImageUrl: cached.npcFaceImageUrl,
+    goalStatus: "ongoing",
     history: [{
       role: "npc",
       text: cached.npcOpeningMessage,
@@ -55,6 +63,8 @@ export function fromCachedConversation(
       npcFaceImageUrl: cached.npcFaceImageUrl,
     }],
     hints: cached.hints,
+    evaluationHistory: [],
+    objectiveHistory: [],
     scenarioKey: cached.scenarioKey,
     languageCode: cached.languageCode,
   };
