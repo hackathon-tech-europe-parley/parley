@@ -24,6 +24,12 @@ export interface ConversationState {
   hints: string[];
   scenarioKey?: string;
   languageCode?: LanguageCode;
+  specialPerson?: {
+    name: string;
+    type: string;
+    mood: string;
+    faceImageUrl: string;
+  };
 }
 
 export interface DebriefState {

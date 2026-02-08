@@ -109,7 +109,25 @@ export function ChatPageClient() {
         if (!parsed.success) {
           throw new Error("Malformed conversation payload");
         }
-        setState(parsed.data);
+        // Convert snapshot to ConversationState
+        setState({
+          conversationId: parsed.data.conversationId,
+          scenario: parsed.data.scenario,
+          language: parsed.data.language,
+          level: parsed.data.level,
+          goal: parsed.data.goal,
+          npcName: parsed.data.npcName,
+          npcGender: parsed.data.npcGender,
+          mood: parsed.data.mood,
+          goalProgress: parsed.data.goalProgress,
+          sceneImageUrl: parsed.data.sceneImageUrl,
+          npcFaceImageUrl: parsed.data.npcFaceImageUrl,
+          history: parsed.data.history,
+          hints: parsed.data.hints,
+          scenarioKey: parsed.data.scenarioKey,
+          languageCode: parsed.data.languageCode,
+          specialPerson: parsed.data.specialPerson,
+        });
       })
       .catch((fetchError) => setError(fetchError.message));
   }, [conversationId]);
@@ -127,13 +145,15 @@ export function ChatPageClient() {
   }, []);
 
   const autoPlayTts = useCallback(
-    (text: string, messageIndex: number, langCode?: string, gender?: NpcGender) => {
+    (text: string, messageIndex: number, langCode?: string, gender?: NpcGender, isSpecialPerson?: boolean) => {
       if (!ttsPlayerRef.current || ttsPlayerRef.current.muted) {
         return;
       }
       setTtsPlaying(messageIndex);
+      // Special person always uses masculine voice
+      const ttsGender = isSpecialPerson ? "masculine" : gender;
       ttsPlayerRef.current
-        .play(text, `msg-${messageIndex}`, langCode, gender, ttsSpeed)
+        .play(text, `msg-${messageIndex}`, langCode, ttsGender, ttsSpeed)
         .then(() => setTtsPlaying(null))
         .catch((playError) => {
           console.error("TTS autoplay failed:", playError);
@@ -154,7 +174,8 @@ export function ChatPageClient() {
       hasAutoPlayed.current = true;
       const firstNpc = state.history[0];
       if (firstNpc?.role === "npc") {
-        autoPlayTts(firstNpc.text, 0, state.languageCode, state.npcGender);
+        const isSpecialPerson = firstNpc.speakerName === state.specialPerson?.name;
+        autoPlayTts(firstNpc.text, 0, state.languageCode, state.npcGender, isSpecialPerson);
         lastProcessedIndex.current = 0;
       }
     }
@@ -170,7 +191,8 @@ export function ChatPageClient() {
       for (let i = lastProcessedIndex.current + 1; i <= currentLastIndex; i++) {
         const message = state.history[i];
         if (message?.role === "npc") {
-          autoPlayTts(message.text, i, state.languageCode, state.npcGender);
+          const isSpecialPerson = message.speakerName === state.specialPerson?.name;
+          autoPlayTts(message.text, i, state.languageCode, state.npcGender, isSpecialPerson);
         }
       }
       lastProcessedIndex.current = currentLastIndex;
@@ -210,7 +232,9 @@ export function ChatPageClient() {
   }, [endStatus?.goalStatus]);
 
   function handleReplay(messageIndex: number, text: string) {
-    autoPlayTts(text, messageIndex, state?.languageCode, state?.npcGender);
+    const message = state?.history[messageIndex];
+    const isSpecialPerson = message?.speakerName === state?.specialPerson?.name;
+    autoPlayTts(text, messageIndex, state?.languageCode, state?.npcGender, isSpecialPerson);
   }
 
   function handleSpeedChange(speed: number) {
@@ -346,8 +370,12 @@ export function ChatPageClient() {
         const preloads: Promise<void>[] = [];
 
         if (ttsPlayerRef.current && !ttsPlayerRef.current.muted) {
+          // Check if this is a special person message (will be determined from state after update)
+          // For now, use state.specialPerson to determine gender
+          const isSpecialPerson = !!state.specialPerson;
+          const ttsGender = isSpecialPerson ? "masculine" : state.npcGender;
           preloads.push(
-            ttsPlayerRef.current.prefetch(data.npcMessage, cacheKey, state.languageCode, state.npcGender, ttsSpeed),
+            ttsPlayerRef.current.prefetch(data.npcMessage, cacheKey, state.languageCode, ttsGender, ttsSpeed),
           );
         }
         if (data.sceneImageUrl && data.sceneImageUrl !== state.sceneImageUrl) {
@@ -365,6 +393,15 @@ export function ChatPageClient() {
             return prev;
           }
           const resolvedFaceUrl = data.npcFaceImageUrl || prev.npcFaceImageUrl;
+          // Use speakerName from payload if available, otherwise determine from context
+          const speakerName = data.speakerName || (prev.specialPerson && data.npcFaceImageUrl === prev.specialPerson.faceImageUrl ? prev.specialPerson.name : prev.npcName);
+          const isSpecialPersonMessage = speakerName === prev.specialPerson?.name;
+          
+          // Update special person mood if it's a special person message
+          const updatedSpecialPerson = isSpecialPersonMessage && prev.specialPerson
+            ? { ...prev.specialPerson, mood: data.mood, faceImageUrl: resolvedFaceUrl }
+            : prev.specialPerson;
+          
           return {
             ...prev,
             history: [...prev.history, {
@@ -372,12 +409,14 @@ export function ChatPageClient() {
               text: data.npcMessage,
               mood: data.mood,
               npcFaceImageUrl: resolvedFaceUrl,
+              speakerName,
             }],
-            mood: data.mood,
+            mood: isSpecialPersonMessage ? prev.mood : data.mood, // Only update NPC mood if not special person
             goalProgress: data.goalProgress,
             hints: data.hints,
             sceneImageUrl: data.sceneImageUrl,
-            npcFaceImageUrl: resolvedFaceUrl,
+            npcFaceImageUrl: isSpecialPersonMessage ? prev.npcFaceImageUrl : resolvedFaceUrl, // Keep NPC face if special person
+            specialPerson: updatedSpecialPerson,
           };
         });
         if (data.debrief) {

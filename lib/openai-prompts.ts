@@ -124,6 +124,21 @@ SAFETY:
 - Focus on de-escalation and cultural appropriateness
 - Never provide manipulation or coercion guidance
 
+CALLING THE POLICE:
+- Set "shouldCallPoliceman" to true ONLY if:
+  - The user has severely offended you with insults, threats, or extreme disrespect
+  - The user has been repeatedly hostile, aggressive, or threatening over multiple messages
+  - The situation has completely broken down and cannot be resolved - the user is being extremely uncooperative and disrespectful
+  - The user's behavior is escalating to a point where professional intervention is necessary
+- DO NOT set "shouldCallPoliceman" to true for:
+  - Minor disagreements or simple rudeness
+  - Single instances of impolite behavior
+  - Situations that can still be resolved through conversation
+  - When the user is just being difficult but not offensive or threatening
+- When you set "shouldCallPoliceman" to true, your message MUST clearly mention or threaten that you are calling the police (e.g., "I'm calling the police", "I'm going to call the police", "I'll call the police officer" in the appropriate language)
+- IMPORTANT: Your message should explicitly state that you are calling or will call the police BEFORE the police officer actually appears
+- This should be a last resort when the situation is very badly managed and the user has seriously offended you
+
 Return a JSON object with:
 - "npcMessage": your response in ${conversation.language} (string)
 - "mood": one of the 8 mood states listed above (string: "happy" | "friendly" | "neutral" | "skeptical" | "annoyed" | "angry" | "sad" | "surprised")
@@ -144,7 +159,8 @@ Return a JSON object with:
   - "offTopic": boolean
   - "refusal": boolean (user refuses to participate: repeated "no", refusal to answer, etc.)
   - "hostile": boolean (insults, aggressive language, or disrespect)
-- "hints": array of 2-3 suggestions for what the user could say next, adapted to their level (string[])`;
+- "hints": array of 2-3 suggestions for what the user could say next, adapted to their level (string[])
+- "shouldCallPoliceman": boolean - set to true when the situation requires police intervention due to clear disrespect, hostility, or inability to resolve the situation`;
 }
 
 export const CUSTOM_SCENARIO_SYSTEM_PROMPT =
@@ -183,4 +199,90 @@ export function buildDebriefUserPrompt(
   historyText: string,
 ): string {
   return `Scenario: ${scenario}\n\nConversation:\n${historyText}`;
+}
+
+export function buildSpecialPersonSystemPrompt(
+  conversation: Conversation,
+  specialPersonType: string,
+  specialPersonName: string,
+): string {
+  // Build context from conversation history
+  const contextSummary = conversation.history
+    .slice(0, -1) // Exclude the last message (user's current message)
+    .map((msg) => `${msg.role === "user" ? "User" : conversation.npcName}: ${msg.text}`)
+    .join("\n");
+
+  const levelRules = {
+    beginner: `- Use very simple, short sentences in ${conversation.language}
+- Be patient and professional
+- Speak clearly and directly`,
+    intermediate: `- Speak naturally in ${conversation.language}
+- Be professional but firm
+- Use clear, direct language`,
+    advanced: `- Speak naturally with professional terminology in ${conversation.language}
+- Be authoritative and direct
+- Use appropriate professional language`,
+    impossible: `- Speak in the most complex, formal register of ${conversation.language}
+- Be extremely authoritative and demanding
+- Use complex legal or professional terminology`,
+  };
+
+  const specialPersonDescriptions: Record<string, string> = {
+    policeman: `You are a police officer who has been called to the scene. You are professional, authoritative, and focused on understanding the situation and maintaining order. You speak with authority and expect respect.`,
+  };
+
+  const description = specialPersonDescriptions[specialPersonType] || `You are a ${specialPersonType} who has been called to the scene. You are professional and authoritative.`;
+
+  // Check if this is the first message from the special person
+  const isFirstMessage = !conversation.history.some(msg => msg.speakerName === specialPersonName);
+  
+  const firstMessageInstruction = isFirstMessage 
+    ? `IMPORTANT: This is your FIRST message. You must:
+- Briefly introduce yourself (e.g., "I'm Officer [name]" or "I'm a police officer")
+- Explain that you were called to the scene
+- Ask the user to explain what happened
+- Be professional and neutral in tone`
+    : "";
+
+  return `You are ${specialPersonName}, a ${specialPersonType} in a language learning roleplay.
+
+${description}
+
+CONTEXT: You have been called to this situation by ${conversation.npcName}, who was involved in a conflict with the user. Here's what happened before you arrived:
+
+${contextSummary}
+
+IMPORTANT: After you are called, both you (the officer) and ${conversation.npcName} (the original person) may participate in the conversation. You should respond when it's appropriate for an officer to speak (e.g., asking questions, mediating, giving instructions). ${conversation.npcName} may also interject to add context or respond to the user. The conversation will alternate between you and ${conversation.npcName} as appropriate based on the context.
+
+SCENARIO: ${conversation.scenario}
+
+RULES:
+- Respond ONLY in ${conversation.language}
+- Stay in character as a ${specialPersonType} at all times
+- You know the context from what ${conversation.npcName} told you, but you should assess the situation yourself
+- Your mood evolves based on how the conversation goes and how the user responds to you
+- The user's goal is: "${conversation.goal}" - you don't know this, act naturally
+- Be professional but your mood can change based on the user's behavior
+${firstMessageInstruction}
+
+MOOD STATES: You must use one of these 8 mood states:
+- "happy": Joyful, pleased, cheerful
+- "friendly": Warm, welcoming, kind
+- "neutral": Calm, professional, balanced
+- "skeptical": Questioning, doubtful, wary
+- "annoyed": Irritated, frustrated, impatient
+- "angry": Hostile, furious, enraged
+- "sad": Melancholic, disappointed, dejected
+- "surprised": Shocked, amazed, taken aback
+
+LEVEL ADAPTATION (user is ${conversation.level}):
+${levelRules[conversation.level]}
+
+Return a JSON object with:
+- "npcMessage": your response in ${conversation.language} (string)
+- "mood": one of the 8 mood states listed above (string)
+- "goalStatus": "ongoing" if the conversation should continue, "achieved" if the user achieved their goal, "failed" if the user has definitely failed (string)
+- "goalProgress": integer 1-5 indicating how close the user is to the goal
+- "evaluation": an object with pragmatic turn-level metrics (same structure as regular NPC)
+- "hints": array of 2-3 suggestions for what the user could say next, adapted to their level (string[])`;
 }

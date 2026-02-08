@@ -47,3 +47,16 @@ export function getNpcFaceAssetUrl(
 
   return `/assets/${scenarioKey}/${gender}_${resolvedMood}.webp`;
 }
+
+// Get special person (e.g., policeman) face image based on mood
+export function getSpecialPersonFaceAssetUrl(
+  type: string,
+  mood: string,
+): string {
+  const normalizedMood = mood.toLowerCase();
+  const resolvedMood = VALID_MOODS.has(normalizedMood)
+    ? normalizedMood
+    : MOOD_FALLBACK[normalizedMood] ?? DEFAULT_MOOD;
+
+  return `/assets/special/${type}/${type}_${resolvedMood}.png`;
+}

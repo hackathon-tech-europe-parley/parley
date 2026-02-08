@@ -252,13 +252,22 @@ export function ChatConversationView({
               key={i}
               className={`flex items-start gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              {msg.role === "npc" && (msg.npcFaceImageUrl || state.npcFaceImageUrl) && (
-                <img
-                  src={msg.npcFaceImageUrl || state.npcFaceImageUrl}
-                  alt={state.npcName}
-                  className="h-8 w-8 flex-shrink-0 rounded-full border-2 border-slate-700/50 object-cover object-top sm:h-10 sm:w-10 md:h-12 md:w-12"
-                />
-              )}
+              {msg.role === "npc" && (() => {
+                // Determine the face image URL
+                const isSpecialPerson = msg.speakerName === state.specialPerson?.name;
+                const faceUrl = isSpecialPerson 
+                  ? (msg.npcFaceImageUrl || state.specialPerson?.faceImageUrl)
+                  : (msg.npcFaceImageUrl || state.npcFaceImageUrl);
+                
+                // Only show image if we have a valid URL (not empty string)
+                return faceUrl && faceUrl.trim() !== "" ? (
+                  <img
+                    src={faceUrl}
+                    alt={msg.speakerName || state.npcName}
+                    className="h-8 w-8 flex-shrink-0 rounded-full border-2 border-slate-700/50 object-cover object-top sm:h-10 sm:w-10 md:h-12 md:w-12"
+                  />
+                ) : null;
+              })()}
               <div
                 className={`max-w-[85%] rounded-2xl px-3 py-2 shadow-lg sm:max-w-[80%] sm:px-4 sm:py-3 md:max-w-[75%] md:px-5 ${
                   msg.role === "user"
@@ -269,7 +278,7 @@ export function ChatConversationView({
                 {msg.role === "npc" && (
                   <div className="mb-1.5 flex items-center gap-2 sm:mb-2">
                     <span className="text-xs font-semibold uppercase tracking-wide text-blue-400">
-                      {state.npcName}
+                      {msg.speakerName || state.npcName}
                     </span>
                     <button
                       type="button"

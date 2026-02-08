@@ -18,6 +18,7 @@ import {
   buildNpcProfileSystemPrompt,
   buildNpcProfileUserPrompt,
   buildNpcSystemPrompt,
+  buildSpecialPersonSystemPrompt,
   CUSTOM_SCENARIO_SYSTEM_PROMPT,
 } from "./openai-prompts";
 import {
@@ -42,6 +43,39 @@ function toCompletionMessages(
       role: msg.role === "user" ? "user" : "assistant",
       content: msg.text,
     });
+  }
+
+  return messages;
+}
+
+function toSpecialPersonCompletionMessages(
+  conversation: Conversation,
+  specialPersonType: string,
+  specialPersonName: string,
+): OpenAI.Chat.ChatCompletionMessageParam[] {
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    {
+      role: "system",
+      content: buildSpecialPersonSystemPrompt(conversation, specialPersonType, specialPersonName),
+    },
+  ];
+
+  // Only include messages from when special person was called
+  // For now, include all history but mark who is speaking
+  for (const msg of conversation.history) {
+    if (msg.role === "user") {
+      messages.push({
+        role: "user",
+        content: msg.text,
+      });
+    } else {
+      // NPC or special person message
+      const speaker = msg.speakerName || conversation.npcName;
+      messages.push({
+        role: "assistant",
+        content: `${speaker}: ${msg.text}`,
+      });
+    }
   }
 
   return messages;
@@ -222,6 +256,66 @@ export async function generateCustomScenario(
   }
 
   return customScenarioFromLlmSchema.parse(parseJsonSafely(content));
+}
+
+export async function* generateSpecialPersonResponseStream(
+  conversation: Conversation,
+  specialPersonType: string,
+  specialPersonName: string,
+): AsyncGenerator<
+  | { type: "token"; text: string }
+  | { type: "complete"; data: NpcResponse }
+> {
+  const stream = await openai.chat.completions.create({
+    model,
+    response_format: { type: "json_object" },
+    messages: toSpecialPersonCompletionMessages(conversation, specialPersonType, specialPersonName),
+    stream: true,
+  });
+
+  let accumulated = "";
+  let lastExtracted = "";
+
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content;
+    if (!delta) {
+      continue;
+    }
+
+    accumulated += delta;
+
+    const extracted = extractPartialNpcMessage(accumulated);
+    if (extracted && extracted !== lastExtracted) {
+      const newText = extracted.slice(lastExtracted.length);
+      if (newText) {
+        yield { type: "token", text: newText };
+      }
+      lastExtracted = extracted;
+    }
+  }
+
+  const parsed = createNpcResponseFromLlmSchema(conversation.goalProgress).parse(
+    parseJsonSafely(accumulated),
+  );
+
+  const normalizedMood = normalizeToMoodState(parsed.mood);
+
+  const goalStatus = parsed.goalStatus;
+  const goalProgress = resolveGoalProgress(
+    goalStatus,
+    parsed.goalProgress,
+    conversation.goalProgress,
+  );
+
+  yield {
+    type: "complete",
+    data: {
+      ...parsed,
+      mood: normalizedMood,
+      goalStatus,
+      goalProgress,
+    },
+  };
 }
 
 export async function generateDebrief(
