@@ -314,6 +314,7 @@ export function ChatPageClient() {
             ...prev,
             history: [...prev.history, { role: "user", text: msg }],
             hints: [],
+            replySuggestions: [],
           }
         : prev,
     );
@@ -388,6 +389,7 @@ export function ChatPageClient() {
             goalStatus: data.goalStatus,
             debrief: data.debrief,
             hints: data.hints,
+            replySuggestions: data.replySuggestions,
             evaluationHistory: [...prev.evaluationHistory, data.evaluation],
             objectiveHistory: [...prev.objectiveHistory, data.objective],
             sceneImageUrl: data.sceneImageUrl,
@@ -489,6 +491,9 @@ export function ChatPageClient() {
         messagesEndRef={messagesEnd}
         onReplay={handleReplay}
         onHintSelect={setInput}
+        onChoiceSelect={(choice: string) => {
+          void sendMessage(choice);
+        }}
         onInputChange={setInput}
         onSubmit={() => {
           void sendMessage();

@@ -52,19 +52,30 @@ export function buildNpcOpeningUserPrompt(conversation: Conversation): string {
 
 export function buildNpcSystemPrompt(conversation: Conversation): string {
   const inPersonContext = getInPersonContext(conversation);
+  const replySuggestionRules = {
+    beginner: `- Generate exactly 4 "replySuggestions": full sentences in ${conversation.language} the user could say next. Keep them simple and varied (one polite, one direct, one asking a question, one playful). These are dialogue choices like in a visual novel.`,
+    intermediate: `- Generate exactly 3 "replySuggestions": natural sentences in ${conversation.language} the user could say next. Vary tone and approach. These are dialogue choices like in a visual novel.`,
+    advanced: `- Generate exactly 1 "replySuggestions": a single natural sentence in ${conversation.language} as a possible reply. This is a dialogue choice hint.`,
+    impossible: `- Do NOT generate any "replySuggestions" (empty array). The user gets no help at this level.`,
+  };
+
   const levelRules = {
     beginner: `- Use very simple, short sentences in ${conversation.language}
 - Be patient and forgiving with grammar mistakes
-- Provide full phrase hints with translations when generating hints`,
+- Provide full phrase hints with translations when generating hints
+${replySuggestionRules.beginner}`,
     intermediate: `- Speak naturally in ${conversation.language} but avoid very dense idioms
 - Be moderately tolerant of mistakes
-- Provide vocabulary-focused hints when generating hints`,
+- Provide vocabulary-focused hints when generating hints
+${replySuggestionRules.intermediate}`,
     advanced: `- Speak naturally with idioms and colloquial phrasing in ${conversation.language}
 - Be demanding and realistic
-- Provide minimal hints`,
+- Provide minimal hints
+${replySuggestionRules.advanced}`,
     impossible: `- Speak in a very complex and idiomatic register of ${conversation.language}
 - Be skeptical and hard to convince
-- Keep progress conservative and provide no hints`,
+- Keep progress conservative and provide no hints
+${replySuggestionRules.impossible}`,
   };
 
   const boundaryRulesByLevel = {
@@ -185,7 +196,8 @@ Return a JSON object with:
 - "safety": object with:
   - "badWordsUsed": boolean (true if the latest user message includes insults/profanity/abusive wording)
   - "tabooTopicUsed": boolean (true if the latest user message pushes taboo or disallowed topics)
-- "hints": array of 2-3 suggestions for the next user message (string[])`;
+- "hints": array of 2-3 suggestions for the next user message (string[])
+- "replySuggestions": array of full dialogue choices in ${conversation.language} that the user could pick as their next reply (like in a dating sim / visual novel). The count depends on difficulty level (see level rules above). Each suggestion should be a complete, natural sentence.`;
 }
 
 export const CUSTOM_SCENARIO_SYSTEM_PROMPT =

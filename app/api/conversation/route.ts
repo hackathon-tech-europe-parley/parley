@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createConversationResponseSchema, createConversationSchema } from "@/lib/types";
 import type { Conversation } from "@/lib/types";
-import { generateId, setConversation, setHints } from "@/lib/storage";
+import { generateId, setConversation, setHints, setReplySuggestions } from "@/lib/storage";
 import { generateSceneImage, generateNpcProfile, generateNpcOpening } from "@/lib/ai";
 import { getNpcFaceAssetUrl } from "@/lib/game";
 
@@ -74,6 +74,7 @@ export async function POST(request: Request) {
 
     await setConversation(conversationId, conversation);
     await setHints(conversationId, opening.hints);
+    await setReplySuggestions(conversationId, opening.replySuggestions);
 
     return NextResponse.json(createConversationResponseSchema.parse({
       conversationId,
@@ -85,6 +86,7 @@ export async function POST(request: Request) {
       npcOpeningMood: opening.mood,
       npcOpeningGoalProgress: opening.goalProgress,
       hints: opening.hints,
+      replySuggestions: opening.replySuggestions,
       scenario,
       goal,
       language,

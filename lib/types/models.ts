@@ -79,6 +79,7 @@ export interface NpcResponse {
   objective: ObjectiveAssessment;
   safety: NpcSafetyAssessment;
   hints: string[];
+  replySuggestions: string[];
 }
 
 export interface NpcProfile {
@@ -126,6 +127,7 @@ export interface ConversationSnapshot {
   debrief?: Debrief;
   history: ConversationMessage[];
   hints: string[];
+  replySuggestions: string[];
   evaluationHistory?: NpcEvaluation[];
   objectiveHistory?: ObjectiveAssessment[];
   scenarioKey?: string;
@@ -155,6 +157,7 @@ export interface CreateConversationResponse {
   npcOpeningMood: string;
   npcOpeningGoalProgress: GoalProgress;
   hints: string[];
+  replySuggestions: string[];
   scenario: string;
   goal: string;
   language: string;
@@ -177,6 +180,7 @@ export interface MessageStreamCompletePayload {
   evaluation: NpcEvaluation;
   objective: ObjectiveAssessment;
   hints: string[];
+  replySuggestions: string[];
   sceneImageUrl: string;
   npcFaceImageUrl?: string;
   debrief?: Debrief;

@@ -1,4 +1,4 @@
-import { getConversation, setConversation, setHints } from "@/lib/storage";
+import { getConversation, setConversation, setHints, setReplySuggestions } from "@/lib/storage";
 import { generateSceneImage, generateNpcResponseStream, generateDebrief } from "@/lib/ai";
 import { getNpcFaceAssetUrl, applyNpcPolicy } from "@/lib/game";
 import {
@@ -137,6 +137,7 @@ export async function POST(
                   ),
                 },
                 hints: [],
+                replySuggestions: [],
               };
             }
 
@@ -165,6 +166,7 @@ export async function POST(
             ];
 
             await setHints(id, npcResponse.hints);
+            await setReplySuggestions(id, npcResponse.replySuggestions);
 
             if (npcResponse.goalStatus === "ongoing") {
               const moodPrompt = buildScenePrompt(conversation.scenario, npcResponse.mood);
@@ -185,6 +187,7 @@ export async function POST(
                 evaluation: npcResponse.evaluation,
                 objective: npcResponse.objective,
                 hints: npcResponse.hints,
+                replySuggestions: npcResponse.replySuggestions,
                 sceneImageUrl,
                 npcFaceImageUrl,
               });
@@ -223,6 +226,7 @@ export async function POST(
                 evaluation: npcResponse.evaluation,
                 objective: npcResponse.objective,
                 hints: npcResponse.hints,
+                replySuggestions: npcResponse.replySuggestions,
                 sceneImageUrl: finalImageUrl,
                 npcFaceImageUrl,
                 debrief,

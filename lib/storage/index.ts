@@ -4,5 +4,7 @@ export {
   deleteConversation,
   getHints,
   setHints,
+  getReplySuggestions,
+  setReplySuggestions,
   generateId,
 } from "./conversations";

@@ -34,6 +34,7 @@ interface ChatConversationViewProps {
   messagesEndRef: RefObject<HTMLDivElement | null>;
   onReplay: (messageIndex: number, text: string) => void;
   onHintSelect: (hint: string) => void;
+  onChoiceSelect: (choice: string) => void;
   onInputChange: (value: string) => void;
   onSubmit: () => void;
   onMicToggle: () => void;
@@ -89,6 +90,7 @@ export function ChatConversationView({
   messagesEndRef,
   onReplay,
   onHintSelect,
+  onChoiceSelect,
   onInputChange,
   onSubmit,
   onMicToggle,
@@ -489,6 +491,26 @@ export function ChatConversationView({
 
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Dialogue choices (visual novel style) */}
+        {state.replySuggestions.length > 0 && !sending && !endStatus && (
+          <div className="relative z-10 flex-shrink-0 border-t border-amber-500/20 bg-gradient-to-t from-slate-950/95 via-slate-900/90 to-slate-900/70 px-3 py-3 sm:px-4 sm:py-4 md:px-6">
+            <div className="flex flex-col gap-2">
+              {state.replySuggestions.map((choice, i) => (
+                <button
+                  key={i}
+                  onClick={() => onChoiceSelect(choice)}
+                  className="btn-press w-full rounded-lg border border-amber-500/20 bg-slate-800/60 px-4 py-2.5 text-left text-sm text-slate-100 shadow-md backdrop-blur-sm transition-all hover:border-amber-400/40 hover:bg-slate-700/70 hover:text-white hover:shadow-amber-500/10 sm:px-5 sm:py-3 sm:text-[15px]"
+                >
+                  <span className="mr-2 inline-block font-[family-name:var(--font-mono)] text-xs font-bold text-amber-400/70">
+                    {i + 1}.
+                  </span>
+                  {choice}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Hints */}
         {state.hints.length > 0 && !sending && !endStatus && (
