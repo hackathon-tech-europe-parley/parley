@@ -130,7 +130,7 @@ export const npcResponseSchema = z
     evaluation: npcEvaluationSchema,
     objective: objectiveAssessmentSchema,
     safety: npcSafetyAssessmentSchema,
-    hints: z.array(nonEmptyStringSchema),
+    replySuggestions: z.array(nonEmptyStringSchema),
   })
   .strict();
 
@@ -243,7 +243,7 @@ export const conversationSnapshotSchema = z
     goalStatus: goalStatusSchema.optional(),
     debrief: debriefSchema.optional(),
     history: z.array(conversationMessageSchema),
-    hints: z.array(nonEmptyStringSchema),
+    replySuggestions: z.array(nonEmptyStringSchema),
     evaluationHistory: z.array(npcEvaluationSchema).optional(),
     objectiveHistory: z.array(objectiveAssessmentSchema).optional(),
     scenarioKey: nonEmptyStringSchema.optional(),
@@ -261,7 +261,7 @@ export const createConversationResponseSchema = z
     npcOpeningMessage: nonEmptyStringSchema,
     npcOpeningMood: nonEmptyStringSchema,
     npcOpeningGoalProgress: goalProgressSchema,
-    hints: z.array(nonEmptyStringSchema),
+    replySuggestions: z.array(nonEmptyStringSchema),
     scenario: nonEmptyStringSchema,
     goal: nonEmptyStringSchema,
     language: nonEmptyStringSchema,
@@ -300,7 +300,7 @@ export const messageStreamCompletePayloadSchema = z
     goalProgress: goalProgressSchema,
     evaluation: npcEvaluationSchema,
     objective: objectiveAssessmentSchema,
-    hints: z.array(nonEmptyStringSchema),
+    replySuggestions: z.array(nonEmptyStringSchema),
     sceneImageUrl: nonEmptyStringSchema,
     npcFaceImageUrl: z.string().optional(),
     debrief: debriefSchema.optional(),
