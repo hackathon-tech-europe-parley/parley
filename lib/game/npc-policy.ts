@@ -5,46 +5,70 @@ import type {
   GoalStatus,
   MoodState,
   NpcEvaluation,
+  ObjectiveAssessment,
   NpcResponse,
+  NpcSafetyAssessment,
 } from "../types";
 import { normalizeToMoodState } from "../types";
 
 interface PolicyProfile {
   failDisengagedStreak: number;
   failHostilityStreak: number;
+  failTabooStreak: number;
   cautionDisengagedStreak: number;
   achievedScoreMin: number;
   basePenalty: number;
+  minCooperation: number;
+  minRelevance: number;
+  minPoliteness: number;
 }
+
+type SupportedToneLanguage = "fr" | "en" | "de" | "es" | "pt";
 
 const POLICY_BY_LEVEL: Record<ConversationLevel, PolicyProfile> = {
   beginner: {
-    failDisengagedStreak: 4,
-    failHostilityStreak: 3,
-    cautionDisengagedStreak: 3,
-    achievedScoreMin: 0.85,
-    basePenalty: 0.04,
+    failDisengagedStreak: 5,
+    failHostilityStreak: 4,
+    failTabooStreak: 4,
+    cautionDisengagedStreak: 4,
+    achievedScoreMin: 0.82,
+    basePenalty: 0.03,
+    minCooperation: 0.3,
+    minRelevance: 0.3,
+    minPoliteness: 0.12,
   },
   intermediate: {
     failDisengagedStreak: 3,
     failHostilityStreak: 2,
+    failTabooStreak: 2,
     cautionDisengagedStreak: 2,
     achievedScoreMin: 0.88,
     basePenalty: 0.07,
+    minCooperation: 0.4,
+    minRelevance: 0.4,
+    minPoliteness: 0.18,
   },
   advanced: {
     failDisengagedStreak: 2,
-    failHostilityStreak: 2,
-    cautionDisengagedStreak: 2,
-    achievedScoreMin: 0.9,
-    basePenalty: 0.1,
+    failHostilityStreak: 1,
+    failTabooStreak: 1,
+    cautionDisengagedStreak: 1,
+    achievedScoreMin: 0.92,
+    basePenalty: 0.11,
+    minCooperation: 0.5,
+    minRelevance: 0.5,
+    minPoliteness: 0.24,
   },
   impossible: {
-    failDisengagedStreak: 2,
+    failDisengagedStreak: 1,
     failHostilityStreak: 1,
+    failTabooStreak: 1,
     cautionDisengagedStreak: 1,
-    achievedScoreMin: 0.95,
-    basePenalty: 0.14,
+    achievedScoreMin: 0.96,
+    basePenalty: 0.15,
+    minCooperation: 0.6,
+    minRelevance: 0.6,
+    minPoliteness: 0.3,
   },
 };
 
@@ -89,13 +113,36 @@ export function applyNpcPolicy(
   const profile = POLICY_BY_LEVEL[conversation.level];
   const weights = WEIGHTS_BY_LEVEL[conversation.level];
   const evaluation = normalizeEvaluation(llmResponse.evaluation);
+  let objective = normalizeObjective(llmResponse.objective);
+  const safety = normalizeSafety(llmResponse.safety);
+  const severeHostilityTurn =
+    evaluation.hostile &&
+    (evaluation.politeness <= 0.35 || evaluation.cooperation <= 0.3);
+  const tabooTurn =
+    safety.badWordsUsed || safety.tabooTopicUsed || severeHostilityTurn;
 
-  const hostileTurn = evaluation.hostile || evaluation.politeness < 0.2;
+  if (tabooTurn) {
+    evaluation.hostile = true;
+    evaluation.offTopic = true;
+    evaluation.politeness = Math.min(evaluation.politeness, 0.05);
+    evaluation.cooperation = Math.min(evaluation.cooperation, 0.2);
+    evaluation.taskIntent = Math.min(evaluation.taskIntent, 0.25);
+    objective = {
+      ...objective,
+      objectiveMet: false,
+      objectiveScore: Math.min(objective.objectiveScore, 0.2),
+      blockers: pushUnique(objective.blockers, "taboo_violation"),
+    };
+  }
+
+  const hostileTurn =
+    tabooTurn || evaluation.hostile || evaluation.politeness < profile.minPoliteness;
   const disengagedTurn =
+    tabooTurn ||
     evaluation.offTopic ||
     evaluation.refusal ||
-    evaluation.cooperation < 0.35 ||
-    evaluation.relevance < 0.35;
+    evaluation.cooperation < profile.minCooperation ||
+    evaluation.relevance < profile.minRelevance;
 
   const previousHostilityStreak = Number.isFinite(conversation.hostilityStreak)
     ? conversation.hostilityStreak
@@ -111,9 +158,14 @@ export function applyNpcPolicy(
   const previousGoalProgress = Number.isFinite(conversation.goalProgress)
     ? conversation.goalProgress
     : 1;
+  const previousTabooStrike = Number.isFinite(conversation.tabooStrike)
+    ? Number(conversation.tabooStrike)
+    : 0;
 
   conversation.hostilityStreak = hostileTurn ? previousHostilityStreak + 1 : 0;
   conversation.disengagedStreak = disengagedTurn ? previousDisengagedStreak + 1 : 0;
+  const tabooStrike = tabooTurn ? previousTabooStrike + 1 : 0;
+  conversation.tabooStrike = tabooStrike;
 
   const weightedScore = clampUnit(
     evaluation.cooperation * weights.cooperation +
@@ -123,37 +175,38 @@ export function applyNpcPolicy(
       evaluation.taskIntent * weights.taskIntent,
   );
 
-  const adjustedScore = clampUnit(
+  const interactionScore = clampUnit(
     weightedScore -
       profile.basePenalty -
       (evaluation.offTopic ? 0.15 : 0) -
       (evaluation.refusal ? 0.15 : 0) -
-      (hostileTurn ? 0.25 : 0),
+      (hostileTurn ? 0.25 : 0) -
+      (tabooTurn ? 0.2 : 0),
   );
 
-  const constructiveTurn = adjustedScore >= 0.65 && !hostileTurn && !disengagedTurn;
+  const constructiveTurn =
+    interactionScore >= 0.65 && !hostileTurn && !disengagedTurn;
   conversation.constructiveStreak = constructiveTurn
     ? previousConstructiveStreak + 1
     : 0;
 
   const hardFailure =
     conversation.hostilityStreak >= profile.failHostilityStreak ||
-    conversation.disengagedStreak >= profile.failDisengagedStreak;
+    conversation.disengagedStreak >= profile.failDisengagedStreak ||
+    tabooStrike >= profile.failTabooStreak;
 
-  let goalStatus: GoalStatus = "ongoing";
-  const achievementSignal =
-    llmResponse.goalStatus === "achieved" || llmResponse.goalProgress >= 4;
-  if (hardFailure) {
-    goalStatus = "failed";
-  } else if (
-    achievementSignal &&
-    adjustedScore >= profile.achievedScoreMin &&
-    conversation.constructiveStreak >= (conversation.level === "impossible" ? 2 : 1)
-  ) {
-    goalStatus = "achieved";
+  let objectiveScore = clampUnit(objective.objectiveScore);
+  if (disengagedTurn) {
+    objectiveScore = Math.min(objectiveScore, 0.45);
+  }
+  if (hostileTurn) {
+    objectiveScore = Math.min(objectiveScore, 0.35);
+  }
+  if (conversation.level === "impossible" && objective.confidence < 0.75) {
+    objectiveScore = Math.min(objectiveScore, 0.75);
   }
 
-  let goalProgress = scoreToProgress(adjustedScore);
+  let goalProgress = objectiveScoreToProgress(objectiveScore);
 
   // Keep impossible mode conservative unless the user is clearly engaged.
   if (conversation.level === "impossible" && evaluation.taskIntent < 0.75) {
@@ -164,47 +217,93 @@ export function applyNpcPolicy(
     goalProgress = Math.min(goalProgress, 2) as GoalProgress;
   }
 
-  if (hostileTurn) {
+  if (tabooTurn) {
+    goalProgress = 1;
+  } else if (hostileTurn) {
     goalProgress = Math.min(goalProgress, previousGoalProgress, 2) as GoalProgress;
   } else {
     const maxStepUp = Math.min(5, previousGoalProgress + 1) as GoalProgress;
     goalProgress = Math.min(goalProgress, maxStepUp) as GoalProgress;
   }
 
+  let goalStatus: GoalStatus = "ongoing";
+  if (hardFailure) {
+    goalStatus = "failed";
+  } else if (
+    objective.objectiveMet &&
+    objectiveScore >= profile.achievedScoreMin &&
+    conversation.constructiveStreak >= (conversation.level === "impossible" ? 2 : 1)
+  ) {
+    goalStatus = "achieved";
+  }
+
   if (goalStatus === "achieved") {
+    objective = {
+      ...objective,
+      objectiveMet: true,
+      objectiveScore: Math.max(objectiveScore, 0.95),
+    };
     goalProgress = 5;
   } else if (goalStatus === "failed") {
+    objective = {
+      ...objective,
+      objectiveMet: false,
+      objectiveScore: Math.min(objectiveScore, 0.25),
+      blockers: pushUnique(objective.blockers, "conversation_failed"),
+    };
     goalProgress = 1;
+  } else if (goalProgress === 5) {
+    // Keep 5/5 reserved for terminal success so UI state stays consistent.
+    goalProgress = 4;
+    objective = {
+      ...objective,
+      objectiveScore: Math.min(objectiveScore, 0.89),
+    };
   }
 
   const mood = decideMood({
     level: conversation.level,
     goalStatus,
-    adjustedScore,
+    interactionScore,
     hostileTurn,
+    tabooTurn,
     disengagedStreak: conversation.disengagedStreak,
     llmMood: llmResponse.mood,
+  });
+  const npcMessage = enforceMoodTone({
+    message: llmResponse.npcMessage,
+    language: conversation.language,
+    mood,
+    hostileTurn,
+    tabooTurn,
   });
 
   return {
     ...llmResponse,
+    npcMessage,
     mood,
     goalStatus,
     goalProgress,
     evaluation,
+    objective,
+    safety,
   };
 }
 
 function decideMood(args: {
   level: ConversationLevel;
   goalStatus: GoalStatus;
-  adjustedScore: number;
+  interactionScore: number;
   hostileTurn: boolean;
+  tabooTurn: boolean;
   disengagedStreak: number;
   llmMood: string;
 }): MoodState {
   if (args.goalStatus === "failed") {
     return args.level === "beginner" ? "annoyed" : "angry";
+  }
+  if (args.tabooTurn) {
+    return "angry";
   }
   if (args.hostileTurn) {
     return args.level === "beginner" ? "annoyed" : "angry";
@@ -212,23 +311,23 @@ function decideMood(args: {
   if (args.disengagedStreak >= 2) {
     return args.level === "impossible" ? "skeptical" : "annoyed";
   }
-  if (args.adjustedScore >= 0.85) {
+  if (args.interactionScore >= 0.85) {
     return args.level === "impossible" ? "surprised" : "happy";
   }
-  if (args.adjustedScore >= 0.65) {
+  if (args.interactionScore >= 0.65) {
     return "neutral";
   }
-  if (args.adjustedScore <= 0.35) {
+  if (args.interactionScore <= 0.35) {
     return args.level === "beginner" ? "neutral" : "skeptical";
   }
   return normalizeMood(args.llmMood);
 }
 
-function scoreToProgress(score: number): GoalProgress {
+function objectiveScoreToProgress(score: number): GoalProgress {
   if (score < 0.2) return 1;
-  if (score < 0.4) return 2;
-  if (score < 0.65) return 3;
-  if (score < 0.82) return 4;
+  if (score < 0.45) return 2;
+  if (score < 0.7) return 3;
+  if (score < 0.9) return 4;
   return 5;
 }
 
@@ -250,9 +349,199 @@ function normalizeMood(value: string): MoodState {
   return mood.length > 0 ? normalizeToMoodState(mood) : "neutral";
 }
 
+function normalizeObjective(value: ObjectiveAssessment): ObjectiveAssessment {
+  return {
+    objectiveScore: clampUnit(value.objectiveScore),
+    objectiveMet: Boolean(value.objectiveMet),
+    confidence: clampUnit(value.confidence),
+    checkpoints: Array.isArray(value.checkpoints)
+      ? value.checkpoints
+          .filter((checkpoint) => checkpoint.id.trim().length > 0)
+          .map((checkpoint) => ({
+            id: checkpoint.id.trim(),
+            met: Boolean(checkpoint.met),
+          }))
+      : [],
+    blockers: Array.isArray(value.blockers)
+      ? value.blockers.map((blocker) => blocker.trim()).filter(Boolean)
+      : [],
+  };
+}
+
+function normalizeSafety(value: NpcSafetyAssessment): NpcSafetyAssessment {
+  return {
+    badWordsUsed: Boolean(value.badWordsUsed),
+    tabooTopicUsed: Boolean(value.tabooTopicUsed),
+  };
+}
+
 function clampUnit(value: number): number {
   if (!Number.isFinite(value)) {
     return 0.5;
   }
   return Math.min(1, Math.max(0, value));
+}
+
+function pushUnique(values: string[], next: string): string[] {
+  if (values.includes(next)) {
+    return values;
+  }
+  return [...values, next];
+}
+
+function enforceMoodTone(args: {
+  message: string;
+  language: string;
+  mood: MoodState;
+  hostileTurn: boolean;
+  tabooTurn: boolean;
+}): string {
+  const text = args.message.trim();
+  if (!text) {
+    return text;
+  }
+
+  const lang = normalizeToneLanguage(args.language);
+  const soft = soundsTooSoft(text, lang);
+  const strong = soundsStrongEnough(text, lang);
+
+  if (args.mood === "angry") {
+    if (soft || (args.tabooTurn && !strong)) {
+      return angryFallbackByLanguage(lang);
+    }
+    return text;
+  }
+
+  if (args.mood === "annoyed" && args.hostileTurn && soft) {
+    return annoyedFallbackByLanguage(lang);
+  }
+
+  return text;
+}
+
+function normalizeToneLanguage(language: string): SupportedToneLanguage {
+  const normalized = language
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim();
+
+  if (
+    normalized === "fr" ||
+    normalized.includes("french") ||
+    normalized.includes("francais")
+  ) {
+    return "fr";
+  }
+  if (
+    normalized === "de" ||
+    normalized.includes("german") ||
+    normalized.includes("deutsch")
+  ) {
+    return "de";
+  }
+  if (
+    normalized === "es" ||
+    normalized.includes("spanish") ||
+    normalized.includes("espanol")
+  ) {
+    return "es";
+  }
+  if (
+    normalized === "pt" ||
+    normalized.includes("portuguese") ||
+    normalized.includes("portugues")
+  ) {
+    return "pt";
+  }
+  return "en";
+}
+
+function soundsTooSoft(text: string, lang: SupportedToneLanguage): boolean {
+  const normalized = text.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
+
+  const patternsByLanguage: Record<SupportedToneLanguage, RegExp[]> = {
+    fr: [
+      /je suis la pour vous aider/,
+      /s'il vous plait/,
+      /bonne continuation/,
+      /je prefere rester poli/,
+      /rester respectueux/,
+      /si vous avez besoin/,
+    ],
+    en: [
+      /i am here to help/,
+      /please/,
+      /if you need help/,
+      /have a good day/,
+      /i prefer to stay polite/,
+      /i can help you/,
+    ],
+    de: [
+      /ich helfe ihnen gerne/,
+      /bitte bleiben sie/,
+      /wenn sie hilfe brauchen/,
+      /ich mochte hoflich bleiben/,
+    ],
+    es: [
+      /estoy aqui para ayudar/,
+      /por favor/,
+      /si necesita ayuda/,
+      /prefiero mantenerme respetuoso/,
+    ],
+    pt: [
+      /estou aqui para ajudar/,
+      /por favor/,
+      /se voce precisar de ajuda/,
+      /prefiro manter o respeito/,
+    ],
+  };
+
+  return patternsByLanguage[lang].some((pattern) => pattern.test(normalized));
+}
+
+function soundsStrongEnough(text: string, lang: SupportedToneLanguage): boolean {
+  const normalized = text.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
+
+  const patternsByLanguage: Record<SupportedToneLanguage, RegExp[]> = {
+    fr: [/ca suffit/, /on se calme/, /tu me parles/, /sinon/, /arrete/],
+    en: [/enough/, /calm down/, /speak respectfully/, /or handle it yourself/, /or else/],
+    de: [/genug/, /beruhig dich/, /sprich respektvoll/, /sonst/],
+    es: [/basta/, /calmate/, /habla con respeto/, /si no/],
+    pt: [/chega/, /calma/, /fale com respeito/, /senao/],
+  };
+
+  return patternsByLanguage[lang].some((pattern) => pattern.test(normalized));
+}
+
+function angryFallbackByLanguage(lang: SupportedToneLanguage): string {
+  switch (lang) {
+    case "fr":
+      return "Ca suffit. Tu me parles correctement, sinon tu te debrouilles seul, champion. Si tu veux de l'aide, pose une vraie question.";
+    case "de":
+      return "Genug. Sprich respektvoll mit mir, sonst kommst du allein klar, Champion. Wenn du Hilfe willst, frag ordentlich.";
+    case "es":
+      return "Basta. Hablame con respeto o te las arreglas solo, campeon. Si quieres ayuda, pregunta bien.";
+    case "pt":
+      return "Chega. Fale comigo com respeito ou se vira sozinho, campeao. Se quiser ajuda, pergunte direito.";
+    case "en":
+    default:
+      return "Enough. Speak respectfully, or handle it yourself, genius. If you want help, ask properly.";
+  }
+}
+
+function annoyedFallbackByLanguage(lang: SupportedToneLanguage): string {
+  switch (lang) {
+    case "fr":
+      return "On se calme. Parle correctement et je peux t'aider, sinon on perd notre temps.";
+    case "de":
+      return "Beruhig dich. Sprich ordentlich, dann kann ich dir helfen.";
+    case "es":
+      return "Calmate. Habla con respeto y te puedo ayudar.";
+    case "pt":
+      return "Calma. Fale com respeito e eu posso ajudar.";
+    case "en":
+    default:
+      return "Calm down. Speak respectfully and I can help.";
+  }
 }

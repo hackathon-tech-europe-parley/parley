@@ -64,6 +64,19 @@ export function ChatPageClient() {
   const lastProcessedIndex = useRef(-1);
 
   useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!conversationId) {
       setError("Invalid conversation id");
       return;
@@ -96,7 +109,22 @@ export function ChatPageClient() {
         if (!parsed.success) {
           throw new Error("Malformed conversation payload");
         }
-        setState(parsed.data);
+        const snapshot = parsed.data;
+        setState({
+          ...snapshot,
+          evaluationHistory: snapshot.evaluationHistory ?? [],
+          objectiveHistory: snapshot.objectiveHistory ?? [],
+        });
+        if (snapshot.goalStatus && snapshot.goalStatus !== "ongoing" && snapshot.debrief) {
+          setEndStatus({
+            debrief: snapshot.debrief,
+            sceneImageUrl: snapshot.sceneImageUrl,
+            npcName: snapshot.npcName,
+            goalStatus: snapshot.goalStatus,
+          });
+        } else {
+          setEndStatus(null);
+        }
       })
       .catch((fetchError) => setError(fetchError.message));
   }, [conversationId]);
@@ -138,6 +166,9 @@ export function ChatPageClient() {
 
   useEffect(() => {
     if (state && state.history.length > 0 && !hasAutoPlayed.current) {
+      if (state.history.length !== 1) {
+        return;
+      }
       hasAutoPlayed.current = true;
       const firstNpc = state.history[0];
       if (firstNpc?.role === "npc") {
@@ -269,7 +300,7 @@ export function ChatPageClient() {
     }
 
     const msg = text ?? input.trim();
-    if (!msg || sending || !state) {
+    if (!msg || sending || !state || endStatus) {
       return;
     }
 
@@ -354,7 +385,11 @@ export function ChatPageClient() {
             }],
             mood: data.mood,
             goalProgress: data.goalProgress,
+            goalStatus: data.goalStatus,
+            debrief: data.debrief,
             hints: data.hints,
+            evaluationHistory: [...prev.evaluationHistory, data.evaluation],
+            objectiveHistory: [...prev.objectiveHistory, data.objective],
             sceneImageUrl: data.sceneImageUrl,
             npcFaceImageUrl: resolvedFaceUrl,
           };
