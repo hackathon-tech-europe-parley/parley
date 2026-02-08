@@ -82,9 +82,9 @@ export async function deleteConversation(id: string): Promise<void> {
 export async function getReplySuggestions(id: string): Promise<string[]> {
   if (usePostgres) {
     const sql = getSQL();
-    const rows = await sql`SELECT reply_suggestions FROM conversations WHERE id = ${id}`;
+    const rows = await sql`SELECT data->'replySuggestions' AS suggestions FROM conversations WHERE id = ${id}`;
     if (rows.length === 0) return [];
-    return (rows[0].reply_suggestions as string[]) ?? [];
+    return (rows[0].suggestions as string[]) ?? [];
   }
   return globalStore.__parleyReplySuggestions!.get(id) ?? [];
 }
@@ -96,7 +96,7 @@ export async function setReplySuggestions(
   if (usePostgres) {
     const sql = getSQL();
     await sql`
-      UPDATE conversations SET reply_suggestions = ${sql.json(suggestions)} WHERE id = ${id}
+      UPDATE conversations SET data = jsonb_set(data, '{replySuggestions}', ${sql.json(suggestions)}) WHERE id = ${id}
     `;
     return;
   }
