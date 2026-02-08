@@ -394,9 +394,9 @@ export function ChatConversationView({
           src={state.sceneImageUrl}
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-35 transition-opacity duration-700"
+          className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-80 transition-opacity duration-700"
         />
-        <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-slate-950/55 via-slate-950/75 to-slate-900/90" />
+        <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-slate-950/5 via-slate-950/20 to-slate-900/40" />
 
         <div className="styled-scrollbar relative z-10 min-h-0 flex-1 space-y-3 overflow-y-auto bg-transparent p-3 sm:space-y-4 sm:p-4 md:p-6">
           {state.history.map((msg, i) => (

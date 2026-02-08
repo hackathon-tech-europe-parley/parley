@@ -126,22 +126,81 @@ export class TTSPlayer {
   }
 
   /** Fetch pre-generated audio from a URL and store in cache so play() is instant. */
-  prefetchFromUrl(url: string, cacheKey: string): Promise<void> {
+  prefetchFromUrl(url: string, cacheKey: string, speed?: number): Promise<void> {
     if (this._muted) return Promise.resolve();
-    if (this.cache.has(cacheKey)) return Promise.resolve();
+    const effectiveKey = speed !== undefined ? `${cacheKey}-speed-${speed}` : cacheKey;
+    if (this.cache.has(effectiveKey)) return Promise.resolve();
     return fetch(url)
       .then((res) => {
         if (!res.ok) return;
         return res.blob();
       })
       .then((blob) => {
-        if (blob && !this.cache.has(cacheKey)) {
-          this.cache.set(cacheKey, URL.createObjectURL(blob));
+        if (blob && !this.cache.has(effectiveKey)) {
+          this.cache.set(effectiveKey, URL.createObjectURL(blob));
         }
       })
       .catch(() => {
         // Best-effort; play() will retry on miss.
       });
+  }
+
+  /** Play audio from a URL (for sound effects). Reuses the internal audio element for autoplay permission. */
+  async playUrl(url: string, cacheKey: string): Promise<void> {
+    if (this._muted) return;
+
+    if (this.playPromise) {
+      await this.playPromise;
+    }
+
+    this.stop();
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    this.playPromise = this._doPlayUrl(url, cacheKey);
+    try {
+      await this.playPromise;
+    } finally {
+      this.playPromise = null;
+    }
+  }
+
+  private async _doPlayUrl(url: string, cacheKey: string): Promise<void> {
+    let objUrl = this.cache.get(cacheKey);
+    if (!objUrl) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Audio fetch failed");
+      const blob = await res.blob();
+      objUrl = URL.createObjectURL(blob);
+      this.cache.set(cacheKey, objUrl);
+    }
+
+    if (!this.audio) {
+      this.audio = new Audio();
+    }
+
+    this.audio.src = objUrl;
+    this.audio.load();
+
+    return new Promise<void>((resolve) => {
+      this._playResolve = resolve;
+
+      this.endedHandler = () => {
+        this._playResolve = null;
+        resolve();
+      };
+      this.errorHandler = () => {
+        this._playResolve = null;
+        resolve();
+      };
+
+      this.audio!.addEventListener('ended', this.endedHandler, { once: true });
+      this.audio!.addEventListener('error', this.errorHandler, { once: true });
+
+      this.audio!.play().catch(() => {
+        this._playResolve = null;
+        resolve();
+      });
+    });
   }
 
   /** Fetch TTS audio and store in cache so play() is instant. */
