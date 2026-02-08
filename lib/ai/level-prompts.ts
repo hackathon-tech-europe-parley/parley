@@ -52,36 +52,32 @@ function getOpeningInstruction(
 ): string {
   const instructions: Record<ConversationLevel, string> = {
     beginner: [
-      `Start the roleplay with a short, friendly greeting in ${language}.`,
-      "Present the scenario's problem matter-of-factly (e.g., serve the wrong dish, give the wrong room key).",
-      "Then ask one simple question about what the user needs.",
+      `Say a short greeting in ${language} (1-2 sentences max).`,
+      "Introduce the scenario's problem briefly, then ask one simple question.",
       'Keep mood "friendly" and goalStatus "ongoing".',
       `Physical context: ${inPersonContext}`,
-      "Speak like a real person meeting them there, not a remote assistant.",
+      "Be concise — no long exposition.",
     ].join(" "),
     intermediate: [
-      `Start the roleplay in ${language} by acting out the scenario's obstacle as something already happening.`,
-      "For example: put down the wrong plate, hand over the wrong key, announce bad news.",
-      "Do NOT ask the user how you can help — let them react to the situation.",
+      `Open with 1-2 sentences in ${language} that drop the user straight into the scenario's obstacle.`,
+      "Do NOT ask the user how you can help — let them react.",
       'Keep mood "neutral" and goalStatus "ongoing".',
       `Physical context: ${inPersonContext}`,
-      "Speak like a real person, naturally and concisely.",
+      "Be brief and natural.",
     ].join(" "),
     advanced: [
-      `Start the roleplay with a direct, in-character opening in ${language} using natural idioms and colloquial phrasing.`,
-      "Present your version of events — you may not think anything is wrong. Act as if everything is normal from your perspective.",
-      "Do NOT acknowledge any problem unless the user raises it.",
+      `Open with 1-2 punchy sentences in ${language} using natural idioms.`,
+      "Act as if everything is normal from your perspective.",
       'Keep mood "neutral" and goalStatus "ongoing".',
       `Physical context: ${inPersonContext}`,
-      "Speak naturally and confidently, like a local who knows their business.",
+      "Be direct and concise.",
     ].join(" "),
     impossible: [
-      `Start the roleplay with a brusque, impatient opening in ${language} using a complex, literary, or archaic register.`,
-      "Signal through your tone that this interaction will be difficult. Be dismissive or preoccupied.",
-      "Present the obstacle as a non-issue from your perspective — you see nothing wrong.",
+      `Open with 1-2 brusque sentences in ${language} using a complex or archaic register.`,
+      "Be dismissive. Present the obstacle as a non-issue.",
       'Keep mood "skeptical" and goalStatus "ongoing".',
       `Physical context: ${inPersonContext}`,
-      "Speak like someone who has no patience and considers the user an interruption.",
+      "Be curt.",
     ].join(" "),
   };
 
