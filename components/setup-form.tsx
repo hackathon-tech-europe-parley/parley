@@ -2,6 +2,7 @@
 import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { TypewriterText } from "./typewriter-text";
 import {
   apiErrorSchema,
   createConversationResponseSchema,
@@ -292,7 +293,8 @@ export function SetupForm() {
                         ? "bg-red-900/20 text-red-400/70"
                         : "bg-slate-800/50 text-slate-500"
                   }`}>
-                    <span className="font-medium">{t("goalLabel")}</span> {goal}
+                    <span className="font-medium">{t("goalLabel")}</span>{" "}
+                    <TypewriterText text={goal} speed={60} />
                   </div>
                 </button>
               );
@@ -333,7 +335,8 @@ export function SetupForm() {
                       ? "bg-red-900/20 text-red-400/70"
                       : "bg-slate-800/50 text-slate-500"
                 }`}>
-                  <span className="font-medium">{t("goalLabel")}</span> {customScenario.goals[level]}
+                  <span className="font-medium">{t("goalLabel")}</span>{" "}
+                  <TypewriterText text={customScenario.goals[level]} speed={60} />
                 </div>
               </button>
             )}
