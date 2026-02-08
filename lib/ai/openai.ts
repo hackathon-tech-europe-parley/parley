@@ -97,9 +97,12 @@ export async function generateNpcOpening(
 
   const parsed = createNpcResponseFromLlmSchema(1).parse(parseJsonSafely(content));
 
+  const openingMood = conversation.level === "impossible" ? "skeptical" :
+    conversation.level === "beginner" ? "friendly" : "neutral";
+
   return {
     ...parsed,
-    mood: "neutral",
+    mood: openingMood,
     goalStatus: "ongoing",
     goalProgress: 1,
   };
