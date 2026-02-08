@@ -62,19 +62,16 @@ export function buildNpcSystemPrompt(conversation: Conversation): string {
   const levelRules = {
     beginner: `- Use very simple, short sentences in ${conversation.language}
 - Be patient and forgiving with grammar mistakes
-- Provide full phrase hints with translations when generating hints
 ${replySuggestionRules.beginner}`,
     intermediate: `- Speak naturally in ${conversation.language} but avoid very dense idioms
 - Be moderately tolerant of mistakes
-- Provide vocabulary-focused hints when generating hints
 ${replySuggestionRules.intermediate}`,
     advanced: `- Speak naturally with idioms and colloquial phrasing in ${conversation.language}
 - Be demanding and realistic
-- Provide minimal hints
 ${replySuggestionRules.advanced}`,
     impossible: `- Speak in a very complex and idiomatic register of ${conversation.language}
 - Be skeptical and hard to convince
-- Keep progress conservative and provide no hints
+- Keep progress conservative
 ${replySuggestionRules.impossible}`,
   };
 
@@ -196,7 +193,6 @@ Return a JSON object with:
 - "safety": object with:
   - "badWordsUsed": boolean (true if the latest user message includes insults/profanity/abusive wording)
   - "tabooTopicUsed": boolean (true if the latest user message pushes taboo or disallowed topics)
-- "hints": array of 2-3 suggestions for the next user message (string[])
 - "replySuggestions": array of full dialogue choices in ${conversation.language} that the user could pick as their next reply (like in a dating sim / visual novel). The count depends on difficulty level (see level rules above). Each suggestion should be a complete, natural sentence.`;
 }
 

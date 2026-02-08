@@ -51,11 +51,6 @@ const moodFromUnknownSchema = z
   .min(1)
   .catch("neutral");
 
-const hintsFromUnknownSchema = z
-  .array(z.string())
-  .transform((hints) => hints.map((hint) => hint.trim()).filter(Boolean))
-  .catch([]);
-
 const replySuggestionsFromUnknownSchema = z
   .array(z.string())
   .transform((suggestions) => suggestions.map((s) => s.trim()).filter(Boolean))
@@ -256,7 +251,6 @@ export function createNpcResponseFromLlmSchema(fallbackProgress: GoalProgress) {
       evaluation: npcEvaluationFromLlmSchema,
       objective: objectiveAssessmentFromLlmSchema,
       safety: npcSafetyFromLlmSchema,
-      hints: hintsFromUnknownSchema,
       replySuggestions: replySuggestionsFromUnknownSchema,
     })
     .catch({
@@ -267,7 +261,6 @@ export function createNpcResponseFromLlmSchema(fallbackProgress: GoalProgress) {
       evaluation: DEFAULT_NPC_EVALUATION,
       objective: DEFAULT_OBJECTIVE_ASSESSMENT,
       safety: DEFAULT_NPC_SAFETY_ASSESSMENT,
-      hints: [],
       replySuggestions: [],
     });
 }

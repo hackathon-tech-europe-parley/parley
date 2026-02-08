@@ -33,7 +33,6 @@ interface ChatConversationViewProps {
   tScenarios: TranslateFn;
   messagesEndRef: RefObject<HTMLDivElement | null>;
   onReplay: (messageIndex: number, text: string) => void;
-  onHintSelect: (hint: string) => void;
   onChoiceSelect: (choice: string) => void;
   onInputChange: (value: string) => void;
   onSubmit: () => void;
@@ -89,7 +88,6 @@ export function ChatConversationView({
   tScenarios,
   messagesEndRef,
   onReplay,
-  onHintSelect,
   onChoiceSelect,
   onInputChange,
   onSubmit,
@@ -506,23 +504,6 @@ export function ChatConversationView({
                     {i + 1}.
                   </span>
                   {choice}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Hints */}
-        {state.hints.length > 0 && !sending && !endStatus && (
-          <div className="relative z-10 flex-shrink-0 border-t border-slate-800/40 bg-slate-900/40 px-3 py-2 sm:px-4 sm:py-3 md:px-6">
-            <div className="flex gap-2 overflow-x-auto styled-scrollbar">
-              {state.hints.map((hint, i) => (
-                <button
-                  key={i}
-                  onClick={() => onHintSelect(hint)}
-                  className="btn-press flex-shrink-0 rounded-full border border-blue-600/25 bg-blue-600/8 px-3 py-1.5 text-xs text-blue-300 transition-all hover:border-blue-500/40 hover:bg-blue-600/15 sm:px-4 sm:py-2 sm:text-sm"
-                >
-                  {hint}
                 </button>
               ))}
             </div>
