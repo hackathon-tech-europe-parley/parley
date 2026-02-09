@@ -1,4 +1,4 @@
-import { type FormEvent, type RefObject, useState } from "react";
+import { type FormEvent, type RefObject, useEffect, useState } from "react";
 import {
   GOAL_PROGRESS_COLORS,
   GOAL_PROGRESS_COLORS_IMPOSSIBLE,
@@ -100,7 +100,7 @@ export function ChatConversationView({
   onEndStatusClick,
   onQuit,
 }: ChatConversationViewProps) {
-  const [metaCollapsed, setMetaCollapsed] = useState(true);
+  const [metaSheetOpen, setMetaSheetOpen] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const progressPalette =
     state.level === "impossible"
@@ -163,16 +163,35 @@ export function ChatConversationView({
     state.scenarioKey && state.scenarioKey !== "__custom__"
       ? tScenarios(`${state.scenarioKey}_goal_${state.level}`)
       : state.goal;
+  const mobileMetaPanelId = "mobile-chat-meta-panel";
+
+  useEffect(() => {
+    if (!metaSheetOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMetaSheetOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [metaSheetOpen]);
 
   return (
     <main className="fixed inset-x-0 bottom-0 top-14 flex min-h-0 flex-col overflow-hidden md:flex-row">
       {/* Left side - Meta Information */}
-      <div className="relative flex min-h-0 shrink-0 flex-col overflow-hidden bg-slate-950 md:max-h-none md:min-w-0 md:flex-[0.3]">
+      <div className="relative z-20 shrink-0 bg-slate-950 md:flex md:min-h-0 md:min-w-0 md:flex-[0.3] md:flex-col md:overflow-hidden">
         {/* Mobile compact summary bar */}
         <button
           type="button"
-          onClick={() => setMetaCollapsed((c) => !c)}
-          className="flex items-center gap-2.5 border-b border-slate-800/50 bg-slate-950 px-3 py-2 md:hidden"
+          onClick={() => {
+            setMetaSheetOpen((open) => !open);
+            setOverflowOpen(false);
+          }}
+          aria-expanded={metaSheetOpen}
+          aria-controls={mobileMetaPanelId}
+          className="flex w-full items-center gap-2.5 border-b border-slate-800/50 bg-slate-950 px-3 py-2 md:hidden"
         >
           {state.npcFaceImageUrl && (
             /* biome-ignore lint/performance/noImgElement: Dynamic FAL image URLs */
@@ -219,14 +238,14 @@ export function ChatConversationView({
           </div>
           {/* Chevron */}
           <svg
-            className={`h-4 w-4 flex-shrink-0 text-slate-500 transition-transform duration-300 ${metaCollapsed ? "" : "rotate-180"}`}
+            className={`h-4 w-4 flex-shrink-0 text-slate-500 transition-transform duration-300 ${metaSheetOpen ? "rotate-180" : ""}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
             strokeWidth={2}
           >
             <title>
-              {metaCollapsed ? t("expandPanel") : t("collapsePanel")}
+              {metaSheetOpen ? t("collapsePanel") : t("expandPanel")}
             </title>
             <path
               strokeLinecap="round"
@@ -236,267 +255,332 @@ export function ChatConversationView({
           </svg>
         </button>
 
-        {/* Full meta panel — collapsible on mobile, always visible on md+ */}
+        {/* Meta panel: mobile sheet + desktop side panel */}
         <div
-          className={`transition-[max-height] duration-300 overflow-hidden md:max-h-none md:flex-1 md:overflow-y-auto ${
-            metaCollapsed ? "max-h-0" : "max-h-[42dvh]"
+          id={mobileMetaPanelId}
+          className={`md:flex-1 md:overflow-y-auto ${
+            metaSheetOpen
+              ? "fixed inset-x-0 bottom-0 top-14 z-40 px-2 pb-2 pt-2 md:static md:inset-auto md:z-auto md:p-0"
+              : "hidden md:block"
           }`}
         >
-          <div className="styled-scrollbar relative z-10 flex-1 space-y-3 overflow-y-auto overscroll-contain p-3 sm:space-y-4 sm:p-4 md:p-5">
-            {/* Mood Indicator */}
-            {(() => {
-              const moodTheme = getMoodTheme(state.mood);
-              return (
-                <div
-                  className={`hud-panel relative rounded-xl border p-3 shadow-lg transition-all duration-700 sm:p-4 ${moodTheme.bg} ${moodTheme.border} ${moodTheme.glow}`}
+          {metaSheetOpen && (
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/60 md:hidden"
+              onClick={() => setMetaSheetOpen(false)}
+              aria-label={t("collapsePanel")}
+            />
+          )}
+          <div
+            className={`relative flex h-full min-h-0 flex-col overflow-hidden ${
+              metaSheetOpen
+                ? "animate-modal rounded-2xl border border-slate-700/50 bg-slate-950/95 shadow-2xl backdrop-blur-xl md:rounded-none md:border-0 md:bg-transparent md:shadow-none md:backdrop-blur-none"
+                : ""
+            }`}
+          >
+            {metaSheetOpen && (
+              <div className="flex items-center justify-between border-b border-slate-800/70 px-4 py-3 md:hidden">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  {state.npcFaceImageUrl && (
+                    /* biome-ignore lint/performance/noImgElement: Dynamic FAL image URLs */
+                    <img
+                      src={state.npcFaceImageUrl}
+                      alt={state.npcName}
+                      className="h-7 w-7 flex-shrink-0 rounded-full border-2 border-slate-700/60 object-cover object-top"
+                    />
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-100">
+                      {state.npcName}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {t("objectiveTitle")}
+                    </p>
+                  </div>
+                  <span
+                    className={`mood-dot ml-1 inline-block h-2 w-2 flex-shrink-0 rounded-full ${getMoodTheme(state.mood).dot}`}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMetaSheetOpen(false)}
+                  className="btn-press rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200"
+                  aria-label={t("collapsePanel")}
                 >
-                  <div className="flex items-center gap-3">
-                    {state.npcFaceImageUrl && (
-                      /* biome-ignore lint/performance/noImgElement: Dynamic FAL image URLs */
-                      <img
-                        src={state.npcFaceImageUrl}
-                        alt={state.npcName}
-                        className="h-9 w-9 flex-shrink-0 rounded-full border-2 border-slate-700/60 object-cover object-top shadow-lg sm:h-11 sm:w-11"
-                      />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="mb-1 text-xs font-semibold uppercase leading-none tracking-wider text-slate-400">
-                        {state.npcName}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`mood-dot inline-block h-2.5 w-2.5 flex-shrink-0 rounded-full ${moodTheme.dot}`}
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <title>{t("collapsePanel")}</title>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            )}
+            <div className="styled-scrollbar relative z-10 flex-1 space-y-3 overflow-y-auto overscroll-contain p-3 sm:space-y-4 sm:p-4 md:p-5">
+              {/* Mood Indicator */}
+              {(() => {
+                const moodTheme = getMoodTheme(state.mood);
+                return (
+                  <div
+                    className={`hud-panel relative rounded-xl border p-3 shadow-lg transition-all duration-700 sm:p-4 ${moodTheme.bg} ${moodTheme.border} ${moodTheme.glow}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {state.npcFaceImageUrl && (
+                        /* biome-ignore lint/performance/noImgElement: Dynamic FAL image URLs */
+                        <img
+                          src={state.npcFaceImageUrl}
+                          alt={state.npcName}
+                          className="h-9 w-9 flex-shrink-0 rounded-full border-2 border-slate-700/60 object-cover object-top shadow-lg sm:h-11 sm:w-11"
                         />
-                        <span
-                          className={`text-base font-bold capitalize tracking-tight transition-colors duration-700 sm:text-lg ${moodTheme.text}`}
-                        >
-                          {state.mood}
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="mb-1 text-xs font-semibold uppercase leading-none tracking-wider text-slate-400">
+                          {state.npcName}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`mood-dot inline-block h-2.5 w-2.5 flex-shrink-0 rounded-full ${moodTheme.dot}`}
+                          />
+                          <span
+                            className={`text-base font-bold capitalize tracking-tight transition-colors duration-700 sm:text-lg ${moodTheme.text}`}
+                          >
+                            {state.mood}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Extra meta */}
+              <div className="space-y-4">
+                <div className="border-t border-slate-800/40" />
+
+                <div>
+                  <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    {t("scenarioTitle")}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-slate-300">
+                    {scenarioDescriptionText}
+                  </p>
+                </div>
+
+                <div
+                  className={`hud-panel relative rounded-xl border p-3 shadow-lg sm:p-4 ${
+                    state.level === "impossible"
+                      ? "border-red-800/50 bg-red-950/40"
+                      : "border-slate-700/50 bg-slate-900/60"
+                  }`}
+                >
+                  <div className="mb-2 flex items-start justify-between gap-2">
+                    <h3
+                      className={`text-[11px] font-bold uppercase tracking-[0.15em] ${
+                        state.level === "impossible"
+                          ? "text-red-400/80"
+                          : "text-slate-400"
+                      }`}
+                    >
+                      {t("objectiveTitle")}
+                    </h3>
+                    <div className="relative h-10 w-10 shrink-0">
+                      <div
+                        className="h-10 w-10 rounded-full border border-slate-700/45 shadow-[inset_0_0_12px_rgba(15,23,42,0.65)]"
+                        style={{
+                          background: donutBackground(
+                            objectiveProgressValue,
+                            "#34d399",
+                          ),
+                        }}
+                      />
+                      <div className="absolute inset-[24%] flex items-center justify-center rounded-full bg-slate-900/95">
+                        <span className="font-[family-name:var(--font-mono)] text-[10px] leading-none text-slate-200">
+                          {Math.round(objectiveProgressValue * 100)}
                         </span>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })()}
 
-            {/* Extra meta */}
-            <div className="space-y-4">
-              <div className="border-t border-slate-800/40" />
-
-              <div>
-                <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                  {t("scenarioTitle")}
-                </h3>
-                <p className="text-sm leading-relaxed text-slate-300">
-                  {scenarioDescriptionText}
-                </p>
-              </div>
-
-              <div
-                className={`hud-panel relative rounded-xl border p-3 shadow-lg sm:p-4 ${
-                  state.level === "impossible"
-                    ? "border-red-800/50 bg-red-950/40"
-                    : "border-slate-700/50 bg-slate-900/60"
-                }`}
-              >
-                <div className="mb-2 flex items-start justify-between gap-2">
-                  <h3
-                    className={`text-[11px] font-bold uppercase tracking-[0.15em] ${
+                  <p
+                    className={`mb-3 text-sm font-medium leading-snug ${
                       state.level === "impossible"
-                        ? "text-red-400/80"
-                        : "text-slate-400"
+                        ? "text-red-100"
+                        : "text-slate-100"
                     }`}
                   >
-                    {t("objectiveTitle")}
-                  </h3>
-                  <div className="relative h-10 w-10 shrink-0">
-                    <div
-                      className="h-10 w-10 rounded-full border border-slate-700/45 shadow-[inset_0_0_12px_rgba(15,23,42,0.65)]"
-                      style={{
-                        background: donutBackground(
-                          objectiveProgressValue,
-                          "#34d399",
-                        ),
-                      }}
-                    />
-                    <div className="absolute inset-[24%] flex items-center justify-center rounded-full bg-slate-900/95">
-                      <span className="font-[family-name:var(--font-mono)] text-[10px] leading-none text-slate-200">
-                        {Math.round(objectiveProgressValue * 100)}
+                    {objectiveText}
+                  </p>
+
+                  <div
+                    role="img"
+                    aria-label={`Goal progress ${state.goalProgress} of 5`}
+                    className="mb-3 flex gap-1.5"
+                  >
+                    {GOAL_PROGRESS_STEPS.map((step) => {
+                      const isActive = step <= state.goalProgress;
+                      return (
+                        <span
+                          key={step}
+                          className={`h-2.5 flex-1 rounded-md transition-all duration-500 ${
+                            isActive
+                              ? `${progressPalette[state.goalProgress]} shadow-md ${glowPalette[state.goalProgress]} progress-animated`
+                              : progressTrackColor
+                          }`}
+                          style={
+                            isActive
+                              ? { animationDelay: `${(step - 1) * 80}ms` }
+                              : undefined
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">
+                        {t("objectiveCompletedLabel")}
+                      </span>
+                      <span
+                        className={`rounded-md px-2 py-0.5 font-[family-name:var(--font-mono)] ${
+                          latestObjective?.objectiveMet
+                            ? "bg-emerald-500/15 text-emerald-300"
+                            : "bg-amber-500/15 text-amber-300"
+                        }`}
+                      >
+                        {latestObjective?.objectiveMet ? t("yes") : t("no")}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">
+                        {t("objectiveProgressLabel")}
+                      </span>
+                      <span className="font-[family-name:var(--font-mono)] text-slate-300">
+                        {toPercent(objectiveProgressValue)}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <p
-                  className={`mb-3 text-sm font-medium leading-snug ${
-                    state.level === "impossible"
-                      ? "text-red-100"
-                      : "text-slate-100"
-                  }`}
-                >
-                  {objectiveText}
-                </p>
-
-                <div
-                  role="img"
-                  aria-label={`Goal progress ${state.goalProgress} of 5`}
-                  className="mb-3 flex gap-1.5"
-                >
-                  {GOAL_PROGRESS_STEPS.map((step) => {
-                    const isActive = step <= state.goalProgress;
-                    return (
-                      <span
-                        key={step}
-                        className={`h-2.5 flex-1 rounded-md transition-all duration-500 ${
-                          isActive
-                            ? `${progressPalette[state.goalProgress]} shadow-md ${glowPalette[state.goalProgress]} progress-animated`
-                            : progressTrackColor
-                        }`}
-                        style={
-                          isActive
-                            ? { animationDelay: `${(step - 1) * 80}ms` }
-                            : undefined
-                        }
-                      />
-                    );
-                  })}
-                </div>
-
-                <div className="space-y-1 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">
-                      {t("objectiveCompletedLabel")}
+                <div className="flex flex-wrap gap-2">
+                  <div className="inline-flex items-center gap-1.5 rounded-lg border border-blue-600/20 bg-blue-600/10 px-2.5 py-1.5">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-400/60">
+                      {t("langShort")}
                     </span>
+                    <span className="text-sm font-medium text-blue-300">
+                      {tLangs(activeLanguageCode)}
+                    </span>
+                  </div>
+                  <div
+                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 ${
+                      state.level === "impossible"
+                        ? "border-red-600/20 bg-red-600/10"
+                        : "border-slate-700/30 bg-slate-800/30"
+                    }`}
+                  >
                     <span
-                      className={`rounded-md px-2 py-0.5 font-[family-name:var(--font-mono)] ${
-                        latestObjective?.objectiveMet
-                          ? "bg-emerald-500/15 text-emerald-300"
-                          : "bg-amber-500/15 text-amber-300"
+                      className={`text-[11px] font-semibold uppercase tracking-wider ${
+                        state.level === "impossible"
+                          ? "text-red-400/60"
+                          : "text-slate-500"
                       }`}
                     >
-                      {latestObjective?.objectiveMet ? t("yes") : t("no")}
+                      {t("levelShort")}
+                    </span>
+                    <span
+                      className={`text-sm font-medium ${
+                        state.level === "impossible"
+                          ? "text-red-300"
+                          : "text-slate-300"
+                      }`}
+                    >
+                      {tLevels(
+                        state.level as
+                          | "beginner"
+                          | "intermediate"
+                          | "advanced"
+                          | "impossible",
+                      )}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">
-                      {t("objectiveProgressLabel")}
-                    </span>
-                    <span className="font-[family-name:var(--font-mono)] text-slate-300">
-                      {toPercent(objectiveProgressValue)}
-                    </span>
-                  </div>
                 </div>
-              </div>
 
-              <div className="flex flex-wrap gap-2">
-                <div className="inline-flex items-center gap-1.5 rounded-lg border border-blue-600/20 bg-blue-600/10 px-2.5 py-1.5">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-400/60">
-                    {t("langShort")}
-                  </span>
-                  <span className="text-sm font-medium text-blue-300">
-                    {tLangs(activeLanguageCode)}
-                  </span>
-                </div>
-                <div
-                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 ${
-                    state.level === "impossible"
-                      ? "border-red-600/20 bg-red-600/10"
-                      : "border-slate-700/30 bg-slate-800/30"
-                  }`}
-                >
-                  <span
-                    className={`text-[11px] font-semibold uppercase tracking-wider ${
-                      state.level === "impossible"
-                        ? "text-red-400/60"
-                        : "text-slate-500"
-                    }`}
-                  >
-                    {t("levelShort")}
-                  </span>
-                  <span
-                    className={`text-sm font-medium ${
-                      state.level === "impossible"
-                        ? "text-red-300"
-                        : "text-slate-300"
-                    }`}
-                  >
-                    {tLevels(
-                      state.level as
-                        | "beginner"
-                        | "intermediate"
-                        | "advanced"
-                        | "impossible",
-                    )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">{t("messagesLabel")}</span>
+                  <span className="font-[family-name:var(--font-mono)] font-medium tabular-nums text-slate-300">
+                    {state.history.length}
                   </span>
                 </div>
               </div>
 
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">{t("messagesLabel")}</span>
-                <span className="font-[family-name:var(--font-mono)] font-medium tabular-nums text-slate-300">
-                  {state.history.length}
-                </span>
-              </div>
-            </div>
+              {/* Live metrics chart */}
+              <div className="hud-panel rounded-xl border border-slate-700/40 bg-slate-900/65 p-3 shadow-lg sm:p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="text-[11px] font-semibold uppercase tracking-wider text-cyan-300/80">
+                    {t("liveMetricsTitle")}
+                  </h3>
+                  <span className="font-[family-name:var(--font-mono)] text-[11px] tabular-nums text-slate-500">
+                    {turnsAnalyzed} {t("turnsLabel")}
+                  </span>
+                </div>
 
-            {/* Live metrics chart */}
-            <div className="hud-panel rounded-xl border border-slate-700/40 bg-slate-900/65 p-3 shadow-lg sm:p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-cyan-300/80">
-                  {t("liveMetricsTitle")}
-                </h3>
-                <span className="font-[family-name:var(--font-mono)] text-[11px] tabular-nums text-slate-500">
-                  {turnsAnalyzed} {t("turnsLabel")}
-                </span>
-              </div>
+                {turnsAnalyzed === 0 ? (
+                  <p className="text-xs leading-relaxed text-slate-500">
+                    {t("liveMetricsEmpty")}
+                  </p>
+                ) : (
+                  <div className="space-y-2.5">
+                    <div className="grid grid-cols-2 gap-2">
+                      {metricRows.map((metric) => (
+                        <div
+                          key={metric.id}
+                          className="rounded-lg border border-slate-700/40 bg-slate-800/30 px-2 py-2"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="relative h-10 w-10">
+                              <div
+                                className="h-10 w-10 rounded-full border border-slate-700/45 shadow-[inset_0_0_12px_rgba(15,23,42,0.65)]"
+                                style={{
+                                  background: donutBackground(
+                                    metric.value,
+                                    metric.color,
+                                  ),
+                                }}
+                              />
+                              <div className="absolute inset-[24%] flex items-center justify-center rounded-full bg-slate-900/95">
+                                <span className="font-[family-name:var(--font-mono)] text-[10px] leading-none text-slate-200">
+                                  {Math.round(metric.value * 100)}
+                                </span>
+                              </div>
+                            </div>
 
-              {turnsAnalyzed === 0 ? (
-                <p className="text-xs leading-relaxed text-slate-500">
-                  {t("liveMetricsEmpty")}
-                </p>
-              ) : (
-                <div className="space-y-2.5">
-                  <div className="grid grid-cols-2 gap-2">
-                    {metricRows.map((metric) => (
-                      <div
-                        key={metric.id}
-                        className="rounded-lg border border-slate-700/40 bg-slate-800/30 px-2 py-2"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="relative h-10 w-10">
-                            <div
-                              className="h-10 w-10 rounded-full border border-slate-700/45 shadow-[inset_0_0_12px_rgba(15,23,42,0.65)]"
-                              style={{
-                                background: donutBackground(
-                                  metric.value,
-                                  metric.color,
-                                ),
-                              }}
-                            />
-                            <div className="absolute inset-[24%] flex items-center justify-center rounded-full bg-slate-900/95">
-                              <span className="font-[family-name:var(--font-mono)] text-[10px] leading-none text-slate-200">
-                                {Math.round(metric.value * 100)}
-                              </span>
+                            <div className="min-w-0">
+                              <p className="truncate text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                                {metric.label}
+                              </p>
+                              <p
+                                className="font-[family-name:var(--font-mono)] text-xs"
+                                style={{ color: metric.color }}
+                              >
+                                {toPercent(metric.value)}
+                              </p>
                             </div>
                           </div>
-
-                          <div className="min-w-0">
-                            <p className="truncate text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                              {metric.label}
-                            </p>
-                            <p
-                              className="font-[family-name:var(--font-mono)] text-xs"
-                              style={{ color: metric.color }}
-                            >
-                              {toPercent(metric.value)}
-                            </p>
-                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
