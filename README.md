@@ -1,6 +1,6 @@
 # Parley
 
-**2nd Place Winner at [{Tech: Europe} Paris AI Hackathon](https://luma.com/paris-hackathon)**
+🥈 **2nd Place Winner at [{Tech: Europe} Paris AI Hackathon](https://luma.com/paris-hackathon)**
 
 Situational language learning through immersive roleplay. Pick a language, choose a scenario, and chat with an AI character to practice real-world conversations.
 
@@ -46,7 +46,7 @@ Situational language learning through immersive roleplay. Pick a language, choos
 
 - **AI-generated scenes** — Photorealistic background images generated per scenario via FAL AI (Flux)
 - **NPC face expressions** — Visual mood indicators that change with conversation tone
-- **Police intervention** — In Impossible mode, the NPC can call the police — complete with siren sound, jail bars drop animation, and a new officer NPC to negotiate with
+- **Police intervention** — If you disrespect or threaten the NPC, they can call the police — complete with siren sound, jail bars drop animation, and a new officer NPC to negotiate with
 - **Confetti celebration** — Visual burst when you achieve your goal
 
 ### Live Metrics & Debrief
@@ -54,11 +54,13 @@ Situational language learning through immersive roleplay. Pick a language, choos
 - **Real-time evaluation** — Goal progress, relevance, cooperation, politeness, and clarity tracked live during conversation
 - **Post-conversation debrief** — Summary with goal achievement status, key phrases learned, and recommended phrases for improvement
 
-### Internationalized UI
+### Supported Languages
 
-Full interface available in 5 languages:
+Practice conversations in any of these languages:
 
-`English` `French` `German` `Spanish` `Portuguese`
+🇬🇧 English · 🇫🇷 French · 🇩🇪 German · 🇪🇸 Spanish · 🇧🇷 Portuguese
+
+The full UI is also localized in all 5 languages via next-intl.
 
 ---
 
