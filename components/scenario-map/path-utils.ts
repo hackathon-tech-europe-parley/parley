@@ -24,6 +24,8 @@ const DESKTOP_BOTTOM_PADDING = 130;
 const DESKTOP_ROW_SPACING = 220;
 const DESKTOP_MIN_X = 12;
 const DESKTOP_MAX_X = 88;
+const DESKTOP_ROW_WAVE = 34;
+const DESKTOP_X_JITTER = 2.6;
 
 function desktopColumns(count: number): number {
   if (count <= 4) return 2;
@@ -59,11 +61,15 @@ export function computeNodePositions(
     const col = i % columns;
     const reverseRow = row % 2 === 1;
     const visualCol = reverseRow ? columns - 1 - col : col;
+    const colProgress = visualCol / denominator;
+    const yWave =
+      Math.sin(colProgress * Math.PI + row * 0.72) * DESKTOP_ROW_WAVE;
+    const xJitter = Math.sin(row * 1.18 + visualCol * 0.9) * DESKTOP_X_JITTER;
 
     positions.push({
       index: i,
-      x: DESKTOP_MIN_X + (visualCol / denominator) * xRange,
-      y: DESKTOP_TOP_PADDING + row * DESKTOP_ROW_SPACING,
+      x: DESKTOP_MIN_X + colProgress * xRange + xJitter,
+      y: DESKTOP_TOP_PADDING + row * DESKTOP_ROW_SPACING + yWave,
     });
   }
 
@@ -85,6 +91,7 @@ export function computeTotalHeight(count: number, layout: MapLayout): number {
   return (
     DESKTOP_TOP_PADDING +
     (rows - 1) * DESKTOP_ROW_SPACING +
+    DESKTOP_ROW_WAVE +
     DESKTOP_BOTTOM_PADDING
   );
 }
@@ -99,6 +106,16 @@ export function buildSvgPath(
   const tx = (to.x / 100) * containerWidth;
   const ty = to.y;
   const dy = ty - fy;
+  const dx = tx - fx;
+
+  if (Math.abs(dy) < 72) {
+    const bow = Math.max(22, Math.min(52, Math.abs(dx) * 0.24));
+    const bowDirection = from.index % 2 === 0 ? 1 : -1;
+    const c1y = fy + bow * bowDirection;
+    const c2y = ty + bow * bowDirection;
+    return `M ${fx} ${fy} C ${fx} ${c1y} ${tx} ${c2y} ${tx} ${ty}`;
+  }
+
   return `M ${fx} ${fy} C ${fx} ${fy + dy * 0.4} ${tx} ${fy + dy * 0.6} ${tx} ${ty}`;
 }
 
