@@ -2,8 +2,6 @@
   <img src="public/assets/logo.png" alt="Parley" width="120" />
 </p>
 
-<h1 align="center">Parley</h1>
-
 <p align="center">
   <strong>Learn languages by living them.</strong><br/>
   Immersive AI roleplay for real-world conversation practice.
