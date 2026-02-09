@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { generateDebrief } from "@/core/debrief";
 import { createLogger, withConversationId } from "@/core/logger";
 import { buildProgressEntry } from "@/core/progress";
+import { buildSceneImagePrompt } from "@/core/scene";
 import { idParamSchema, quitConversationResponseSchema } from "@/core/types";
 import { generateSceneImage } from "@/infra/image";
 import { getSessionId } from "@/infra/session";
@@ -42,7 +43,16 @@ export async function POST(
       const [debrief, finalImageUrl] = await Promise.all([
         generateDebrief(conversation, "quit"),
         generateSceneImage(
-          `Photorealistic background scene: ${conversation.scenario}. No people, just the environment and setting. First-person perspective.`,
+          buildSceneImagePrompt({
+            scenario: conversation.scenario,
+            language: conversation.language,
+            languageCode: conversation.languageCode,
+            scenarioKey: conversation.scenarioKey,
+            npcName: conversation.npcName,
+            npcPersonality: conversation.npcPersonality,
+            mood: conversation.mood,
+            outcome: "quit",
+          }),
         ),
       ]);
 

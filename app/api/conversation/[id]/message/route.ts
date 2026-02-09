@@ -12,8 +12,8 @@ import {
   getSpecialPersonFaceAssetUrl,
 } from "@/core/npc";
 import { buildProgressEntry } from "@/core/progress";
+import { buildSceneImagePrompt } from "@/core/scene";
 import {
-  type GoalStatus,
   idParamSchema,
   messageStreamCompletePayloadSchema,
   messageStreamErrorPayloadSchema,
@@ -318,10 +318,16 @@ export async function POST(
               // Send NPC's complete event FIRST
               if (shouldCallPoliceman) {
                 // Police sequence: NPC message is "ongoing" for the client (debrief goes on police intro)
-                const moodPrompt = buildScenePrompt(
-                  conversation.scenario,
-                  npcResponse.mood,
-                );
+                const moodPrompt = buildSceneImagePrompt({
+                  scenario: conversation.scenario,
+                  language: conversation.language,
+                  languageCode: conversation.languageCode,
+                  scenarioKey: conversation.scenarioKey,
+                  npcName: conversation.npcName,
+                  npcPersonality: conversation.npcPersonality,
+                  mood: npcResponse.mood,
+                  outcome: "failed",
+                });
                 const sceneImageUrl = await generateSceneImageSafely(
                   moodPrompt,
                   conversation.sceneImageUrl,
@@ -418,10 +424,15 @@ export async function POST(
                   encoder.encode(formatSSE("complete", introPayload)),
                 );
               } else if (npcResponse.goalStatus === "ongoing") {
-                const moodPrompt = buildScenePrompt(
-                  conversation.scenario,
-                  npcResponse.mood,
-                );
+                const moodPrompt = buildSceneImagePrompt({
+                  scenario: conversation.scenario,
+                  language: conversation.language,
+                  languageCode: conversation.languageCode,
+                  scenarioKey: conversation.scenarioKey,
+                  npcName: conversation.npcName,
+                  npcPersonality: conversation.npcPersonality,
+                  mood: npcResponse.mood,
+                });
                 const sceneImageUrl = await generateSceneImageSafely(
                   moodPrompt,
                   conversation.sceneImageUrl,
@@ -453,11 +464,16 @@ export async function POST(
                   conversation,
                   finalStatus,
                 );
-                const finalImagePrompt = buildScenePrompt(
-                  conversation.scenario,
-                  npcResponse.mood,
-                  finalStatus,
-                );
+                const finalImagePrompt = buildSceneImagePrompt({
+                  scenario: conversation.scenario,
+                  language: conversation.language,
+                  languageCode: conversation.languageCode,
+                  scenarioKey: conversation.scenarioKey,
+                  npcName: conversation.npcName,
+                  npcPersonality: conversation.npcPersonality,
+                  mood: npcResponse.mood,
+                  outcome: finalStatus,
+                });
                 const finalImageUrl = await generateSceneImageSafely(
                   finalImagePrompt,
                   conversation.sceneImageUrl,
@@ -531,52 +547,6 @@ function sseHeaders(): HeadersInit {
 
 function formatSSE(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-}
-
-function buildScenePrompt(
-  scenario: string,
-  mood: string,
-  outcome?: GoalStatus,
-): string {
-  const moodTone = describeMoodTone(mood);
-  const outcomeTone =
-    outcome === "achieved"
-      ? "The scene should feel resolved and calmer than before."
-      : outcome === "failed"
-        ? "The scene should feel tense, unresolved, and emotionally heavy."
-        : "";
-
-  return [
-    `Photorealistic background scene: ${scenario}.`,
-    "No people, just the environment and setting. First-person perspective.",
-    `Atmosphere: ${moodTone}.`,
-    outcomeTone,
-  ]
-    .filter(Boolean)
-    .join(" ");
-}
-
-function describeMoodTone(mood: string): string {
-  switch (mood) {
-    case "happy":
-      return "uplifting and optimistic";
-    case "friendly":
-      return "welcoming and calm";
-    case "neutral":
-      return "balanced and realistic";
-    case "skeptical":
-      return "wary and uncertain";
-    case "annoyed":
-      return "frustrated and tense";
-    case "angry":
-      return "hostile and intense";
-    case "sad":
-      return "somber and subdued";
-    case "surprised":
-      return "suddenly tense and alert";
-    default:
-      return "balanced and realistic";
-  }
 }
 
 async function generateSceneImageSafely(
