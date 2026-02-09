@@ -152,7 +152,10 @@
     "metricRelevance": "Pertinence",
     "metricCooperation": "Coopération",
     "metricPoliteness": "Politesse",
-    "metricClarity": "Clarté"
+    "metricClarity": "Clarté",
+    "expandPanel": "Afficher les détails",
+    "collapsePanel": "Masquer les détails",
+    "moreOptions": "Plus d'options"
   },
   "Debrief": {
     "goalAchieved": "Objectif atteint",
@@ -160,7 +163,19 @@
     "quitEarly": "Arrêt prématuré",
     "withNpc": "avec {npcName}",
     "keyPhrases": "Phrases clés",
-    "returnToMap": "Retour à la carte"
+    "returnToMap": "Retour à la carte",
+    "performanceBreakdown": "Bilan de performance",
+    "cooperation": "Coopération",
+    "relevance": "Pertinence",
+    "politeness": "Politesse",
+    "clarity": "Clarté",
+    "taskIntent": "Intention de tâche",
+    "turnsCount": "{count} tours",
+    "objectiveScore": "Score de l'objectif",
+    "go": "RÉUSSI",
+    "noGo": "ÉCHOUÉ",
+    "confidence": "confiance",
+    "blockers": "Obstacles"
   },
   "Map": {
     "heading": "Votre parcours",

@@ -25,27 +25,27 @@ export function ChatDebriefView({
     ? [
         {
           id: "cooperation",
-          label: "Cooperation",
+          label: tDebrief("cooperation"),
           value: metrics.evaluationAverages.cooperation,
         },
         {
           id: "relevance",
-          label: "Relevance",
+          label: tDebrief("relevance"),
           value: metrics.evaluationAverages.relevance,
         },
         {
           id: "politeness",
-          label: "Politeness",
+          label: tDebrief("politeness"),
           value: metrics.evaluationAverages.politeness,
         },
         {
           id: "clarity",
-          label: "Clarity",
+          label: tDebrief("clarity"),
           value: metrics.evaluationAverages.clarity,
         },
         {
           id: "taskIntent",
-          label: "Task intent",
+          label: tDebrief("taskIntent"),
           value: metrics.evaluationAverages.taskIntent,
         },
       ]
@@ -138,10 +138,10 @@ export function ChatDebriefView({
             <div className="space-y-3 rounded-xl border border-slate-700/40 bg-slate-800/30 p-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Performance Breakdown
+                  {tDebrief("performanceBreakdown")}
                 </h3>
                 <span className="text-xs text-slate-500">
-                  {metrics.turnsAnalyzed} turns
+                  {tDebrief("turnsCount", { count: metrics.turnsAnalyzed })}
                 </span>
               </div>
 
@@ -167,7 +167,7 @@ export function ChatDebriefView({
               <div className="rounded-lg border border-slate-700/50 bg-slate-900/60 p-3 text-xs">
                 <div className="mb-1 flex items-center justify-between">
                   <span className="font-semibold uppercase tracking-wide text-slate-400">
-                    Objective Score
+                    {tDebrief("objectiveScore")}
                   </span>
                   <span className="font-[family-name:var(--font-mono)] text-slate-200">
                     {Math.round(metrics.objective.score * 100)}%
@@ -180,13 +180,16 @@ export function ChatDebriefView({
                       : "text-amber-300"
                   }
                 >
-                  {metrics.objective.met ? "GO" : "NO-GO"}
+                  {metrics.objective.met ? tDebrief("go") : tDebrief("noGo")}
                   {" · "}
-                  confidence {Math.round(metrics.objective.confidence * 100)}%
+                  {tDebrief("confidence")}{" "}
+                  {Math.round(metrics.objective.confidence * 100)}%
                 </p>
                 {metrics.objective.blockers.length > 0 && (
                   <p className="mt-1 text-slate-400">
-                    Blockers: {metrics.objective.blockers.join(", ")}
+                    {tDebrief("blockers")}
+                    {": "}
+                    {metrics.objective.blockers.join(", ")}
                   </p>
                 )}
               </div>

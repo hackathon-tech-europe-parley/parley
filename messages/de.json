@@ -152,7 +152,10 @@
     "metricRelevance": "Relevanz",
     "metricCooperation": "Kooperation",
     "metricPoliteness": "Höflichkeit",
-    "metricClarity": "Klarheit"
+    "metricClarity": "Klarheit",
+    "expandPanel": "Details anzeigen",
+    "collapsePanel": "Details ausblenden",
+    "moreOptions": "Mehr Optionen"
   },
   "Debrief": {
     "goalAchieved": "Ziel erreicht",
@@ -160,7 +163,19 @@
     "quitEarly": "Vorzeitig beendet",
     "withNpc": "mit {npcName}",
     "keyPhrases": "Wichtige Ausdrücke",
-    "returnToMap": "Zurück zur Karte"
+    "returnToMap": "Zurück zur Karte",
+    "performanceBreakdown": "Leistungsübersicht",
+    "cooperation": "Kooperation",
+    "relevance": "Relevanz",
+    "politeness": "Höflichkeit",
+    "clarity": "Klarheit",
+    "taskIntent": "Aufgabenfokus",
+    "turnsCount": "{count} Runden",
+    "objectiveScore": "Zielbewertung",
+    "go": "BESTANDEN",
+    "noGo": "NICHT BESTANDEN",
+    "confidence": "Konfidenz",
+    "blockers": "Hindernisse"
   },
   "Map": {
     "heading": "Deine Reise",
