@@ -9,6 +9,9 @@ import type {
   NpcResponse,
   NpcSafetyAssessment,
 } from "../types";
+import { createLogger } from "../logger";
+
+const log = createLogger("game:npc-policy");
 
 interface PolicyProfile {
   failDisengagedStreak: number;
@@ -381,6 +384,18 @@ export function applyNpcPolicy(
     hostileTurn,
     tabooTurn,
   });
+
+  log.debug({
+    level: conversation.level,
+    mood,
+    goalStatus,
+    goalProgress,
+    interactionScore: Math.round(interactionScore * 100) / 100,
+    hostileTurn,
+    tabooTurn,
+    hostilityStreak: conversation.hostilityStreak,
+    disengagedStreak: conversation.disengagedStreak,
+  }, "NPC policy applied");
 
   return {
     ...llmResponse,

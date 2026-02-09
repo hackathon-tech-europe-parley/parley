@@ -1,5 +1,7 @@
 import { DATABASE_URL } from "../env";
+import { createLogger } from "../logger";
 
+const log = createLogger("storage:police-audio");
 const usePostgres = Boolean(DATABASE_URL);
 
 // --- Postgres backend (production) ---
@@ -40,10 +42,16 @@ export async function getPoliceAudio(key: string): Promise<string | undefined> {
   if (usePostgres) {
     const sql = getSQL();
     const rows = await sql`SELECT audio_base64 FROM police_audio WHERE key = ${key}`;
-    if (rows.length === 0) return undefined;
+    if (rows.length === 0) {
+      log.debug({ key }, "police audio cache miss");
+      return undefined;
+    }
+    log.debug({ key }, "police audio cache hit");
     return rows[0].audio_base64 as string;
   }
-  return globalStore.__parleyPoliceAudio!.get(key);
+  const cached = globalStore.__parleyPoliceAudio!.get(key);
+  log.debug({ key, hit: Boolean(cached) }, "police audio cache lookup");
+  return cached;
 }
 
 export async function setPoliceAudio(key: string, audioBase64: string): Promise<void> {

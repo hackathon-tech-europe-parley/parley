@@ -1,9 +1,13 @@
 import type { GoalProgress, GoalStatus } from "../types";
+import { createLogger } from "../logger";
+
+const log = createLogger("ai:parsing");
 
 export function parseJsonSafely(content: string): unknown {
   try {
     return JSON.parse(content);
   } catch {
+    log.warn("JSON parse failed, returning empty object");
     return {};
   }
 }

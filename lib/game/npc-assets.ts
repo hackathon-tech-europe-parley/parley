@@ -1,4 +1,7 @@
 import type { NpcGender } from "../types";
+import { createLogger } from "../logger";
+
+const log = createLogger("game:npc-assets");
 
 const GENDER_MAP: Record<NpcGender, string> = {
   masculine: "man",
@@ -44,6 +47,10 @@ export function getNpcFaceAssetUrl(
   const resolvedMood = VALID_MOODS.has(normalizedMood)
     ? normalizedMood
     : MOOD_FALLBACK[normalizedMood] ?? DEFAULT_MOOD;
+
+  if (resolvedMood !== normalizedMood) {
+    log.debug({ mood, resolvedMood }, "mood mapped to fallback asset");
+  }
 
   return `/assets/${scenarioKey}/${gender}_${resolvedMood}.webp`;
 }

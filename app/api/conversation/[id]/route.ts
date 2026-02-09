@@ -5,6 +5,9 @@ import {
   idParamSchema,
   type ConversationSnapshot,
 } from "@/lib/types";
+import { createLogger, withConversationId } from "@/lib/logger";
+
+const log = createLogger("api:conversation:get");
 
 export async function GET(
   _request: Request,
@@ -19,37 +22,42 @@ export async function GET(
     );
   }
   const id = parsedParams.data;
-  const conversation = await getConversation(id);
 
-  if (!conversation) {
-    return NextResponse.json(
-      { error: "Conversation not found" },
-      { status: 404 },
-    );
-  }
+  return withConversationId(id, async () => {
+    const conversation = await getConversation(id);
 
-  const snapshot: ConversationSnapshot = {
-    conversationId: id,
-    scenario: conversation.scenario,
-    language: conversation.language,
-    level: conversation.level,
-    goal: conversation.goal,
-    npcName: conversation.npcName,
-    mood: conversation.mood,
-    goalProgress: conversation.goalProgress ?? 1,
-    sceneImageUrl: conversation.sceneImageUrl,
-    npcFaceImageUrl: conversation.npcFaceImageUrl,
-    npcGender: conversation.npcGender,
-    goalStatus: conversation.goalStatus ?? "ongoing",
-    debrief: conversation.debrief,
-    history: conversation.history,
-    replySuggestions: await getReplySuggestions(id),
-    evaluationHistory: conversation.evaluationHistory ?? [],
-    objectiveHistory: conversation.objectiveHistory ?? [],
-    scenarioKey: conversation.scenarioKey,
-    languageCode: conversation.languageCode,
-    specialPerson: conversation.specialPerson,
-  };
+    if (!conversation) {
+      log.info("conversation not found");
+      return NextResponse.json(
+        { error: "Conversation not found" },
+        { status: 404 },
+      );
+    }
 
-  return NextResponse.json(conversationSnapshotSchema.parse(snapshot));
+    log.info({ historyLength: conversation.history.length }, "conversation hydrated");
+    const snapshot: ConversationSnapshot = {
+      conversationId: id,
+      scenario: conversation.scenario,
+      language: conversation.language,
+      level: conversation.level,
+      goal: conversation.goal,
+      npcName: conversation.npcName,
+      mood: conversation.mood,
+      goalProgress: conversation.goalProgress ?? 1,
+      sceneImageUrl: conversation.sceneImageUrl,
+      npcFaceImageUrl: conversation.npcFaceImageUrl,
+      npcGender: conversation.npcGender,
+      goalStatus: conversation.goalStatus ?? "ongoing",
+      debrief: conversation.debrief,
+      history: conversation.history,
+      replySuggestions: await getReplySuggestions(id),
+      evaluationHistory: conversation.evaluationHistory ?? [],
+      objectiveHistory: conversation.objectiveHistory ?? [],
+      scenarioKey: conversation.scenarioKey,
+      languageCode: conversation.languageCode,
+      specialPerson: conversation.specialPerson,
+    };
+
+    return NextResponse.json(conversationSnapshotSchema.parse(snapshot));
+  });
 }

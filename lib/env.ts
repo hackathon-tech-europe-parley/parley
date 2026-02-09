@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { createLogger } from "./logger";
+
+const log = createLogger("env");
 
 const optionalEnvString = z.string().trim().min(1).optional();
 
@@ -13,6 +16,13 @@ const envSchema = z
   });
 
 const env = envSchema.parse(process.env);
+
+if (!env.GRADIUM_API_KEY) {
+  log.warn("GRADIUM_API_KEY not set — TTS/STT will fail");
+}
+if (!env.DATABASE_URL) {
+  log.info("DATABASE_URL not set — using in-memory storage");
+}
 
 export const OPENAI_MODEL = env.OPENAI_MODEL ?? "gpt-4o-2024-08-06";
 export const FAL_IMAGE_MODEL = env.FAL_IMAGE_MODEL ?? "fal-ai/flux/schnell";

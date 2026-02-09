@@ -9,6 +9,9 @@ import {
   messageStreamTokenPayloadSchema,
   sendMessageSchema,
 } from "@/lib/types";
+import { createLogger, withConversationId } from "@/lib/logger";
+
+const log = createLogger("api:message");
 
 const MAX_USER_TURNS = 15;
 
@@ -31,6 +34,8 @@ export async function POST(
     );
   }
   const id = parsedParams.data;
+
+  return withConversationId(id, async () => {
   const conversation = await getConversation(id);
 
   if (!conversation) {
@@ -89,6 +94,7 @@ export async function POST(
   }
 
   const { message } = parsed.data;
+  log.info({ turn: conversation.turnCount }, "message received");
   conversation.history.push({ role: "user", text: message });
   const previousTurnCount = Number.isFinite(conversation.turnCount)
     ? Number(conversation.turnCount)
@@ -297,8 +303,7 @@ export async function POST(
               );
 
               // Generate debrief for the police intro payload
-              console.log("[POLICE] Triggering police call. Message:", npcResponse.npcMessage.substring(0, 100));
-              console.log("[POLICE] Flag:", npcResponse.shouldCallPoliceman);
+              log.info({ flag: npcResponse.shouldCallPoliceman }, "triggering police call");
 
               const debrief = await generateDebrief(conversation, "failed");
 
@@ -421,6 +426,7 @@ export async function POST(
           }
         }
       } catch (error) {
+        log.error({ err: error }, "message stream error");
         const encoder = new TextEncoder();
         const message =
           error instanceof Error ? error.message : "Unknown error";
@@ -439,6 +445,7 @@ export async function POST(
   });
 
   return new Response(stream, { headers: sseHeaders() });
+  });
 }
 
 function sseHeaders(): HeadersInit {
@@ -506,7 +513,7 @@ async function generateSceneImageSafely(
   try {
     return await generateSceneImage(prompt);
   } catch (error) {
-    console.error("Scene image regeneration failed, using previous background.", error);
+    log.warn({ err: error }, "scene image regeneration failed, using previous background");
     return fallbackImageUrl;
   }
 }

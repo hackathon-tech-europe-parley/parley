@@ -28,7 +28,9 @@ import {
   resolveGoalProgress,
 } from "./openai-parsing";
 import { OPENAI_MODEL } from "../env";
+import { createLogger } from "../logger";
 
+const log = createLogger("ai:openai");
 const openai = new OpenAI();
 const model = OPENAI_MODEL;
 
@@ -86,6 +88,8 @@ export async function generateNpcProfile(
   scenario: string,
   language: string,
 ): Promise<NpcProfile> {
+  log.info({ language }, "generating NPC profile");
+  const start = Date.now();
   const response = await openai.chat.completions.create({
     model,
     response_format: { type: "json_object" },
@@ -106,12 +110,16 @@ export async function generateNpcProfile(
     throw new Error("Failed to generate NPC profile");
   }
 
-  return npcProfileFromLlmSchema.parse(parseJsonSafely(content));
+  const profile = npcProfileFromLlmSchema.parse(parseJsonSafely(content));
+  log.info({ durationMs: Date.now() - start, name: profile.name, gender: profile.gender }, "NPC profile generated");
+  return profile;
 }
 
 export async function generateNpcOpening(
   conversation: Conversation,
 ): Promise<NpcResponse> {
+  log.info({ level: conversation.level }, "generating NPC opening");
+  const start = Date.now();
   const response = await openai.chat.completions.create({
     model,
     temperature: 1.2,
@@ -135,6 +143,7 @@ export async function generateNpcOpening(
   const openingMood = conversation.level === "impossible" ? "skeptical" :
     conversation.level === "beginner" ? "friendly" : "neutral";
 
+  log.info({ durationMs: Date.now() - start, mood: openingMood }, "NPC opening generated");
   return {
     ...parsed,
     mood: openingMood,
@@ -146,6 +155,8 @@ export async function generateNpcOpening(
 export async function generateNpcResponse(
   conversation: Conversation,
 ): Promise<NpcResponse> {
+  log.info({ turn: conversation.turnCount }, "generating NPC response");
+  const start = Date.now();
   const response = await openai.chat.completions.create({
     model,
     response_format: { type: "json_object" },
@@ -170,6 +181,7 @@ export async function generateNpcResponse(
     conversation.goalProgress,
   );
 
+  log.info({ durationMs: Date.now() - start, mood: normalizedMood, goalStatus, goalProgress }, "NPC response generated");
   return {
     ...parsed,
     mood: normalizedMood,
@@ -184,6 +196,8 @@ export async function* generateNpcResponseStream(
   | { type: "token"; text: string }
   | { type: "complete"; data: NpcResponse }
 > {
+  log.info({ turn: conversation.turnCount }, "streaming NPC response");
+  const start = Date.now();
   const stream = await openai.chat.completions.create({
     model,
     temperature: 1.2,
@@ -226,6 +240,7 @@ export async function* generateNpcResponseStream(
     conversation.goalProgress,
   );
 
+  log.info({ durationMs: Date.now() - start, mood: normalizedMood, goalStatus, goalProgress }, "NPC response stream complete");
   yield {
     type: "complete",
     data: {
@@ -240,6 +255,8 @@ export async function* generateNpcResponseStream(
 export async function generateCustomScenario(
   prompt: string,
 ): Promise<CustomScenario> {
+  log.info("generating custom scenario");
+  const start = Date.now();
   const response = await openai.chat.completions.create({
     model,
     response_format: { type: "json_object" },
@@ -260,7 +277,9 @@ export async function generateCustomScenario(
     throw new Error("Failed to generate custom scenario");
   }
 
-  return customScenarioFromLlmSchema.parse(parseJsonSafely(content));
+  const scenario = customScenarioFromLlmSchema.parse(parseJsonSafely(content));
+  log.info({ durationMs: Date.now() - start }, "custom scenario generated");
+  return scenario;
 }
 
 export async function* generateSpecialPersonResponseStream(
@@ -271,6 +290,8 @@ export async function* generateSpecialPersonResponseStream(
   | { type: "token"; text: string }
   | { type: "complete"; data: NpcResponse }
 > {
+  log.info({ specialPersonType, specialPersonName }, "streaming special person response");
+  const start = Date.now();
   const stream = await openai.chat.completions.create({
     model,
     response_format: { type: "json_object" },
@@ -312,6 +333,7 @@ export async function* generateSpecialPersonResponseStream(
     conversation.goalProgress,
   );
 
+  log.info({ durationMs: Date.now() - start, mood: normalizedMood, goalStatus }, "special person response stream complete");
   yield {
     type: "complete",
     data: {
@@ -327,6 +349,8 @@ export async function generateDebrief(
   conversation: Conversation,
   finalStatus: "achieved" | "failed" | "quit",
 ): Promise<Debrief> {
+  log.info({ finalStatus }, "generating debrief");
+  const start = Date.now();
   const historyText = conversation.history
     .map((m) => `${m.role === "user" ? "User" : conversation.npcName}: ${m.text}`)
     .join("\n");
@@ -354,6 +378,7 @@ export async function generateDebrief(
   const parsed = debriefFromLlmSchema.parse(parseJsonSafely(content));
   const metrics = buildDebriefMetrics(conversation, finalStatus);
 
+  log.info({ durationMs: Date.now() - start, keyPhraseCount: parsed.keyPhrases.length }, "debrief generated");
   return {
     narrative: parsed.narrative,
     keyPhrases: parsed.keyPhrases,
