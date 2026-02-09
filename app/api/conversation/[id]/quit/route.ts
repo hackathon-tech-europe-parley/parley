@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
-import { generateDebrief, generateSceneImage } from "@/lib/ai";
-import { createLogger, withConversationId } from "@/lib/logger";
-import { deleteConversation, getConversation } from "@/lib/storage";
-import { idParamSchema, quitConversationResponseSchema } from "@/lib/types";
+import { generateDebrief } from "@/core/debrief";
+import { createLogger, withConversationId } from "@/core/logger";
+import { buildProgressEntry } from "@/core/progress";
+import { idParamSchema, quitConversationResponseSchema } from "@/core/types";
+import { generateSceneImage } from "@/infra/image";
+import { getSessionId } from "@/infra/session";
+import {
+  addProgressEntry,
+  deleteConversation,
+  getConversation,
+} from "@/infra/storage";
 
 const log = createLogger("api:quit");
 
@@ -41,6 +48,14 @@ export async function POST(
 
       const history = [...conversation.history];
       const npcName = conversation.npcName;
+
+      // Save progress before deleting conversation
+      conversation.debrief = debrief;
+      const sessionId = await getSessionId();
+      if (sessionId) {
+        await addProgressEntry(buildProgressEntry(sessionId, conversation));
+      }
+
       await deleteConversation(id);
 
       return NextResponse.json(

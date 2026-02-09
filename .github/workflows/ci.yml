@@ -16,4 +16,8 @@ jobs:
       - run: bun run build
         env:
           OPENAI_API_KEY: placeholder
+          LLM_PROVIDER: openai
+          LLM_MODEL: gpt-4o
           FAL_KEY: placeholder
+          FAL_IMAGE_MODEL: fal-ai/flux/schnell
+          GRADIUM_API_KEY: placeholder

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { synthesizeSpeech } from "@/lib/audio";
-import { createLogger } from "@/lib/logger";
-import { ttsRequestSchema } from "@/lib/types";
+import { createLogger } from "@/core/logger";
+import { ttsRequestSchema } from "@/core/types";
+import { synthesizeSpeech } from "@/infra/tts";
 
 const log = createLogger("api:tts");
 

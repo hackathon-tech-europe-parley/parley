@@ -1,14 +1,14 @@
 "use client";
 import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
-import { useRouter } from "@/i18n/navigation";
 import {
   apiErrorSchema,
   type CustomScenario,
   createConversationResponseSchema,
   customScenarioSchema,
   type LanguageCode,
-} from "@/lib/types";
+} from "@/core/types";
+import { useRouter } from "@/i18n/navigation";
 import {
   LANGUAGE_ENGLISH_NAMES,
   LANGUAGES,

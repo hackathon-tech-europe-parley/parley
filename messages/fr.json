@@ -160,6 +160,20 @@
     "quitEarly": "Arrêt prématuré",
     "withNpc": "avec {npcName}",
     "keyPhrases": "Phrases clés",
-    "newScenario": "Nouveau scénario"
+    "returnToMap": "Retour à la carte"
+  },
+  "Map": {
+    "heading": "Votre parcours",
+    "subheading": "Choisissez une langue et conquérez chaque scénario",
+    "pickLanguage": "Quelle langue voulez-vous pratiquer ?",
+    "pickLanguageSubtitle": "Choisissez la langue que vous voulez apprendre",
+    "completed": "Terminé",
+    "failed": "Échoué",
+    "available": "Disponible",
+    "locked": "Verrouillé",
+    "score": "Score",
+    "turns": "tours",
+    "startRoleplay": "Commencer le jeu de rôle",
+    "settingUp": "Mise en place du scénario..."
   }
 }

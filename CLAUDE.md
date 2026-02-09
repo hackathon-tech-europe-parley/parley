@@ -36,15 +36,22 @@ Next.js 15 App Router with two pages:
 ### Key Directories
 
 - `app/` — Pages, layout (global header), and API route handlers
-- `lib/` — Shared library organized by domain:
-  - `lib/ai/` — LLM integration (OpenAI), image generation (FAL), prompt engineering, response parsing
-  - `lib/audio/` — Text-to-speech (Gradium API), client-side TTS playback, microphone recording
-  - `lib/game/` — NPC conversation policy engine, NPC face asset mapping
-  - `lib/storage/` — Conversation persistence (PostgreSQL or in-memory)
-  - `lib/types/` — TypeScript types, Zod schemas, constants, LLM response schemas
-  - `lib/env.ts` — Environment variable validation
-  - `lib/sse-client.ts` — Client-side SSE stream consumer
+- `core/` — Domain logic organized by feature:
+  - `core/npc/` — NPC conversation feature (generation, prompts, policy, assets, messages, parsing)
+  - `core/debrief/` — Post-conversation debrief (generation, metrics, prompts)
+  - `core/scenario/` — Custom scenario generation (generation, prompts)
+  - `core/safety/` — Content moderation (taboo rules)
+  - `core/types/` — TypeScript types, Zod schemas, constants, LLM response schemas
+  - `core/env.ts` — Environment variable validation
+  - `core/logger.ts` — Pino logger with AsyncLocalStorage context
+- `infra/` — External provider bindings (thin adapters):
+  - `infra/llm/` — LLM abstraction wrapping Vercel AI SDK
+  - `infra/image/` — Image generation (FAL)
+  - `infra/tts/` — Text-to-speech (Gradium)
+  - `infra/stt/` — Speech-to-text (Gradium)
+  - `infra/storage/` — Conversation persistence (PostgreSQL or in-memory)
 - `components/` — React components (setup-form, chat)
+  - `components/chat/lib/` — Client-side utilities (SSE consumer, TTS player, audio recorder)
 
 ### Layout
 

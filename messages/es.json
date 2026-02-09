@@ -160,6 +160,20 @@
     "quitEarly": "Abandonado Temprano",
     "withNpc": "con {npcName}",
     "keyPhrases": "Frases Clave",
-    "newScenario": "Nuevo Escenario"
+    "returnToMap": "Volver al mapa"
+  },
+  "Map": {
+    "heading": "Tu recorrido",
+    "subheading": "Elige un idioma y conquista cada escenario",
+    "pickLanguage": "¿Qué idioma quieres practicar?",
+    "pickLanguageSubtitle": "Elige el idioma que quieres aprender",
+    "completed": "Completado",
+    "failed": "Fallido",
+    "available": "Disponible",
+    "locked": "Bloqueado",
+    "score": "Puntuación",
+    "turns": "turnos",
+    "startRoleplay": "Iniciar juego de rol",
+    "settingUp": "Configurando escenario..."
   }
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { generateCustomScenario } from "@/lib/ai";
-import { createLogger } from "@/lib/logger";
-import { customScenarioSchema, generateScenarioSchema } from "@/lib/types";
+import { createLogger } from "@/core/logger";
+import { generateCustomScenario } from "@/core/scenario";
+import { customScenarioSchema, generateScenarioSchema } from "@/core/types";
 
 const log = createLogger("api:generate-scenario");
 

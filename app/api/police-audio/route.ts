@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { synthesizeSpeech } from "@/lib/audio";
-import { getPoliceIntroMessage } from "@/lib/game";
-import { createLogger } from "@/lib/logger";
-import { getPoliceAudio } from "@/lib/storage";
-import type { NpcGender } from "@/lib/types";
+import { createLogger } from "@/core/logger";
+import { getPoliceIntroMessage } from "@/core/npc";
+import type { NpcGender } from "@/core/types";
+import { getPoliceAudio } from "@/infra/storage";
+import { synthesizeSpeech } from "@/infra/tts";
 
 const log = createLogger("api:police-audio");
 

@@ -1,4 +1,4 @@
-import { type GoalProgress, normalizeToMoodState } from "@/lib/types";
+import { type GoalProgress, normalizeToMoodState } from "@/core/types";
 
 // Reverse mapping from English language names to codes.
 export const LANGUAGE_CODE_MAP: Record<string, string> = {

@@ -9,7 +9,7 @@ import type {
   NpcEvaluation,
   NpcGender,
   ObjectiveAssessment,
-} from "@/lib/types";
+} from "@/core/types";
 
 export interface ConversationState {
   conversationId: string;

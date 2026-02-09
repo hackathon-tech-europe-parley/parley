@@ -1,7 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { SetupForm } from "@/components/setup-form";
+import { Suspense } from "react";
+import { MapPage } from "@/components/scenario-map/map-page";
 
 export default function Home() {
   const t = useTranslations("Layout");
@@ -14,7 +15,9 @@ export default function Home() {
           <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-blue-600/[0.04] blur-3xl" />
           <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-violet-600/[0.03] blur-3xl" />
         </div>
-        <SetupForm />
+        <Suspense>
+          <MapPage />
+        </Suspense>
       </main>
       <footer className="flex-shrink-0 border-t border-slate-800/40 bg-slate-950/80 backdrop-blur-sm">
         <div className="mx-auto flex h-12 max-w-5xl items-center justify-between px-3 sm:px-4 md:px-6 text-xs text-slate-500">
