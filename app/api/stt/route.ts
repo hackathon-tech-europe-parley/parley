@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import WebSocket from "ws";
 import { getGradiumApiKey } from "@/lib/env";
 import { sttRequestSchema, sttServerMessageSchema } from "@/lib/types";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("api:stt");
 
 const CHUNK_SAMPLES = 1920;
 const BYTES_PER_SAMPLE = 2;
@@ -25,10 +28,13 @@ export async function POST(request: Request) {
   const languageCode = parsed.data.languageCode;
 
   try {
+    log.info({ languageCode, audioBytes: pcmBuffer.length }, "STT request");
+    const start = Date.now();
     const text = await transcribeViaWebSocket(pcmBuffer, languageCode);
+    log.info({ durationMs: Date.now() - start, transcriptLength: text.length }, "STT complete");
     return NextResponse.json({ text });
   } catch (err) {
-    console.error("STT error:", err);
+    log.error({ err }, "STT transcription failed");
     return NextResponse.json(
       { error: "Transcription failed" },
       { status: 502 },
@@ -77,15 +83,15 @@ function transcribeViaWebSocket(pcm: Buffer, languageCode?: string): Promise<str
         ws.send(JSON.stringify({ type: "audio", audio: chunk.toString("base64") }));
         chunkCount++;
       }
-      console.log(`[STT] Sent ${chunkCount} chunks (${pcm.length} bytes)`);
+      log.debug({ chunkCount, audioBytes: pcm.length }, "sent audio chunks");
 
       // Signal end of audio stream
       ws.send(JSON.stringify({ type: "end_of_stream" }));
-      console.log("[STT] Sent end_of_stream");
+      log.debug("sent end_of_stream");
     };
 
     ws.on("open", () => {
-      console.log("[STT] WebSocket connected");
+      log.debug("WebSocket connected");
 
       // Setup message must be the first frame.
       const setup: Record<string, unknown> = {
@@ -96,13 +102,13 @@ function transcribeViaWebSocket(pcm: Buffer, languageCode?: string): Promise<str
       if (languageCode) {
         setup.json_config = { language: languageCode };
       }
-      console.log("[STT] Setup:", JSON.stringify(setup));
+      log.debug({ setup }, "sending STT setup");
       ws.send(JSON.stringify(setup));
     });
 
     ws.on("message", (data) => {
       const raw = data.toString();
-      console.log("[STT] Recv:", raw.substring(0, 300));
+      log.debug({ message: raw.substring(0, 200) }, "STT recv");
       try {
         const msg = sttServerMessageSchema.parse(JSON.parse(raw));
         // "text" messages contain transcription results
@@ -129,7 +135,7 @@ function transcribeViaWebSocket(pcm: Buffer, languageCode?: string): Promise<str
     });
 
     ws.on("close", (code, reason) => {
-      console.log(`[STT] Closed: code=${code} reason=${reason?.toString()}`);
+      log.debug({ code, reason: reason?.toString() }, "STT WebSocket closed");
       if (sawEndOfStream || transcript.trim()) {
         finalize(transcript);
         return;
@@ -138,7 +144,7 @@ function transcribeViaWebSocket(pcm: Buffer, languageCode?: string): Promise<str
     });
 
     ws.on("error", (err) => {
-      console.log("[STT] Error:", err.message);
+      log.error({ err }, "STT WebSocket error");
       fail(err);
     });
   });

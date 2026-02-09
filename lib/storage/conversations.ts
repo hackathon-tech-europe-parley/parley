@@ -1,6 +1,8 @@
 import type { Conversation } from "../types";
 import { DATABASE_URL } from "../env";
+import { createLogger } from "../logger";
 
+const log = createLogger("storage:conversations");
 const usePostgres = Boolean(DATABASE_URL);
 
 // --- Postgres backend (production) ---
@@ -47,16 +49,24 @@ export async function getConversation(
   if (usePostgres) {
     const sql = getSQL();
     const rows = await sql`SELECT data FROM conversations WHERE id = ${id}`;
-    if (rows.length === 0) return undefined;
+    if (rows.length === 0) {
+      log.debug("conversation not found (postgres)");
+      return undefined;
+    }
     return rows[0].data as Conversation;
   }
-  return globalStore.__parleyConversations!.get(id);
+  const result = globalStore.__parleyConversations!.get(id);
+  if (!result) {
+    log.debug("conversation not found (memory)");
+  }
+  return result;
 }
 
 export async function setConversation(
   id: string,
   conversation: Conversation,
 ): Promise<void> {
+  log.debug({ backend: usePostgres ? "postgres" : "memory" }, "saving conversation");
   if (usePostgres) {
     const sql = getSQL();
     await sql`
@@ -70,6 +80,7 @@ export async function setConversation(
 }
 
 export async function deleteConversation(id: string): Promise<void> {
+  log.debug({ backend: usePostgres ? "postgres" : "memory" }, "deleting conversation");
   if (usePostgres) {
     const sql = getSQL();
     await sql`DELETE FROM conversations WHERE id = ${id}`;

@@ -1,3 +1,7 @@
+import { createLogger } from "../logger";
+
+const log = createLogger("game:taboo-rules");
+
 interface TabooTopicRule {
   topic: string;
   keywords: readonly string[];
@@ -60,6 +64,7 @@ export function detectTabooMatch(input: string): TabooMatch | null {
 
   for (const word of FORBIDDEN_WORDS) {
     if (containsToken(normalized, normalizeText(word))) {
+      log.debug({ kind: "word", token: word }, "taboo match detected");
       return {
         kind: "word",
         label: "forbidden-word",
@@ -71,6 +76,7 @@ export function detectTabooMatch(input: string): TabooMatch | null {
   for (const topic of FORBIDDEN_TOPICS) {
     for (const keyword of topic.keywords) {
       if (containsToken(normalized, normalizeText(keyword))) {
+        log.debug({ kind: "topic", topic: topic.topic, token: keyword }, "taboo match detected");
         return {
           kind: "topic",
           label: topic.topic,

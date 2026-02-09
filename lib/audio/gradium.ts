@@ -1,5 +1,8 @@
 import type { NpcGender } from "../types";
 import { getGradiumApiKey, getGradiumTtsPaddingBonus } from "../env";
+import { createLogger } from "../logger";
+
+const log = createLogger("audio:gradium");
 
 // Serialize TTS requests to avoid Gradium concurrency limit (max 2 sessions)
 let pending: Promise<unknown> = Promise.resolve();
@@ -35,6 +38,9 @@ export function synthesizeSpeech(
   speed?: number,
 ): Promise<ArrayBuffer> {
   return enqueue(async () => {
+    const voiceId = getVoiceId(languageCode, gender);
+    log.info({ languageCode, gender, voiceId, textLength: text.length }, "synthesizing speech");
+    const start = Date.now();
     const apiKey = getGradiumApiKey();
     const basePayload = {
       text,
@@ -79,9 +85,12 @@ export function synthesizeSpeech(
 
     if (!res.ok) {
       const body = await res.text().catch(() => "");
+      log.error({ status: res.status }, "Gradium TTS request failed");
       throw new Error(`Gradium TTS failed (${res.status}): ${body}`);
     }
 
-    return res.arrayBuffer();
+    const audio = await res.arrayBuffer();
+    log.info({ durationMs: Date.now() - start, responseBytes: audio.byteLength }, "speech synthesized");
+    return audio;
   });
 }

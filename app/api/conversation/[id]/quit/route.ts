@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { getConversation, deleteConversation } from "@/lib/storage";
 import { generateSceneImage, generateDebrief } from "@/lib/ai";
 import { idParamSchema, quitConversationResponseSchema } from "@/lib/types";
+import { createLogger, withConversationId } from "@/lib/logger";
+
+const log = createLogger("api:quit");
 
 export async function POST(
   _request: Request,
@@ -16,39 +19,43 @@ export async function POST(
     );
   }
   const id = parsedParams.data;
-  const conversation = await getConversation(id);
 
-  if (!conversation) {
-    return NextResponse.json(
-      { error: "Conversation not found" },
-      { status: 404 },
-    );
-  }
+  return withConversationId(id, async () => {
+    const conversation = await getConversation(id);
 
-  try {
-    const [debrief, finalImageUrl] = await Promise.all([
-      generateDebrief(conversation, "quit"),
-      generateSceneImage(
-        `Photorealistic background scene: ${conversation.scenario}. No people, just the environment and setting. First-person perspective.`,
-      ),
-    ]);
+    if (!conversation) {
+      return NextResponse.json(
+        { error: "Conversation not found" },
+        { status: 404 },
+      );
+    }
 
-    const history = [...conversation.history];
-    const npcName = conversation.npcName;
-    await deleteConversation(id);
+    try {
+      log.info({ turns: conversation.turnCount }, "quitting conversation");
+      const [debrief, finalImageUrl] = await Promise.all([
+        generateDebrief(conversation, "quit"),
+        generateSceneImage(
+          `Photorealistic background scene: ${conversation.scenario}. No people, just the environment and setting. First-person perspective.`,
+        ),
+      ]);
 
-    return NextResponse.json(quitConversationResponseSchema.parse({
-      debrief,
-      sceneImageUrl: finalImageUrl,
-      npcName,
-      goalStatus: "quit",
-      conversationHistory: history,
-    }));
-  } catch (error) {
-    console.error("Failed to quit conversation:", error);
-    return NextResponse.json(
-      { error: "Failed to generate debrief" },
-      { status: 500 },
-    );
-  }
+      const history = [...conversation.history];
+      const npcName = conversation.npcName;
+      await deleteConversation(id);
+
+      return NextResponse.json(quitConversationResponseSchema.parse({
+        debrief,
+        sceneImageUrl: finalImageUrl,
+        npcName,
+        goalStatus: "quit",
+        conversationHistory: history,
+      }));
+    } catch (error) {
+      log.error({ err: error }, "failed to quit conversation");
+      return NextResponse.json(
+        { error: "Failed to generate debrief" },
+        { status: 500 },
+      );
+    }
+  });
 }

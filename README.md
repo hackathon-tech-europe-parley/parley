@@ -114,4 +114,5 @@ npm run start
 | Voice | Gradium (TTS & STT) |
 | i18n | next-intl |
 | Validation | Zod |
+| Logging | Pino (structured JSON, per-request tracing) |
 | Database | PostgreSQL (optional, for production) |
