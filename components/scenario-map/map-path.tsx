@@ -25,7 +25,7 @@ export function MapPath({
 
       {/* Background: all segments as dashed gray lines */}
       {segments.map((seg) => {
-        const d = buildSvgPath(seg.from, seg.to, containerWidth);
+        const d = buildSvgPath(seg, containerWidth);
         const backgroundStroke =
           seg.status === "locked"
             ? "rgb(51 65 85 / 0.18)"
@@ -48,7 +48,7 @@ export function MapPath({
       {/* Active path glow for stronger focus on the next progression route */}
       {segments.map((seg, segIndex) => {
         if (seg.status !== "active") return null;
-        const d = buildSvgPath(seg.from, seg.to, containerWidth);
+        const d = buildSvgPath(seg, containerWidth);
         return (
           <motion.path
             key={`glow-${seg.from.index}`}
@@ -74,7 +74,7 @@ export function MapPath({
       {/* Foreground: completed (emerald) and active (blue) with draw animation */}
       {segments.map((seg, segIndex) => {
         if (seg.status === "locked") return null;
-        const d = buildSvgPath(seg.from, seg.to, containerWidth);
+        const d = buildSvgPath(seg, containerWidth);
         const color =
           seg.status === "completed" ? "rgb(16 185 129)" : "rgb(59 130 246)";
         const strokeWidth = seg.status === "active" ? 4 : 3;

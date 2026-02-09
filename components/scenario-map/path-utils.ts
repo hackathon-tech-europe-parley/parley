@@ -11,6 +11,8 @@ export interface NodePosition {
 export interface PathSegment {
   from: NodePosition;
   to: NodePosition;
+  fromPrev?: NodePosition;
+  toNext?: NodePosition;
   status: "completed" | "active" | "locked";
 }
 
@@ -23,13 +25,13 @@ const MOBILE_BOTTOM_PADDING = 80;
 
 const DESKTOP_TOP_PADDING = 90;
 const DESKTOP_BOTTOM_PADDING = 130;
-const DESKTOP_MIN_X = 8;
-const DESKTOP_MAX_X = 92;
-const DESKTOP_SPAN_PER_NODE = 54;
-const DESKTOP_MIN_SPAN = 420;
-const DESKTOP_MAX_SPAN = 700;
-const DESKTOP_MIN_ANCHORS = 6;
-const DESKTOP_MAX_ANCHORS = 12;
+const DESKTOP_MIN_X = 10;
+const DESKTOP_MAX_X = 90;
+const DESKTOP_SPAN_PER_NODE = 64;
+const DESKTOP_MIN_SPAN = 430;
+const DESKTOP_MAX_SPAN = 820;
+const DESKTOP_MIN_ANCHORS = 11;
+const DESKTOP_MAX_ANCHORS = 21;
 
 interface ControlPoint {
   x: number;
@@ -38,11 +40,6 @@ interface ControlPoint {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
-}
-
-function seededNoise(index: number, seed: number): number {
-  const value = Math.sin(index * 12.9898 + seed * 78.233) * 43758.5453;
-  return value - Math.floor(value);
 }
 
 function desktopPathSpan(count: number): number {
@@ -55,35 +52,81 @@ function desktopPathSpan(count: number): number {
 }
 
 function desktopAnchorCount(count: number): number {
-  return Math.round(
-    clamp(count * 0.8, DESKTOP_MIN_ANCHORS, DESKTOP_MAX_ANCHORS),
+  const raw = Math.round(count * 1.35) + 3;
+  const clamped = Math.round(
+    clamp(raw, DESKTOP_MIN_ANCHORS, DESKTOP_MAX_ANCHORS),
   );
+  return clamped % 2 === 0 ? clamped + 1 : clamped;
+}
+
+function createRng(seed: number): () => number {
+  let state = seed | 0;
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function buildTrailXs(anchorCount: number, rng: () => number): number[] {
+  const xs = new Array<number>(anchorCount);
+  xs[0] = 52;
+  xs[anchorCount - 1] = 48;
+
+  const fill = (left: number, right: number, amplitude: number) => {
+    if (right - left <= 1) return;
+    const mid = Math.floor((left + right) / 2);
+    const base = (xs[left] + xs[right]) / 2;
+    xs[mid] = clamp(
+      base + (rng() - 0.5) * amplitude,
+      DESKTOP_MIN_X,
+      DESKTOP_MAX_X,
+    );
+    fill(left, mid, amplitude * 0.74);
+    fill(mid, right, amplitude * 0.74);
+  };
+
+  fill(0, anchorCount - 1, 140);
+
+  // One light smoothing pass keeps roughness while avoiding sharp spikes.
+  const smoothed = [...xs];
+  for (let i = 1; i < anchorCount - 1; i++) {
+    smoothed[i] = clamp(
+      xs[i] * 0.66 + (xs[i - 1] + xs[i + 1]) * 0.17 + (rng() - 0.5) * 4.2,
+      DESKTOP_MIN_X,
+      DESKTOP_MAX_X,
+    );
+  }
+  smoothed[0] = 52;
+  smoothed[anchorCount - 1] = 48;
+
+  return smoothed;
 }
 
 function buildDesktopControlPoints(count: number): ControlPoint[] {
   const span = desktopPathSpan(count);
   const anchorCount = desktopAnchorCount(count);
+  const rng = createRng(0x7f4a7c15 + count * 131);
+  const xs = buildTrailXs(anchorCount, rng);
+
+  const yWeights = Array.from(
+    { length: anchorCount - 1 },
+    () => 0.75 + rng() * 0.9,
+  );
+  const totalWeight = yWeights.reduce((sum, value) => sum + value, 0);
+
   const points: ControlPoint[] = [];
-
+  let accumulated = 0;
   for (let i = 0; i < anchorCount; i++) {
-    const t = i / (anchorCount - 1);
-    const x = clamp(
-      50 +
-        Math.sin(t * Math.PI * 3 + 0.65) * 34 +
-        Math.sin(t * Math.PI * 6.2 + 1.45) * 12 +
-        (seededNoise(i, 11) - 0.5) * 7,
-      DESKTOP_MIN_X,
-      DESKTOP_MAX_X,
-    );
-
+    if (i > 0) accumulated += yWeights[i - 1];
+    const t = totalWeight === 0 ? 0 : accumulated / totalWeight;
     points.push({
-      x,
+      x: xs[i],
       y: DESKTOP_TOP_PADDING + t * span,
     });
   }
 
-  points[0].x = 52;
-  points[points.length - 1].x = 48;
   return points;
 }
 
@@ -93,7 +136,7 @@ function buildDesktopCurve(points: ControlPoint[]): string | null {
     line<ControlPoint>()
       .x((point) => point.x)
       .y((point) => point.y)
-      .curve(curveCatmullRom.alpha(1))(points) ?? null
+      .curve(curveCatmullRom.alpha(0.68))(points) ?? null
   );
 }
 
@@ -159,32 +202,28 @@ export function computeTotalHeight(count: number, layout: MapLayout): number {
 }
 
 export function buildSvgPath(
-  from: NodePosition,
-  to: NodePosition,
+  segment: PathSegment,
   containerWidth: number,
 ): string {
-  const fx = (from.x / 100) * containerWidth;
-  const fy = from.y;
-  const tx = (to.x / 100) * containerWidth;
-  const ty = to.y;
-  const dy = ty - fy;
-  const dx = tx - fx;
-  const segmentLength = Math.hypot(dx, dy);
-  if (segmentLength < 1) return `M ${fx} ${fy} L ${tx} ${ty}`;
+  const fromPrev = segment.fromPrev ?? segment.from;
+  const toNext = segment.toNext ?? segment.to;
 
-  const normalX = -dy / segmentLength;
-  const normalY = dx / segmentLength;
-  const bow = clamp(segmentLength * 0.13, 14, 42);
-  const bowDirection = from.index % 2 === 0 ? 1 : -1;
-  const bowX = normalX * bow * bowDirection;
-  const bowY = normalY * bow * bowDirection;
+  const p0x = (fromPrev.x / 100) * containerWidth;
+  const p0y = fromPrev.y;
+  const p1x = (segment.from.x / 100) * containerWidth;
+  const p1y = segment.from.y;
+  const p2x = (segment.to.x / 100) * containerWidth;
+  const p2y = segment.to.y;
+  const p3x = (toNext.x / 100) * containerWidth;
+  const p3y = toNext.y;
 
-  const c1x = fx + dx * 0.28 + bowX;
-  const c1y = fy + dy * 0.28 + bowY;
-  const c2x = fx + dx * 0.72 + bowX;
-  const c2y = fy + dy * 0.72 + bowY;
+  const tension = 0.92;
+  const c1x = p1x + ((p2x - p0x) * tension) / 6;
+  const c1y = p1y + ((p2y - p0y) * tension) / 6;
+  const c2x = p2x - ((p3x - p1x) * tension) / 6;
+  const c2y = p2y - ((p3y - p1y) * tension) / 6;
 
-  return `M ${fx} ${fy} C ${c1x} ${c1y} ${c2x} ${c2y} ${tx} ${ty}`;
+  return `M ${p1x} ${p1y} C ${c1x} ${c1y} ${c2x} ${c2y} ${p2x} ${p2y}`;
 }
 
 export function classifySegments(
@@ -215,7 +254,13 @@ export function classifySegments(
       status = "locked";
     }
 
-    segments.push({ from: positions[i], to: positions[i + 1], status });
+    segments.push({
+      from: positions[i],
+      to: positions[i + 1],
+      fromPrev: positions[i - 1] ?? positions[i],
+      toNext: positions[i + 2] ?? positions[i + 1],
+      status,
+    });
   }
   return segments;
 }
