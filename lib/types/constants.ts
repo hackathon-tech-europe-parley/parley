@@ -37,28 +37,116 @@ export type MoodState =
 export function normalizeToMoodState(mood: string): MoodState {
   const m = mood.toLowerCase();
 
-  if (["happy", "joyful", "pleased", "cheerful", "delighted", "ecstatic", "elated", "encouraging", "impressed"].some(k => m.includes(k))) {
+  if (
+    [
+      "happy",
+      "joyful",
+      "pleased",
+      "cheerful",
+      "delighted",
+      "ecstatic",
+      "elated",
+      "encouraging",
+      "impressed",
+    ].some((k) => m.includes(k))
+  ) {
     return "happy";
   }
-  if (["friendly", "warm", "welcoming", "kind", "pleasant", "amiable", "cordial"].some(k => m.includes(k))) {
+  if (
+    [
+      "friendly",
+      "warm",
+      "welcoming",
+      "kind",
+      "pleasant",
+      "amiable",
+      "cordial",
+    ].some((k) => m.includes(k))
+  ) {
     return "friendly";
   }
-  if (["neutral", "calm", "professional", "balanced", "composed", "steady", "focused", "patient", "firm"].some(k => m.includes(k))) {
+  if (
+    [
+      "neutral",
+      "calm",
+      "professional",
+      "balanced",
+      "composed",
+      "steady",
+      "focused",
+      "patient",
+      "firm",
+    ].some((k) => m.includes(k))
+  ) {
     return "neutral";
   }
-  if (["skeptical", "doubtful", "wary", "suspicious", "distrustful", "guarded", "questioning", "unconvinced"].some(k => m.includes(k))) {
+  if (
+    [
+      "skeptical",
+      "doubtful",
+      "wary",
+      "suspicious",
+      "distrustful",
+      "guarded",
+      "questioning",
+      "unconvinced",
+    ].some((k) => m.includes(k))
+  ) {
     return "skeptical";
   }
-  if (["annoyed", "irritated", "frustrated", "impatient", "exasperated", "bothered", "aggravated"].some(k => m.includes(k))) {
+  if (
+    [
+      "annoyed",
+      "irritated",
+      "frustrated",
+      "impatient",
+      "exasperated",
+      "bothered",
+      "aggravated",
+    ].some((k) => m.includes(k))
+  ) {
     return "annoyed";
   }
-  if (["angry", "hostile", "furious", "enraged", "aggressive", "livid", "incensed", "cold", "distant"].some(k => m.includes(k))) {
+  if (
+    [
+      "angry",
+      "hostile",
+      "furious",
+      "enraged",
+      "aggressive",
+      "livid",
+      "incensed",
+      "cold",
+      "distant",
+    ].some((k) => m.includes(k))
+  ) {
     return "angry";
   }
-  if (["sad", "melancholic", "gloomy", "somber", "dejected", "disappointed", "downcast", "sorrowful"].some(k => m.includes(k))) {
+  if (
+    [
+      "sad",
+      "melancholic",
+      "gloomy",
+      "somber",
+      "dejected",
+      "disappointed",
+      "downcast",
+      "sorrowful",
+    ].some((k) => m.includes(k))
+  ) {
     return "sad";
   }
-  if (["surprised", "shocked", "amazed", "astonished", "taken aback", "startled", "bewildered"].some(k => m.includes(k))) {
+  if (
+    [
+      "surprised",
+      "shocked",
+      "amazed",
+      "astonished",
+      "taken aback",
+      "startled",
+      "bewildered",
+    ].some((k) => m.includes(k))
+  ) {
     return "surprised";
   }
 

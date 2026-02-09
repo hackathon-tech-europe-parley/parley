@@ -8,7 +8,9 @@ const usePostgres = Boolean(DATABASE_URL);
 
 // postgres uses `export = postgres` so we must use require() with verbatimModuleSyntax
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const postgres = usePostgres ? (require("postgres") as typeof import("postgres")) : null;
+const postgres = usePostgres
+  ? (require("postgres") as typeof import("postgres"))
+  : null;
 
 type SQL = import("postgres").Sql;
 
@@ -19,7 +21,10 @@ function getSQL(): SQL {
     if (!DATABASE_URL) {
       throw new Error("DATABASE_URL is required when Postgres mode is enabled");
     }
-    globalWithSQL.__parleySQL = postgres!(DATABASE_URL);
+    if (!postgres) {
+      throw new Error("postgres module is not available");
+    }
+    globalWithSQL.__parleySQL = postgres(DATABASE_URL);
   }
   return globalWithSQL.__parleySQL;
 }
@@ -41,7 +46,8 @@ if (!usePostgres) {
 export async function getPoliceAudio(key: string): Promise<string | undefined> {
   if (usePostgres) {
     const sql = getSQL();
-    const rows = await sql`SELECT audio_base64 FROM police_audio WHERE key = ${key}`;
+    const rows =
+      await sql`SELECT audio_base64 FROM police_audio WHERE key = ${key}`;
     if (rows.length === 0) {
       log.debug({ key }, "police audio cache miss");
       return undefined;
@@ -49,12 +55,15 @@ export async function getPoliceAudio(key: string): Promise<string | undefined> {
     log.debug({ key }, "police audio cache hit");
     return rows[0].audio_base64 as string;
   }
-  const cached = globalStore.__parleyPoliceAudio!.get(key);
+  const cached = globalStore.__parleyPoliceAudio?.get(key);
   log.debug({ key, hit: Boolean(cached) }, "police audio cache lookup");
   return cached;
 }
 
-export async function setPoliceAudio(key: string, audioBase64: string): Promise<void> {
+export async function setPoliceAudio(
+  key: string,
+  audioBase64: string,
+): Promise<void> {
   if (usePostgres) {
     const sql = getSQL();
     await sql`
@@ -64,5 +73,5 @@ export async function setPoliceAudio(key: string, audioBase64: string): Promise<
     `;
     return;
   }
-  globalStore.__parleyPoliceAudio!.set(key, audioBase64);
+  globalStore.__parleyPoliceAudio?.set(key, audioBase64);
 }

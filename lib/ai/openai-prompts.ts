@@ -149,8 +149,7 @@ Return a JSON object with:
 - "shouldCallPoliceman": boolean (true only for severe hostility/threats — see "Calling the police" rules above)`;
 }
 
-export const CUSTOM_SCENARIO_SYSTEM_PROMPT =
-  `You generate language learning roleplay scenarios. Given a user's freeform idea, create a complete scenario definition.
+export const CUSTOM_SCENARIO_SYSTEM_PROMPT = `You generate language learning roleplay scenarios. Given a user's freeform idea, create a complete scenario definition.
 
 Return JSON with:
 - "title": a short catchy title (2-4 words)
@@ -187,7 +186,10 @@ export function buildSpecialPersonSystemPrompt(
 ): string {
   const contextSummary = conversation.history
     .slice(0, -1)
-    .map((msg) => `${msg.role === "user" ? "User" : conversation.npcName}: ${msg.text}`)
+    .map(
+      (msg) =>
+        `${msg.role === "user" ? "User" : conversation.npcName}: ${msg.text}`,
+    )
     .join("\n");
 
   const levelRules: Record<string, string> = {
@@ -214,9 +216,13 @@ export function buildSpecialPersonSystemPrompt(
     policewoman: `You are a female police officer who has been called to the scene. You are professional, authoritative, and focused on understanding the situation and maintaining order.`,
   };
 
-  const description = specialPersonDescriptions[specialPersonType] ?? `You are a ${specialPersonType} who has been called to the scene. You are professional and authoritative.`;
+  const description =
+    specialPersonDescriptions[specialPersonType] ??
+    `You are a ${specialPersonType} who has been called to the scene. You are professional and authoritative.`;
 
-  const isFirstMessage = !conversation.history.some(msg => msg.speakerName === specialPersonName);
+  const isFirstMessage = !conversation.history.some(
+    (msg) => msg.speakerName === specialPersonName,
+  );
 
   const firstMessageInstruction = isFirstMessage
     ? `IMPORTANT: This is your FIRST message. You must:

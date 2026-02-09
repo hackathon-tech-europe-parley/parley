@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import WebSocket from "ws";
 import { getGradiumApiKey } from "@/lib/env";
-import { sttRequestSchema, sttServerMessageSchema } from "@/lib/types";
 import { createLogger } from "@/lib/logger";
+import { sttRequestSchema, sttServerMessageSchema } from "@/lib/types";
 
 const log = createLogger("api:stt");
 
@@ -31,7 +31,10 @@ export async function POST(request: Request) {
     log.info({ languageCode, audioBytes: pcmBuffer.length }, "STT request");
     const start = Date.now();
     const text = await transcribeViaWebSocket(pcmBuffer, languageCode);
-    log.info({ durationMs: Date.now() - start, transcriptLength: text.length }, "STT complete");
+    log.info(
+      { durationMs: Date.now() - start, transcriptLength: text.length },
+      "STT complete",
+    );
     return NextResponse.json({ text });
   } catch (err) {
     log.error({ err }, "STT transcription failed");
@@ -42,7 +45,10 @@ export async function POST(request: Request) {
   }
 }
 
-function transcribeViaWebSocket(pcm: Buffer, languageCode?: string): Promise<string> {
+function transcribeViaWebSocket(
+  pcm: Buffer,
+  languageCode?: string,
+): Promise<string> {
   const apiKey = getGradiumApiKey();
   return new Promise((resolve, reject) => {
     const ws = new WebSocket("wss://eu.api.gradium.ai/api/speech/asr", {
@@ -80,7 +86,9 @@ function transcribeViaWebSocket(pcm: Buffer, languageCode?: string): Promise<str
       let chunkCount = 0;
       for (let offset = 0; offset < pcm.length; offset += chunkBytes) {
         const chunk = pcm.subarray(offset, offset + chunkBytes);
-        ws.send(JSON.stringify({ type: "audio", audio: chunk.toString("base64") }));
+        ws.send(
+          JSON.stringify({ type: "audio", audio: chunk.toString("base64") }),
+        );
         chunkCount++;
       }
       log.debug({ chunkCount, audioBytes: pcm.length }, "sent audio chunks");

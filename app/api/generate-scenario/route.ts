@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { customScenarioSchema, generateScenarioSchema } from "@/lib/types";
 import { generateCustomScenario } from "@/lib/ai";
 import { createLogger } from "@/lib/logger";
+import { customScenarioSchema, generateScenarioSchema } from "@/lib/types";
 
 const log = createLogger("api:generate-scenario");
 
@@ -9,10 +9,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
     if (body === null) {
-      return NextResponse.json(
-        { error: "Invalid JSON body" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
     const parsed = generateScenarioSchema.safeParse(body);

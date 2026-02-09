@@ -8,7 +8,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "biome check .",
+    "lint:fix": "biome check --fix .",
+    "format": "biome format --fix .",
     "generate-police-audio": "tsx scripts/generate-police-audio.ts"
   },
   "dependencies": {
@@ -27,6 +29,7 @@
     "zod": "^3.25.67"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.3.14",
     "@tailwindcss/postcss": "^4.1.10",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^22.16.0",

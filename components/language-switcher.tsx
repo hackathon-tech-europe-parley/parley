@@ -1,7 +1,7 @@
 "use client";
 
-import { useTransition } from "react";
 import { useLocale } from "next-intl";
+import { useTransition } from "react";
 import { usePathname, useRouter } from "@/i18n/navigation";
 
 const LOCALE_LABELS: Record<string, string> = {

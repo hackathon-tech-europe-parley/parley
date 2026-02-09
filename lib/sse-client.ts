@@ -43,7 +43,8 @@ export async function consumeSSE<T = unknown>(
           try {
             const parsed = JSON.parse(data);
             if (currentEvent === "token") {
-              const tokenPayload = messageStreamTokenPayloadSchema.safeParse(parsed);
+              const tokenPayload =
+                messageStreamTokenPayloadSchema.safeParse(parsed);
               if (tokenPayload.success) {
                 handlers.onToken(tokenPayload.data.text);
               }
@@ -59,7 +60,8 @@ export async function consumeSSE<T = unknown>(
                 handlers.onComplete(parsed as T);
               }
             } else if (currentEvent === "error") {
-              const errorPayload = messageStreamErrorPayloadSchema.safeParse(parsed);
+              const errorPayload =
+                messageStreamErrorPayloadSchema.safeParse(parsed);
               if (errorPayload.success) {
                 handlers.onError(errorPayload.data.error);
               } else {

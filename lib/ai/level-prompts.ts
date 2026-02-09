@@ -84,10 +84,7 @@ function getOpeningInstruction(
   return instructions[level];
 }
 
-function getLanguageRules(
-  level: ConversationLevel,
-  language: string,
-): string {
+function getLanguageRules(level: ConversationLevel, language: string): string {
   const replySuggestionRules: Record<ConversationLevel, string> = {
     beginner: `- Generate exactly 4 "replySuggestions": full sentences in ${language} the user could say next. Keep them simple and varied (one polite, one direct, one asking a question, one playful). These are dialogue choices like in a visual novel.`,
     intermediate: `- Generate exactly 3 "replySuggestions": natural sentences in ${language} the user could say next. Vary tone and approach. These are dialogue choices like in a visual novel.`,

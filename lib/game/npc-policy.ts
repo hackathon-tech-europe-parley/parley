@@ -1,3 +1,4 @@
+import { createLogger } from "../logger";
 import type {
   Conversation,
   ConversationLevel,
@@ -5,11 +6,10 @@ import type {
   GoalStatus,
   MoodState,
   NpcEvaluation,
-  ObjectiveAssessment,
   NpcResponse,
   NpcSafetyAssessment,
+  ObjectiveAssessment,
 } from "../types";
-import { createLogger } from "../logger";
 
 const log = createLogger("game:npc-policy");
 
@@ -101,7 +101,10 @@ const POLICY_BY_LEVEL: Record<ConversationLevel, PolicyProfile> = {
 
 const WEIGHTS_BY_LEVEL: Record<
   ConversationLevel,
-  Pick<NpcEvaluation, "cooperation" | "relevance" | "politeness" | "clarity" | "taskIntent">
+  Pick<
+    NpcEvaluation,
+    "cooperation" | "relevance" | "politeness" | "clarity" | "taskIntent"
+  >
 > = {
   beginner: {
     cooperation: 0.25,
@@ -133,7 +136,10 @@ const WEIGHTS_BY_LEVEL: Record<
   },
 };
 
-const MOOD_THRESHOLDS_BY_LEVEL: Record<ConversationLevel, MoodThresholdProfile> = {
+const MOOD_THRESHOLDS_BY_LEVEL: Record<
+  ConversationLevel,
+  MoodThresholdProfile
+> = {
   beginner: {
     angryPolitenessMax: 0.1,
     angryCooperationMax: 0.15,
@@ -242,7 +248,9 @@ export function applyNpcPolicy(
   }
 
   const hostileTurn =
-    tabooTurn || evaluation.hostile || evaluation.politeness < profile.minPoliteness;
+    tabooTurn ||
+    evaluation.hostile ||
+    evaluation.politeness < profile.minPoliteness;
   const disengagedTurn =
     tabooTurn ||
     evaluation.offTopic ||
@@ -253,7 +261,9 @@ export function applyNpcPolicy(
   const previousHostilityStreak = Number.isFinite(conversation.hostilityStreak)
     ? conversation.hostilityStreak
     : 0;
-  const previousDisengagedStreak = Number.isFinite(conversation.disengagedStreak)
+  const previousDisengagedStreak = Number.isFinite(
+    conversation.disengagedStreak,
+  )
     ? conversation.disengagedStreak
     : 0;
   const previousConstructiveStreak = Number.isFinite(
@@ -269,7 +279,9 @@ export function applyNpcPolicy(
     : 0;
 
   conversation.hostilityStreak = hostileTurn ? previousHostilityStreak + 1 : 0;
-  conversation.disengagedStreak = disengagedTurn ? previousDisengagedStreak + 1 : 0;
+  conversation.disengagedStreak = disengagedTurn
+    ? previousDisengagedStreak + 1
+    : 0;
   const tabooStrike = tabooTurn ? previousTabooStrike + 1 : 0;
   conversation.tabooStrike = tabooStrike;
 
@@ -326,7 +338,11 @@ export function applyNpcPolicy(
   if (tabooTurn) {
     goalProgress = 1;
   } else if (hostileTurn) {
-    goalProgress = Math.min(goalProgress, previousGoalProgress, 2) as GoalProgress;
+    goalProgress = Math.min(
+      goalProgress,
+      previousGoalProgress,
+      2,
+    ) as GoalProgress;
   } else {
     const maxStepUp = Math.min(5, previousGoalProgress + 1) as GoalProgress;
     goalProgress = Math.min(goalProgress, maxStepUp) as GoalProgress;
@@ -338,7 +354,8 @@ export function applyNpcPolicy(
   } else if (
     objective.objectiveMet &&
     objectiveScore >= profile.achievedScoreMin &&
-    conversation.constructiveStreak >= (conversation.level === "impossible" ? 2 : 1)
+    conversation.constructiveStreak >=
+      (conversation.level === "impossible" ? 2 : 1)
   ) {
     goalStatus = "achieved";
   }
@@ -385,17 +402,20 @@ export function applyNpcPolicy(
     tabooTurn,
   });
 
-  log.debug({
-    level: conversation.level,
-    mood,
-    goalStatus,
-    goalProgress,
-    interactionScore: Math.round(interactionScore * 100) / 100,
-    hostileTurn,
-    tabooTurn,
-    hostilityStreak: conversation.hostilityStreak,
-    disengagedStreak: conversation.disengagedStreak,
-  }, "NPC policy applied");
+  log.debug(
+    {
+      level: conversation.level,
+      mood,
+      goalStatus,
+      goalProgress,
+      interactionScore: Math.round(interactionScore * 100) / 100,
+      hostileTurn,
+      tabooTurn,
+      hostilityStreak: conversation.hostilityStreak,
+      disengagedStreak: conversation.disengagedStreak,
+    },
+    "NPC policy applied",
+  );
 
   return {
     ...llmResponse,
@@ -434,7 +454,8 @@ function decideMood(args: {
     args.hostileTurn &&
     (args.evaluation.politeness <= thresholds.angryPolitenessMax ||
       args.evaluation.cooperation <= thresholds.angryCooperationMax ||
-      (args.evaluation.refusal && args.evaluation.relevance <= thresholds.annoyedRelevanceMax))
+      (args.evaluation.refusal &&
+        args.evaluation.relevance <= thresholds.annoyedRelevanceMax))
   ) {
     return "angry";
   }
@@ -647,7 +668,10 @@ function normalizeToneLanguage(language: string): SupportedToneLanguage {
 }
 
 function soundsTooSoft(text: string, lang: SupportedToneLanguage): boolean {
-  const normalized = text.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
+  const normalized = text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
 
   const patternsByLanguage: Record<SupportedToneLanguage, RegExp[]> = {
     fr: [
@@ -689,12 +713,24 @@ function soundsTooSoft(text: string, lang: SupportedToneLanguage): boolean {
   return patternsByLanguage[lang].some((pattern) => pattern.test(normalized));
 }
 
-function soundsStrongEnough(text: string, lang: SupportedToneLanguage): boolean {
-  const normalized = text.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
+function soundsStrongEnough(
+  text: string,
+  lang: SupportedToneLanguage,
+): boolean {
+  const normalized = text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
 
   const patternsByLanguage: Record<SupportedToneLanguage, RegExp[]> = {
     fr: [/ca suffit/, /on se calme/, /tu me parles/, /sinon/, /arrete/],
-    en: [/enough/, /calm down/, /speak respectfully/, /or handle it yourself/, /or else/],
+    en: [
+      /enough/,
+      /calm down/,
+      /speak respectfully/,
+      /or handle it yourself/,
+      /or else/,
+    ],
     de: [/genug/, /beruhig dich/, /sprich respektvoll/, /sonst/],
     es: [/basta/, /calmate/, /habla con respeto/, /si no/],
     pt: [/chega/, /calma/, /fale com respeito/, /senao/],
@@ -713,7 +749,6 @@ function angryFallbackByLanguage(lang: SupportedToneLanguage): string {
       return "Basta. Hablame con respeto o te las arreglas solo, campeon. Si quieres ayuda, pregunta bien.";
     case "pt":
       return "Chega. Fale comigo com respeito ou se vira sozinho, campeao. Se quiser ajuda, pergunte direito.";
-    case "en":
     default:
       return "Enough. Speak respectfully, or handle it yourself, genius. If you want help, ask properly.";
   }
@@ -729,7 +764,6 @@ function annoyedFallbackByLanguage(lang: SupportedToneLanguage): string {
       return "Calmate. Habla con respeto y te puedo ayudar.";
     case "pt":
       return "Calma. Fale com respeito e eu posso ajudar.";
-    case "en":
     default:
       return "Calm down. Speak respectfully and I can help.";
   }

@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
-import { createConversationResponseSchema, createConversationSchema } from "@/lib/types";
-import type { Conversation } from "@/lib/types";
-import { generateId, setConversation, setReplySuggestions } from "@/lib/storage";
-import { generateSceneImage, generateNpcProfile, generateNpcOpening } from "@/lib/ai";
+import {
+  generateNpcOpening,
+  generateNpcProfile,
+  generateSceneImage,
+} from "@/lib/ai";
 import { getNpcFaceAssetUrl } from "@/lib/game";
 import { createLogger, withConversationId } from "@/lib/logger";
+import {
+  generateId,
+  setConversation,
+  setReplySuggestions,
+} from "@/lib/storage";
+import type { Conversation } from "@/lib/types";
+import {
+  createConversationResponseSchema,
+  createConversationSchema,
+} from "@/lib/types";
 
 const log = createLogger("api:conversation");
 
@@ -12,10 +23,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
     if (body === null) {
-      return NextResponse.json(
-        { error: "Invalid JSON body" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
     const parsed = createConversationSchema.safeParse(body);
@@ -26,7 +34,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const { scenario, language, level, goal, scenarioKey, languageCode } = parsed.data;
+    const { scenario, language, level, goal, scenarioKey, languageCode } =
+      parsed.data;
     const conversationId = generateId();
 
     return await withConversationId(conversationId, async () => {
@@ -66,7 +75,11 @@ export async function POST(request: Request) {
       };
 
       const opening = await generateNpcOpening(conversation);
-      const npcFaceImageUrl = getNpcFaceAssetUrl(scenarioKey ?? "__custom__", npcProfile.gender, opening.mood);
+      const npcFaceImageUrl = getNpcFaceAssetUrl(
+        scenarioKey ?? "__custom__",
+        npcProfile.gender,
+        opening.mood,
+      );
 
       conversation.history.push({
         role: "npc",
@@ -82,21 +95,23 @@ export async function POST(request: Request) {
       await setReplySuggestions(conversationId, opening.replySuggestions);
 
       log.info({ npcName: npcProfile.name }, "conversation created");
-      return NextResponse.json(createConversationResponseSchema.parse({
-        conversationId,
-        sceneImageUrl,
-        npcFaceImageUrl,
-        npcName: npcProfile.name,
-        npcGender: npcProfile.gender,
-        npcOpeningMessage: opening.npcMessage,
-        npcOpeningMood: opening.mood,
-        npcOpeningGoalProgress: opening.goalProgress,
-        replySuggestions: opening.replySuggestions,
-        scenario,
-        goal,
-        language,
-        level,
-      }));
+      return NextResponse.json(
+        createConversationResponseSchema.parse({
+          conversationId,
+          sceneImageUrl,
+          npcFaceImageUrl,
+          npcName: npcProfile.name,
+          npcGender: npcProfile.gender,
+          npcOpeningMessage: opening.npcMessage,
+          npcOpeningMood: opening.mood,
+          npcOpeningGoalProgress: opening.goalProgress,
+          replySuggestions: opening.replySuggestions,
+          scenario,
+          goal,
+          language,
+          level,
+        }),
+      );
     });
   } catch (error) {
     log.error({ err: error }, "failed to create conversation");

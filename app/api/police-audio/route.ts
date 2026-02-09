@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getPoliceAudio } from "@/lib/storage";
 import { synthesizeSpeech } from "@/lib/audio";
 import { getPoliceIntroMessage } from "@/lib/game";
-import type { NpcGender } from "@/lib/types";
 import { createLogger } from "@/lib/logger";
+import { getPoliceAudio } from "@/lib/storage";
+import type { NpcGender } from "@/lib/types";
 
 const log = createLogger("api:police-audio");
 
@@ -16,10 +16,16 @@ export async function GET(request: Request) {
   const lang = searchParams.get("lang");
 
   if (!type || !VALID_TYPES.has(type)) {
-    return NextResponse.json({ error: "Invalid type parameter" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid type parameter" },
+      { status: 400 },
+    );
   }
   if (!lang || !VALID_LANGS.has(lang)) {
-    return NextResponse.json({ error: "Invalid lang parameter" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid lang parameter" },
+      { status: 400 },
+    );
   }
 
   const key = `${type}_${lang}`;
@@ -50,6 +56,9 @@ export async function GET(request: Request) {
     });
   } catch (err) {
     log.error({ err }, "police audio TTS fallback failed");
-    return NextResponse.json({ error: "TTS synthesis failed" }, { status: 502 });
+    return NextResponse.json(
+      { error: "TTS synthesis failed" },
+      { status: 502 },
+    );
   }
 }

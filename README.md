@@ -70,7 +70,7 @@ The full UI is also localized in all 5 languages via next-intl.
 
 ### Prerequisites
 
-- Node.js 20+
+- [Bun](https://bun.sh/) 1.0+
 - OpenAI API key
 - FAL AI API key
 - Gradium API key (for TTS/STT)
@@ -78,7 +78,7 @@ The full UI is also localized in all 5 languages via next-intl.
 ### Setup
 
 ```bash
-npm install
+bun install
 ```
 
 Create a `.env.local` file (see `.env.example` for all options):
@@ -92,14 +92,14 @@ GRADIUM_API_KEY=your-key-here
 ### Development
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 ### Production
 
 ```bash
-npm run build
-npm run start
+bun run build
+bun run start
 ```
 
 ---
@@ -115,6 +115,7 @@ npm run start
 | Image Generation | FAL AI (Flux) |
 | Voice | Gradium (TTS & STT) |
 | i18n | next-intl |
+| Linting & Formatting | Biome |
 | Validation | Zod |
 | Logging | Pino (structured JSON, per-request tracing) |
 | Database | PostgreSQL (optional, for production) |

@@ -1,5 +1,5 @@
-import type { NpcGender } from "../types";
 import { createLogger } from "../logger";
+import type { NpcGender } from "../types";
 
 const log = createLogger("game:npc-assets");
 
@@ -46,7 +46,7 @@ export function getNpcFaceAssetUrl(
   const normalizedMood = mood.toLowerCase();
   const resolvedMood = VALID_MOODS.has(normalizedMood)
     ? normalizedMood
-    : MOOD_FALLBACK[normalizedMood] ?? DEFAULT_MOOD;
+    : (MOOD_FALLBACK[normalizedMood] ?? DEFAULT_MOOD);
 
   if (resolvedMood !== normalizedMood) {
     log.debug({ mood, resolvedMood }, "mood mapped to fallback asset");
@@ -64,18 +64,22 @@ export function getSpecialPersonFaceAssetUrl(
   const normalizedMood = mood.toLowerCase();
   const resolvedMood = VALID_MOODS.has(normalizedMood)
     ? normalizedMood
-    : MOOD_FALLBACK[normalizedMood] ?? DEFAULT_MOOD;
+    : (MOOD_FALLBACK[normalizedMood] ?? DEFAULT_MOOD);
 
   return `/assets/special/${type}/${type}_${resolvedMood}.png`;
 }
 
 // Determine police officer type based on NPC gender (opposite gender)
-export function getPoliceOfficerType(npcGender: NpcGender): "policeman" | "policewoman" {
+export function getPoliceOfficerType(
+  npcGender: NpcGender,
+): "policeman" | "policewoman" {
   return npcGender === "masculine" ? "policewoman" : "policeman";
 }
 
 // Get police officer name based on type
-export function getPoliceOfficerName(type: "policeman" | "policewoman"): string {
+export function getPoliceOfficerName(
+  type: "policeman" | "policewoman",
+): string {
   return type === "policeman" ? "Officer" : "Officer";
 }
 

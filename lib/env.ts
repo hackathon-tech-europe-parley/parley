@@ -5,15 +5,14 @@ const log = createLogger("env");
 
 const optionalEnvString = z.string().trim().min(1).optional();
 
-const envSchema = z
-  .object({
-    OPENAI_MODEL: optionalEnvString,
-    FAL_IMAGE_MODEL: optionalEnvString,
+const envSchema = z.object({
+  OPENAI_MODEL: optionalEnvString,
+  FAL_IMAGE_MODEL: optionalEnvString,
 
-    GRADIUM_API_KEY: optionalEnvString,
-    GRADIUM_TTS_PADDING_BONUS: optionalEnvString,
-    DATABASE_URL: optionalEnvString,
-  });
+  GRADIUM_API_KEY: optionalEnvString,
+  GRADIUM_TTS_PADDING_BONUS: optionalEnvString,
+  DATABASE_URL: optionalEnvString,
+});
 
 const env = envSchema.parse(process.env);
 
