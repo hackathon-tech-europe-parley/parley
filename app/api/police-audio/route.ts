@@ -3,6 +3,9 @@ import { getPoliceAudio } from "@/lib/storage";
 import { synthesizeSpeech } from "@/lib/audio";
 import { getPoliceIntroMessage } from "@/lib/game";
 import type { NpcGender } from "@/lib/types";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("api:police-audio");
 
 const VALID_TYPES = new Set(["policeman", "policewoman"]);
 const VALID_LANGS = new Set(["en", "fr", "de", "es", "pt"]);
@@ -23,6 +26,7 @@ export async function GET(request: Request) {
   const cached = await getPoliceAudio(key);
 
   if (cached) {
+    log.info({ key }, "police audio cache hit");
     const buffer = Buffer.from(cached, "base64");
     return new Response(buffer, {
       headers: {
@@ -33,6 +37,7 @@ export async function GET(request: Request) {
   }
 
   // Fallback: generate on-demand via Gradium TTS
+  log.info({ key }, "police audio cache miss, generating via TTS");
   try {
     const text = getPoliceIntroMessage(lang);
     const gender: NpcGender = type === "policeman" ? "masculine" : "feminine";
@@ -44,7 +49,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
-    console.error("Police audio TTS fallback error:", err);
+    log.error({ err }, "police audio TTS fallback failed");
     return NextResponse.json({ error: "TTS synthesis failed" }, { status: 502 });
   }
 }
