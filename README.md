@@ -49,10 +49,10 @@ Each character gets a unique name, backstory, and personality. A conversation po
 
 | | NPC Style | Hints | Goals |
 |---|---|---|---|
-| **Beginner** | Patient, simple vocabulary | Full phrase suggestions | Achievable |
-| **Intermediate** | Natural speech | Vocabulary hints | Moderate |
-| **Advanced** | Idioms & slang, demanding | Minimal | Challenging |
-| **Impossible** | Archaic register, uncooperative | None | Absurd |
+| ![Beginner](https://img.shields.io/badge/Beginner-4ade80?style=flat-square) | Patient, simple vocabulary | Full phrase suggestions | Achievable |
+| ![Intermediate](https://img.shields.io/badge/Intermediate-facc15?style=flat-square) | Natural speech | Vocabulary hints | Moderate |
+| ![Advanced](https://img.shields.io/badge/Advanced-f97316?style=flat-square) | Idioms & slang, demanding | Minimal | Challenging |
+| ![Impossible](https://img.shields.io/badge/Impossible-dc2626?style=flat-square) | Archaic register, uncooperative | None | Absurd |
 
 ### &#x1F50A; Voice In & Out
 
