@@ -1,5 +1,5 @@
-import type { GoalProgress, GoalStatus } from "../types";
 import { createLogger } from "../logger";
+import type { GoalProgress, GoalStatus } from "../types";
 
 const log = createLogger("ai:parsing");
 

@@ -5,8 +5,8 @@ import {
   GOAL_PROGRESS_GLOW,
   GOAL_PROGRESS_GLOW_IMPOSSIBLE,
   GOAL_PROGRESS_STEPS,
-  LANGUAGE_CODE_MAP,
   getMoodTheme,
+  LANGUAGE_CODE_MAP,
 } from "./chat-constants";
 import type { ConversationState, DebriefState } from "./chat-types";
 
@@ -110,7 +110,8 @@ export function ChatConversationView({
     state.level === "impossible"
       ? GOAL_PROGRESS_GLOW_IMPOSSIBLE
       : GOAL_PROGRESS_GLOW;
-  const activeLanguageCode = state.languageCode ?? LANGUAGE_CODE_MAP[state.language] ?? "en";
+  const activeLanguageCode =
+    state.languageCode ?? LANGUAGE_CODE_MAP[state.language] ?? "en";
   const latestEvaluation =
     state.evaluationHistory[state.evaluationHistory.length - 1] ?? null;
   const latestObjective =
@@ -176,6 +177,7 @@ export function ChatConversationView({
               >
                 <div className="flex items-center gap-3">
                   {state.npcFaceImageUrl && (
+                    /* biome-ignore lint/performance/noImgElement: Dynamic FAL image URLs */
                     <img
                       src={state.npcFaceImageUrl}
                       alt={state.npcName}
@@ -210,7 +212,9 @@ export function ChatConversationView({
               <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                 {t("scenarioTitle")}
               </h3>
-              <p className="text-sm leading-relaxed text-slate-300">{scenarioDescriptionText}</p>
+              <p className="text-sm leading-relaxed text-slate-300">
+                {scenarioDescriptionText}
+              </p>
             </div>
 
             <div
@@ -223,7 +227,9 @@ export function ChatConversationView({
               <div className="mb-2 flex items-start justify-between gap-2">
                 <h3
                   className={`text-[11px] font-bold uppercase tracking-[0.15em] ${
-                    state.level === "impossible" ? "text-red-400/80" : "text-slate-400"
+                    state.level === "impossible"
+                      ? "text-red-400/80"
+                      : "text-slate-400"
                   }`}
                 >
                   {t("objectiveTitle")}
@@ -231,7 +237,12 @@ export function ChatConversationView({
                 <div className="relative h-10 w-10 shrink-0">
                   <div
                     className="h-10 w-10 rounded-full border border-slate-700/45 shadow-[inset_0_0_12px_rgba(15,23,42,0.65)]"
-                    style={{ background: donutBackground(objectiveProgressValue, "#34d399") }}
+                    style={{
+                      background: donutBackground(
+                        objectiveProgressValue,
+                        "#34d399",
+                      ),
+                    }}
                   />
                   <div className="absolute inset-[24%] flex items-center justify-center rounded-full bg-slate-900/95">
                     <span className="font-[family-name:var(--font-mono)] text-[10px] leading-none text-slate-200">
@@ -243,13 +254,19 @@ export function ChatConversationView({
 
               <p
                 className={`mb-3 text-sm font-medium leading-snug ${
-                  state.level === "impossible" ? "text-red-100" : "text-slate-100"
+                  state.level === "impossible"
+                    ? "text-red-100"
+                    : "text-slate-100"
                 }`}
               >
                 {objectiveText}
               </p>
 
-              <div role="img" aria-label={`Goal progress ${state.goalProgress} of 5`} className="mb-3 flex gap-1.5">
+              <div
+                role="img"
+                aria-label={`Goal progress ${state.goalProgress} of 5`}
+                className="mb-3 flex gap-1.5"
+              >
                 {GOAL_PROGRESS_STEPS.map((step) => {
                   const isActive = step <= state.goalProgress;
                   return (
@@ -260,7 +277,11 @@ export function ChatConversationView({
                           ? `${progressPalette[state.goalProgress]} shadow-md ${glowPalette[state.goalProgress]} progress-animated`
                           : progressTrackColor
                       }`}
-                      style={isActive ? { animationDelay: `${(step - 1) * 80}ms` } : undefined}
+                      style={
+                        isActive
+                          ? { animationDelay: `${(step - 1) * 80}ms` }
+                          : undefined
+                      }
                     />
                   );
                 })}
@@ -268,7 +289,9 @@ export function ChatConversationView({
 
               <div className="space-y-1 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400">{t("objectiveCompletedLabel")}</span>
+                  <span className="text-slate-400">
+                    {t("objectiveCompletedLabel")}
+                  </span>
                   <span
                     className={`rounded-md px-2 py-0.5 font-[family-name:var(--font-mono)] ${
                       latestObjective?.objectiveMet
@@ -280,7 +303,9 @@ export function ChatConversationView({
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400">{t("objectiveProgressLabel")}</span>
+                  <span className="text-slate-400">
+                    {t("objectiveProgressLabel")}
+                  </span>
                   <span className="font-[family-name:var(--font-mono)] text-slate-300">
                     {toPercent(objectiveProgressValue)}
                   </span>
@@ -306,18 +331,26 @@ export function ChatConversationView({
               >
                 <span
                   className={`text-[11px] font-semibold uppercase tracking-wider ${
-                    state.level === "impossible" ? "text-red-400/60" : "text-slate-500"
+                    state.level === "impossible"
+                      ? "text-red-400/60"
+                      : "text-slate-500"
                   }`}
                 >
                   {t("levelShort")}
                 </span>
                 <span
                   className={`text-sm font-medium ${
-                    state.level === "impossible" ? "text-red-300" : "text-slate-300"
+                    state.level === "impossible"
+                      ? "text-red-300"
+                      : "text-slate-300"
                   }`}
                 >
                   {tLevels(
-                    state.level as "beginner" | "intermediate" | "advanced" | "impossible",
+                    state.level as
+                      | "beginner"
+                      | "intermediate"
+                      | "advanced"
+                      | "impossible",
                   )}
                 </span>
               </div>
@@ -358,7 +391,12 @@ export function ChatConversationView({
                         <div className="relative h-10 w-10">
                           <div
                             className="h-10 w-10 rounded-full border border-slate-700/45 shadow-[inset_0_0_12px_rgba(15,23,42,0.65)]"
-                            style={{ background: donutBackground(metric.value, metric.color) }}
+                            style={{
+                              background: donutBackground(
+                                metric.value,
+                                metric.color,
+                              ),
+                            }}
                           />
                           <div className="absolute inset-[24%] flex items-center justify-center rounded-full bg-slate-900/95">
                             <span className="font-[family-name:var(--font-mono)] text-[10px] leading-none text-slate-200">
@@ -390,6 +428,7 @@ export function ChatConversationView({
 
       {/* Right side - Messages */}
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-t border-slate-800/50 md:flex-[0.7] md:border-l md:border-t-0">
+        {/* biome-ignore lint/performance/noImgElement: Dynamic FAL image URLs */}
         <img
           src={state.sceneImageUrl}
           alt=""
@@ -404,20 +443,23 @@ export function ChatConversationView({
               key={i}
               className={`flex items-start gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end msg-user" : "justify-start msg-npc"}`}
             >
-              {msg.role === "npc" && (() => {
-                const isSpecialPerson = msg.speakerName === state.specialPerson?.name;
-                const faceUrl = isSpecialPerson
-                  ? (msg.npcFaceImageUrl || state.specialPerson?.faceImageUrl)
-                  : (msg.npcFaceImageUrl || state.npcFaceImageUrl);
+              {msg.role === "npc" &&
+                (() => {
+                  const isSpecialPerson =
+                    msg.speakerName === state.specialPerson?.name;
+                  const faceUrl = isSpecialPerson
+                    ? msg.npcFaceImageUrl || state.specialPerson?.faceImageUrl
+                    : msg.npcFaceImageUrl || state.npcFaceImageUrl;
 
-                return faceUrl && faceUrl.trim() !== "" ? (
-                  <img
-                    src={faceUrl}
-                    alt={msg.speakerName || state.npcName}
-                    className="h-8 w-8 flex-shrink-0 rounded-full border-2 border-slate-700/40 object-cover object-top shadow-md sm:h-10 sm:w-10 md:h-12 md:w-12"
-                  />
-                ) : null;
-              })()}
+                  return faceUrl && faceUrl.trim() !== "" ? (
+                    /* biome-ignore lint/performance/noImgElement: Dynamic FAL image URLs */
+                    <img
+                      src={faceUrl}
+                      alt={msg.speakerName || state.npcName}
+                      className="h-8 w-8 flex-shrink-0 rounded-full border-2 border-slate-700/40 object-cover object-top shadow-md sm:h-10 sm:w-10 md:h-12 md:w-12"
+                    />
+                  ) : null;
+                })()}
               <div
                 className={`max-w-[85%] rounded-2xl px-3 py-2 shadow-lg sm:max-w-[80%] sm:px-4 sm:py-3 md:max-w-[75%] md:px-5 ${
                   msg.role === "user"
@@ -437,20 +479,34 @@ export function ChatConversationView({
                       className="inline-flex items-center rounded p-1 text-slate-400 transition-all hover:bg-slate-700/50 hover:text-blue-400"
                     >
                       {ttsPlaying === i ? (
-                        <svg className="h-4 w-4 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                        <svg
+                          className="h-4 w-4 animate-pulse"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <title>Playing audio</title>
                           <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
                         </svg>
                       ) : (
-                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                        <svg
+                          className="h-4 w-4"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <title>Replay audio</title>
                           <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
                         </svg>
                       )}
                     </button>
                   </div>
                 )}
-                <p className="whitespace-pre-wrap text-sm leading-relaxed sm:text-[15px]">{msg.text}</p>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed sm:text-[15px]">
+                  {msg.text}
+                </p>
               </div>
-              {msg.role === "user" && <div className="hidden flex-shrink-0 sm:block sm:h-10 sm:w-10 md:h-12 md:w-12" />}
+              {msg.role === "user" && (
+                <div className="hidden flex-shrink-0 sm:block sm:h-10 sm:w-10 md:h-12 md:w-12" />
+              )}
             </div>
           ))}
 
@@ -458,6 +514,7 @@ export function ChatConversationView({
           {sending && (
             <div className="msg-npc flex items-start justify-start gap-2 sm:gap-3">
               {state.npcFaceImageUrl && (
+                /* biome-ignore lint/performance/noImgElement: Dynamic FAL image URLs */
                 <img
                   src={state.npcFaceImageUrl}
                   alt={state.npcName}
@@ -471,9 +528,18 @@ export function ChatConversationView({
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="typing-dot h-2 w-2 rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
-                  <span className="typing-dot h-2 w-2 rounded-full bg-slate-400" style={{ animationDelay: "200ms" }} />
-                  <span className="typing-dot h-2 w-2 rounded-full bg-slate-400" style={{ animationDelay: "400ms" }} />
+                  <span
+                    className="typing-dot h-2 w-2 rounded-full bg-slate-400"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <span
+                    className="typing-dot h-2 w-2 rounded-full bg-slate-400"
+                    style={{ animationDelay: "200ms" }}
+                  />
+                  <span
+                    className="typing-dot h-2 w-2 rounded-full bg-slate-400"
+                    style={{ animationDelay: "400ms" }}
+                  />
                 </div>
               </div>
             </div>
@@ -482,13 +548,15 @@ export function ChatConversationView({
           {/* End status badge */}
           {endStatus && (
             <div className="flex justify-center py-3 sm:py-4">
-              <div className={`rounded-full px-3 py-1 text-xs font-medium sm:px-4 sm:py-1.5 ${
-                endStatus.goalStatus === "achieved"
-                  ? "border border-green-800/40 bg-green-900/30 text-green-400"
-                  : endStatus.goalStatus === "failed"
-                    ? "border border-red-800/40 bg-red-900/30 text-red-400"
-                    : "border border-amber-800/40 bg-amber-900/30 text-amber-400"
-              }`}>
+              <div
+                className={`rounded-full px-3 py-1 text-xs font-medium sm:px-4 sm:py-1.5 ${
+                  endStatus.goalStatus === "achieved"
+                    ? "border border-green-800/40 bg-green-900/30 text-green-400"
+                    : endStatus.goalStatus === "failed"
+                      ? "border border-red-800/40 bg-red-900/30 text-red-400"
+                      : "border border-amber-800/40 bg-amber-900/30 text-amber-400"
+                }`}
+              >
                 {endStatus.goalStatus === "achieved"
                   ? tDebrief("goalAchieved")
                   : endStatus.goalStatus === "failed"
@@ -507,6 +575,7 @@ export function ChatConversationView({
             <div className="flex flex-col gap-2">
               {state.replySuggestions.map((choice, i) => (
                 <button
+                  type="button"
                   key={i}
                   onClick={() => onChoiceSelect(choice)}
                   className="btn-press w-full rounded-lg border border-amber-500/20 bg-slate-800/60 px-4 py-2.5 text-left text-sm text-slate-100 shadow-md backdrop-blur-sm transition-all hover:border-amber-400/40 hover:bg-slate-700/70 hover:text-white hover:shadow-amber-500/10 sm:px-5 sm:py-3 sm:text-[15px]"
@@ -546,21 +615,66 @@ export function ChatConversationView({
                 <div className="flex items-center gap-2 sm:gap-3">
                   {endStatus.goalStatus === "achieved" ? (
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-600/20 sm:h-10 sm:w-10">
-                      <svg className="h-4 w-4 text-green-400 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      <svg
+                        className="h-4 w-4 text-green-400 sm:h-5 sm:w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <title>Goal achieved</title>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
                     </div>
                   ) : endStatus.goalStatus === "failed" ? (
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-600/20 sm:h-10 sm:w-10">
-                      <svg className="h-4 w-4 text-red-400 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                      <svg
+                        className="h-4 w-4 text-red-400 sm:h-5 sm:w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <title>Goal failed</title>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
                     </div>
                   ) : (
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-600/20 sm:h-10 sm:w-10">
-                      <svg className="h-4 w-4 text-amber-400 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      <svg
+                        className="h-4 w-4 text-amber-400 sm:h-5 sm:w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <title>Quit early</title>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
                     </div>
                   )}
                   <div>
-                    <p className={`text-sm font-semibold sm:text-base ${
-                      endStatus.goalStatus === "achieved" ? "text-green-300" : endStatus.goalStatus === "failed" ? "text-red-300" : "text-amber-300"
-                    }`}>
+                    <p
+                      className={`text-sm font-semibold sm:text-base ${
+                        endStatus.goalStatus === "achieved"
+                          ? "text-green-300"
+                          : endStatus.goalStatus === "failed"
+                            ? "text-red-300"
+                            : "text-amber-300"
+                      }`}
+                    >
                       {endStatus.goalStatus === "achieved"
                         ? tDebrief("goalAchieved")
                         : endStatus.goalStatus === "failed"
@@ -574,11 +688,27 @@ export function ChatConversationView({
                     </p>
                   </div>
                 </div>
-                <svg className="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                <svg
+                  className="h-5 w-5 text-slate-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <title>Navigate forward</title>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
               </div>
             </button>
           ) : (
-            <form onSubmit={(event) => handleSubmit(event, onSubmit)} className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+            <form
+              onSubmit={(event) => handleSubmit(event, onSubmit)}
+              className="flex flex-col gap-2 sm:flex-row sm:gap-3"
+            >
               <input
                 type="text"
                 value={input}
@@ -588,7 +718,9 @@ export function ChatConversationView({
                     ? t("recording")
                     : transcribing
                       ? t("transcribing")
-                      : t("messagePlaceholder", { language: tLangs(activeLanguageCode) })
+                      : t("messagePlaceholder", {
+                          language: tLangs(activeLanguageCode),
+                        })
                 }
                 disabled={sending || recording}
                 className="flex-1 rounded-xl border border-slate-700/50 bg-slate-800/40 px-3 py-2.5 text-sm text-white backdrop-blur-sm placeholder-slate-500 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:px-4 sm:py-3 sm:text-base md:px-5"
@@ -596,8 +728,19 @@ export function ChatConversationView({
               <div className="flex gap-2 sm:gap-3">
                 {/* Speed Control */}
                 <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/50 px-2 py-2.5 sm:px-3 sm:py-3">
-                  <svg className="h-4 w-4 flex-shrink-0 text-slate-400 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  <svg
+                    className="h-4 w-4 flex-shrink-0 text-slate-400 sm:h-5 sm:w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <title>Speech speed</title>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
                   </svg>
                   <input
                     type="range"
@@ -609,7 +752,9 @@ export function ChatConversationView({
                     title={`Speech speed: ${ttsSpeed.toFixed(1)}x`}
                     className="h-1 w-16 cursor-pointer appearance-none rounded-lg bg-slate-700 accent-blue-500 sm:w-20"
                   />
-                  <span className="w-8 text-xs text-slate-400 sm:w-10 sm:text-sm">{ttsSpeed.toFixed(1)}x</span>
+                  <span className="w-8 text-xs text-slate-400 sm:w-10 sm:text-sm">
+                    {ttsSpeed.toFixed(1)}x
+                  </span>
                 </div>
                 <button
                   type="button"
@@ -618,9 +763,23 @@ export function ChatConversationView({
                   className="btn-press rounded-xl border border-slate-700/50 bg-slate-800/40 px-3 py-2.5 text-slate-400 transition-all hover:border-slate-600 hover:bg-slate-700/50 sm:px-4 sm:py-3"
                 >
                   {npcMuted ? (
-                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                    <svg
+                      className="h-5 w-5"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <title>Speaker muted</title>
+                      <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+                    </svg>
                   ) : (
-                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                    <svg
+                      className="h-5 w-5"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <title>Speaker on</title>
+                      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                    </svg>
                   )}
                 </button>
                 <button
@@ -635,12 +794,33 @@ export function ChatConversationView({
                   } disabled:opacity-50`}
                 >
                   {transcribing ? (
-                    <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <svg
+                      className="h-5 w-5 animate-spin"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <title>Transcribing</title>
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
                     </svg>
                   ) : (
-                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="h-5 w-5"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <title>Microphone</title>
                       <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
                     </svg>
                   )}

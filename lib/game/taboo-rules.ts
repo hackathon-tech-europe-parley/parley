@@ -76,7 +76,10 @@ export function detectTabooMatch(input: string): TabooMatch | null {
   for (const topic of FORBIDDEN_TOPICS) {
     for (const keyword of topic.keywords) {
       if (containsToken(normalized, normalizeText(keyword))) {
-        log.debug({ kind: "topic", topic: topic.topic, token: keyword }, "taboo match detected");
+        log.debug(
+          { kind: "topic", topic: topic.topic, token: keyword },
+          "taboo match detected",
+        );
         return {
           kind: "topic",
           label: topic.topic,

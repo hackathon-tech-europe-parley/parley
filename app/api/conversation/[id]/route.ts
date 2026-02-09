@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
+import { createLogger, withConversationId } from "@/lib/logger";
 import { getConversation, getReplySuggestions } from "@/lib/storage";
 import {
+  type ConversationSnapshot,
   conversationSnapshotSchema,
   idParamSchema,
-  type ConversationSnapshot,
 } from "@/lib/types";
-import { createLogger, withConversationId } from "@/lib/logger";
 
 const log = createLogger("api:conversation:get");
 
@@ -34,7 +34,10 @@ export async function GET(
       );
     }
 
-    log.info({ historyLength: conversation.history.length }, "conversation hydrated");
+    log.info(
+      { historyLength: conversation.history.length },
+      "conversation hydrated",
+    );
     const snapshot: ConversationSnapshot = {
       conversationId: id,
       scenario: conversation.scenario,

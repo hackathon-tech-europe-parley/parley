@@ -1,16 +1,22 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { DM_Sans, JetBrains_Mono } from "next/font/google";
+import Image from "next/image";
 import { notFound } from "next/navigation";
-import { hasLocale } from "next-intl";
-import { setRequestLocale, getTranslations, getMessages } from "next-intl/server";
-import { NextIntlClientProvider } from "next-intl";
-import { routing } from "@/i18n/routing";
-import { Link } from "@/i18n/navigation";
+import { hasLocale, NextIntlClientProvider } from "next-intl";
+import {
+  getMessages,
+  getTranslations,
+  setRequestLocale,
+} from "next-intl/server";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { Link } from "@/i18n/navigation";
+import { routing } from "@/i18n/routing";
 
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
-const jetBrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -46,7 +52,9 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   return (
     <html lang={locale} className="dark">
-      <body className={`${dmSans.variable} ${jetBrainsMono.variable} font-[family-name:var(--font-dm-sans)] flex min-h-screen flex-col`}>
+      <body
+        className={`${dmSans.variable} ${jetBrainsMono.variable} font-[family-name:var(--font-dm-sans)] flex min-h-screen flex-col`}
+      >
         <NextIntlClientProvider messages={messages}>
           {/* Header */}
           <header className="sticky top-0 z-40 flex-shrink-0 border-b border-slate-800/50 bg-slate-950/90 backdrop-blur-xl">
@@ -76,7 +84,9 @@ export default async function LocaleLayout({ children, params }: Props) {
           </header>
 
           {/* Content */}
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {children}
+          </div>
         </NextIntlClientProvider>
       </body>
     </html>

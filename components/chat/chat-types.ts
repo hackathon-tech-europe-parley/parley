@@ -1,14 +1,14 @@
-import {
+import type {
+  ConversationLevel,
+  ConversationMessage,
   conversationCacheSchema,
-  type ConversationLevel,
-  type ConversationMessage,
-  type Debrief,
-  type GoalStatus,
-  type GoalProgress,
-  type LanguageCode,
-  type NpcEvaluation,
-  type NpcGender,
-  type ObjectiveAssessment,
+  Debrief,
+  GoalProgress,
+  GoalStatus,
+  LanguageCode,
+  NpcEvaluation,
+  NpcGender,
+  ObjectiveAssessment,
 } from "@/lib/types";
 
 export interface ConversationState {
@@ -62,12 +62,14 @@ export function fromCachedConversation(
     sceneImageUrl: cached.sceneImageUrl,
     npcFaceImageUrl: cached.npcFaceImageUrl,
     goalStatus: "ongoing",
-    history: [{
-      role: "npc",
-      text: cached.npcOpeningMessage,
-      mood: cached.npcOpeningMood,
-      npcFaceImageUrl: cached.npcFaceImageUrl,
-    }],
+    history: [
+      {
+        role: "npc",
+        text: cached.npcOpeningMessage,
+        mood: cached.npcOpeningMood,
+        npcFaceImageUrl: cached.npcFaceImageUrl,
+      },
+    ],
     replySuggestions: cached.replySuggestions,
     evaluationHistory: [],
     objectiveHistory: [],

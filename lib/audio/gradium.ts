@@ -1,6 +1,6 @@
-import type { NpcGender } from "../types";
 import { getGradiumApiKey, getGradiumTtsPaddingBonus } from "../env";
 import { createLogger } from "../logger";
+import type { NpcGender } from "../types";
 
 const log = createLogger("audio:gradium");
 
@@ -8,7 +8,10 @@ const log = createLogger("audio:gradium");
 let pending: Promise<unknown> = Promise.resolve();
 function enqueue<T>(fn: () => Promise<T>): Promise<T> {
   const next = pending.then(fn, fn);
-  pending = next.then(() => {}, () => {});
+  pending = next.then(
+    () => {},
+    () => {},
+  );
   return next;
 }
 
@@ -28,7 +31,7 @@ export function getVoiceId(languageCode?: string, gender?: NpcGender): string {
   if (languageCode && VOICE_MAP[languageCode]) {
     return VOICE_MAP[languageCode][g];
   }
-  return VOICE_MAP["en"]?.[g] ?? DEFAULT_VOICE;
+  return VOICE_MAP.en?.[g] ?? DEFAULT_VOICE;
 }
 
 export function synthesizeSpeech(
@@ -39,7 +42,10 @@ export function synthesizeSpeech(
 ): Promise<ArrayBuffer> {
   return enqueue(async () => {
     const voiceId = getVoiceId(languageCode, gender);
-    log.info({ languageCode, gender, voiceId, textLength: text.length }, "synthesizing speech");
+    log.info(
+      { languageCode, gender, voiceId, textLength: text.length },
+      "synthesizing speech",
+    );
     const start = Date.now();
     const apiKey = getGradiumApiKey();
     const basePayload = {
@@ -53,9 +59,8 @@ export function synthesizeSpeech(
     // speed 1.0 (normal) → padding_bonus 0.0
     // speed 2.0 (fastest) → padding_bonus -2.0
     // Falls back to env-configured value if no speed provided.
-    const paddingBonus = speed !== undefined
-      ? (1.0 - speed) * 2.0
-      : getGradiumTtsPaddingBonus();
+    const paddingBonus =
+      speed !== undefined ? (1.0 - speed) * 2.0 : getGradiumTtsPaddingBonus();
     const fastPayload = {
       ...basePayload,
       json_config: JSON.stringify({
@@ -90,7 +95,10 @@ export function synthesizeSpeech(
     }
 
     const audio = await res.arrayBuffer();
-    log.info({ durationMs: Date.now() - start, responseBytes: audio.byteLength }, "speech synthesized");
+    log.info(
+      { durationMs: Date.now() - start, responseBytes: audio.byteLength },
+      "speech synthesized",
+    );
     return audio;
   });
 }

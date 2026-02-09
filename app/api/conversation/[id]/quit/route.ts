@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getConversation, deleteConversation } from "@/lib/storage";
-import { generateSceneImage, generateDebrief } from "@/lib/ai";
-import { idParamSchema, quitConversationResponseSchema } from "@/lib/types";
+import { generateDebrief, generateSceneImage } from "@/lib/ai";
 import { createLogger, withConversationId } from "@/lib/logger";
+import { deleteConversation, getConversation } from "@/lib/storage";
+import { idParamSchema, quitConversationResponseSchema } from "@/lib/types";
 
 const log = createLogger("api:quit");
 
@@ -43,13 +43,15 @@ export async function POST(
       const npcName = conversation.npcName;
       await deleteConversation(id);
 
-      return NextResponse.json(quitConversationResponseSchema.parse({
-        debrief,
-        sceneImageUrl: finalImageUrl,
-        npcName,
-        goalStatus: "quit",
-        conversationHistory: history,
-      }));
+      return NextResponse.json(
+        quitConversationResponseSchema.parse({
+          debrief,
+          sceneImageUrl: finalImageUrl,
+          npcName,
+          goalStatus: "quit",
+          conversationHistory: history,
+        }),
+      );
     } catch (error) {
       log.error({ err: error }, "failed to quit conversation");
       return NextResponse.json(

@@ -23,16 +23,16 @@ export class TTSPlayer {
     if (this.audio) {
       // Remove event listeners
       if (this.endedHandler) {
-        this.audio.removeEventListener('ended', this.endedHandler);
+        this.audio.removeEventListener("ended", this.endedHandler);
       }
       if (this.errorHandler) {
-        this.audio.removeEventListener('error', this.errorHandler);
+        this.audio.removeEventListener("error", this.errorHandler);
       }
 
       // Stop and reset audio
       this.audio.pause();
       this.audio.currentTime = 0;
-      this.audio.src = '';
+      this.audio.src = "";
       this.audio.load(); // Reset the audio element
     }
 
@@ -46,7 +46,13 @@ export class TTSPlayer {
     }
   }
 
-  async play(text: string, cacheKey: string, languageCode?: string, npcGender?: string, speed?: number): Promise<void> {
+  async play(
+    text: string,
+    cacheKey: string,
+    languageCode?: string,
+    npcGender?: string,
+    speed?: number,
+  ): Promise<void> {
     if (this._muted) return;
 
     // If there's already a play operation in progress, wait for it to complete
@@ -58,10 +64,16 @@ export class TTSPlayer {
     this.stop();
 
     // Wait for the audio to fully stop and reset
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Create a promise for this play operation
-    this.playPromise = this._doPlay(text, cacheKey, languageCode, npcGender, speed);
+    this.playPromise = this._doPlay(
+      text,
+      cacheKey,
+      languageCode,
+      npcGender,
+      speed,
+    );
 
     try {
       await this.playPromise;
@@ -70,9 +82,16 @@ export class TTSPlayer {
     }
   }
 
-  private async _doPlay(text: string, cacheKey: string, languageCode?: string, npcGender?: string, speed?: number): Promise<void> {
+  private async _doPlay(
+    text: string,
+    cacheKey: string,
+    languageCode?: string,
+    npcGender?: string,
+    speed?: number,
+  ): Promise<void> {
     // Include speed in cache key to cache different speeds separately
-    const speedCacheKey = speed !== undefined ? `${cacheKey}-speed-${speed}` : cacheKey;
+    const speedCacheKey =
+      speed !== undefined ? `${cacheKey}-speed-${speed}` : cacheKey;
 
     let url = this.cache.get(speedCacheKey);
     if (!url) {
@@ -109,10 +128,16 @@ export class TTSPlayer {
         resolve();
       };
 
-      this.audio!.addEventListener('ended', this.endedHandler, { once: true });
-      this.audio!.addEventListener('error', this.errorHandler, { once: true });
+      const audio = this.audio;
+      if (!audio) {
+        resolve();
+        return;
+      }
 
-      this.audio!.play().catch((err) => {
+      audio.addEventListener("ended", this.endedHandler, { once: true });
+      audio.addEventListener("error", this.errorHandler, { once: true });
+
+      audio.play().catch((err) => {
         if (err instanceof DOMException && err.name === "NotAllowedError") {
           // Browser blocked autoplay — user hasn't interacted yet. Silently skip.
           this._playResolve = null;
@@ -126,9 +151,14 @@ export class TTSPlayer {
   }
 
   /** Fetch pre-generated audio from a URL and store in cache so play() is instant. */
-  prefetchFromUrl(url: string, cacheKey: string, speed?: number): Promise<void> {
+  prefetchFromUrl(
+    url: string,
+    cacheKey: string,
+    speed?: number,
+  ): Promise<void> {
     if (this._muted) return Promise.resolve();
-    const effectiveKey = speed !== undefined ? `${cacheKey}-speed-${speed}` : cacheKey;
+    const effectiveKey =
+      speed !== undefined ? `${cacheKey}-speed-${speed}` : cacheKey;
     if (this.cache.has(effectiveKey)) return Promise.resolve();
     return fetch(url)
       .then((res) => {
@@ -154,7 +184,7 @@ export class TTSPlayer {
     }
 
     this.stop();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     this.playPromise = this._doPlayUrl(url, cacheKey);
     try {
@@ -193,10 +223,16 @@ export class TTSPlayer {
         resolve();
       };
 
-      this.audio!.addEventListener('ended', this.endedHandler, { once: true });
-      this.audio!.addEventListener('error', this.errorHandler, { once: true });
+      const audio = this.audio;
+      if (!audio) {
+        resolve();
+        return;
+      }
 
-      this.audio!.play().catch(() => {
+      audio.addEventListener("ended", this.endedHandler, { once: true });
+      audio.addEventListener("error", this.errorHandler, { once: true });
+
+      audio.play().catch(() => {
         this._playResolve = null;
         resolve();
       });
@@ -204,10 +240,17 @@ export class TTSPlayer {
   }
 
   /** Fetch TTS audio and store in cache so play() is instant. */
-  prefetch(text: string, cacheKey: string, languageCode?: string, npcGender?: string, speed?: number): Promise<void> {
+  prefetch(
+    text: string,
+    cacheKey: string,
+    languageCode?: string,
+    npcGender?: string,
+    speed?: number,
+  ): Promise<void> {
     if (this._muted) return Promise.resolve();
     // Include speed in cache key to cache different speeds separately
-    const speedCacheKey = speed !== undefined ? `${cacheKey}-speed-${speed}` : cacheKey;
+    const speedCacheKey =
+      speed !== undefined ? `${cacheKey}-speed-${speed}` : cacheKey;
     if (this.cache.has(speedCacheKey)) return Promise.resolve();
     return fetch("/api/tts", {
       method: "POST",

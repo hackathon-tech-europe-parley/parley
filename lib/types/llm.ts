@@ -2,8 +2,8 @@ import { z } from "zod";
 import type { GoalProgress } from "./constants";
 import type {
   NpcEvaluation,
-  ObjectiveAssessment,
   NpcSafetyAssessment,
+  ObjectiveAssessment,
 } from "./models";
 import { goalStatusSchema, npcGenderSchema } from "./schemas";
 
@@ -45,11 +45,7 @@ const booleanFromUnknownSchema = z
     return value.trim().toLowerCase() === "true";
   });
 
-const moodFromUnknownSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .catch("neutral");
+const moodFromUnknownSchema = z.string().trim().min(1).catch("neutral");
 
 const replySuggestionsFromUnknownSchema = z
   .array(z.string())
@@ -105,31 +101,34 @@ export const objectiveAssessmentFromLlmSchema = z
   .catch(DEFAULT_OBJECTIVE_ASSESSMENT);
 
 export const npcSafetyFromLlmSchema = z
-  .preprocess((raw) => {
-    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
-      const candidate = raw as Record<string, unknown>;
-      return {
-        badWordsUsed:
-          candidate.badWordsUsed ??
-          candidate.badLanguage ??
-          candidate.toxicLanguage ??
-          candidate.profanity ??
-          candidate.insultDetected ??
-          false,
-        tabooTopicUsed:
-          candidate.tabooTopicUsed ??
-          candidate.tabooTopic ??
-          candidate.disallowedTopic ??
-          candidate.forbiddenTopic ??
-          candidate.sensitiveTopic ??
-          false,
-      };
-    }
-    return raw;
-  }, z.object({
-    badWordsUsed: booleanFromUnknownSchema.catch(false),
-    tabooTopicUsed: booleanFromUnknownSchema.catch(false),
-  }))
+  .preprocess(
+    (raw) => {
+      if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+        const candidate = raw as Record<string, unknown>;
+        return {
+          badWordsUsed:
+            candidate.badWordsUsed ??
+            candidate.badLanguage ??
+            candidate.toxicLanguage ??
+            candidate.profanity ??
+            candidate.insultDetected ??
+            false,
+          tabooTopicUsed:
+            candidate.tabooTopicUsed ??
+            candidate.tabooTopic ??
+            candidate.disallowedTopic ??
+            candidate.forbiddenTopic ??
+            candidate.sensitiveTopic ??
+            false,
+        };
+      }
+      return raw;
+    },
+    z.object({
+      badWordsUsed: booleanFromUnknownSchema.catch(false),
+      tabooTopicUsed: booleanFromUnknownSchema.catch(false),
+    }),
+  )
   .catch(DEFAULT_NPC_SAFETY_ASSESSMENT);
 
 export const npcProfileFromLlmSchema = z
@@ -160,7 +159,11 @@ export const customScenarioFromLlmSchema = z
       .catch("You are in a realistic social scenario."),
     goals: z
       .object({
-        beginner: z.string().trim().min(1).catch("Introduce yourself politely."),
+        beginner: z
+          .string()
+          .trim()
+          .min(1)
+          .catch("Introduce yourself politely."),
         intermediate: z
           .string()
           .trim()
@@ -199,11 +202,7 @@ export const customScenarioFromLlmSchema = z
 
 export const debriefFromLlmSchema = z
   .object({
-    narrative: z
-      .string()
-      .trim()
-      .min(1)
-      .catch("The conversation has ended."),
+    narrative: z.string().trim().min(1).catch("The conversation has ended."),
     keyPhrases: z
       .array(
         z
@@ -218,8 +217,7 @@ export const debriefFromLlmSchema = z
       )
       .transform((values) =>
         values.filter(
-          (value) =>
-            value.phrase.length > 0 && value.translation.length > 0,
+          (value) => value.phrase.length > 0 && value.translation.length > 0,
         ),
       )
       .catch([]),

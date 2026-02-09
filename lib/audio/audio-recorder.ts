@@ -31,7 +31,9 @@ export class AudioRecorder {
 
     this.processor?.disconnect();
     this.source?.disconnect();
-    this.stream?.getTracks().forEach((t) => t.stop());
+    this.stream?.getTracks().forEach((t) => {
+      t.stop();
+    });
     await this.context?.close();
 
     // Merge chunks
@@ -44,9 +46,10 @@ export class AudioRecorder {
     }
 
     // Downsample from native rate to 24kHz if needed
-    const resampled = nativeSampleRate === TARGET_SAMPLE_RATE
-      ? merged
-      : downsample(merged, nativeSampleRate, TARGET_SAMPLE_RATE);
+    const resampled =
+      nativeSampleRate === TARGET_SAMPLE_RATE
+        ? merged
+        : downsample(merged, nativeSampleRate, TARGET_SAMPLE_RATE);
 
     // Convert Float32 [-1, 1] → Int16
     const int16 = new Int16Array(resampled.length);
