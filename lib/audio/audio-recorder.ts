@@ -1,4 +1,4 @@
-const SAMPLE_RATE = 24000;
+const TARGET_SAMPLE_RATE = 24000;
 const BUFFER_SIZE = 4096;
 
 export class AudioRecorder {
@@ -11,7 +11,9 @@ export class AudioRecorder {
   async start(): Promise<void> {
     this.chunks = [];
     this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    this.context = new AudioContext({ sampleRate: SAMPLE_RATE });
+    // Use the browser's native sample rate to avoid silent-capture bugs
+    // when forcing a non-native rate on MediaStreamSource
+    this.context = new AudioContext();
     this.source = this.context.createMediaStreamSource(this.stream);
     this.processor = this.context.createScriptProcessor(BUFFER_SIZE, 1, 1);
 
@@ -25,6 +27,8 @@ export class AudioRecorder {
   }
 
   async stop(): Promise<string> {
+    const nativeSampleRate = this.context?.sampleRate ?? TARGET_SAMPLE_RATE;
+
     this.processor?.disconnect();
     this.source?.disconnect();
     this.stream?.getTracks().forEach((t) => t.stop());
@@ -39,10 +43,15 @@ export class AudioRecorder {
       offset += chunk.length;
     }
 
+    // Downsample from native rate to 24kHz if needed
+    const resampled = nativeSampleRate === TARGET_SAMPLE_RATE
+      ? merged
+      : downsample(merged, nativeSampleRate, TARGET_SAMPLE_RATE);
+
     // Convert Float32 [-1, 1] → Int16
-    const int16 = new Int16Array(merged.length);
-    for (let i = 0; i < merged.length; i++) {
-      const clamped = Math.max(-1, Math.min(1, merged[i]));
+    const int16 = new Int16Array(resampled.length);
+    for (let i = 0; i < resampled.length; i++) {
+      const clamped = Math.max(-1, Math.min(1, resampled[i]));
       int16[i] = clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff;
     }
 
@@ -61,4 +70,22 @@ export class AudioRecorder {
 
     return btoa(binary);
   }
+}
+
+function downsample(
+  buffer: Float32Array,
+  fromRate: number,
+  toRate: number,
+): Float32Array {
+  const ratio = fromRate / toRate;
+  const newLength = Math.round(buffer.length / ratio);
+  const result = new Float32Array(newLength);
+  for (let i = 0; i < newLength; i++) {
+    const srcIndex = i * ratio;
+    const lo = Math.floor(srcIndex);
+    const hi = Math.min(lo + 1, buffer.length - 1);
+    const frac = srcIndex - lo;
+    result[i] = buffer[lo] * (1 - frac) + buffer[hi] * frac;
+  }
+  return result;
 }

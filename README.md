@@ -4,6 +4,8 @@
 
 Situational language learning through immersive roleplay. Pick a language, choose a scenario, and chat with an AI character to practice real-world conversations.
 
+**[Try it live](https://parley-ruby.vercel.app/fr)**
+
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991?logo=openai&logoColor=white)](https://openai.com/)
