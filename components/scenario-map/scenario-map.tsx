@@ -8,6 +8,7 @@ import {
   classifySegments,
   computeNodePositions,
   computeTotalHeight,
+  computeTotalWidth,
   type MapLayout,
 } from "./path-utils";
 import { ScenarioNode } from "./scenario-node";
@@ -25,6 +26,16 @@ export function ScenarioMap({
 }: ScenarioMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+
+  useEffect(() => {
+    const updateViewport = () => {
+      setIsMobileViewport(window.innerWidth < 700);
+    };
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    return () => window.removeEventListener("resize", updateViewport);
+  }, []);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -39,8 +50,7 @@ export function ScenarioMap({
     return () => observer.disconnect();
   }, []);
 
-  const layout: MapLayout =
-    containerWidth > 0 && containerWidth < 700 ? "mobile" : "desktop";
+  const layout: MapLayout = isMobileViewport ? "mobile" : "desktop";
 
   const positions = useMemo(
     () => computeNodePositions(scenarios.length, layout),
@@ -49,6 +59,11 @@ export function ScenarioMap({
 
   const totalHeight = useMemo(
     () => computeTotalHeight(scenarios.length, layout),
+    [scenarios.length, layout],
+  );
+
+  const totalWidth = useMemo(
+    () => computeTotalWidth(scenarios.length, layout),
     [scenarios.length, layout],
   );
 
@@ -75,11 +90,15 @@ export function ScenarioMap({
   }, [scenarios, nodeStates]);
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="w-full overflow-x-auto pb-2">
       <div
         ref={containerRef}
-        className="relative mx-auto w-full"
-        style={{ height: totalHeight }}
+        className="relative mx-auto"
+        style={{
+          width: layout === "desktop" ? totalWidth : "100%",
+          minWidth: "100%",
+          height: totalHeight,
+        }}
       >
         {containerWidth > 0 && (
           <MapPath

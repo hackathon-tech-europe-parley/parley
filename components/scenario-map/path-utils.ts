@@ -21,27 +21,17 @@ const MOBILE_AMPLITUDE = 18;
 const MOBILE_TOP_PADDING = 40;
 const MOBILE_BOTTOM_PADDING = 80;
 
-const DESKTOP_TOP_PADDING = 90;
-const DESKTOP_BOTTOM_PADDING = 130;
-const DESKTOP_MIN_X = 8;
-const DESKTOP_MAX_X = 92;
-const DESKTOP_START_X = 10;
-const DESKTOP_END_X = 90;
-const DESKTOP_SPAN_PER_NODE = 112;
-const DESKTOP_MIN_SPAN = 760;
-const DESKTOP_MAX_SPAN = 1500;
+const DESKTOP_HEIGHT = 560;
+const DESKTOP_CENTER_Y = 272;
+const DESKTOP_MIN_Y = 116;
+const DESKTOP_MAX_Y = 428;
+const DESKTOP_START_X = 6;
+const DESKTOP_END_X = 94;
+const DESKTOP_BASE_WIDTH = 980;
+const DESKTOP_WIDTH_PER_NODE = 220;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
-}
-
-function desktopPathSpan(count: number): number {
-  if (count <= 1) return DESKTOP_MIN_SPAN;
-  return clamp(
-    (count - 1) * DESKTOP_SPAN_PER_NODE,
-    DESKTOP_MIN_SPAN,
-    DESKTOP_MAX_SPAN,
-  );
 }
 
 function createRng(seed: number): () => number {
@@ -55,52 +45,50 @@ function createRng(seed: number): () => number {
 }
 
 function computeDesktopPositions(count: number): NodePosition[] {
-  const rng = createRng(0x9e3779b9 + count * 313);
+  if (count <= 0) return [];
+
+  const rng = createRng(0xa53b9f1d + count * 941);
   const denominator = Math.max(count - 1, 1);
   const xRange = DESKTOP_END_X - DESKTOP_START_X;
-  const targetSpan = desktopPathSpan(count);
   const positions: NodePosition[] = [];
-  let y = DESKTOP_TOP_PADDING;
-  let driftX = (rng() - 0.5) * 6;
 
-  for (let i = 0; i < count; i++) {
+  let y = DESKTOP_CENTER_Y + (rng() - 0.5) * 36;
+  positions.push({
+    index: 0,
+    x: DESKTOP_START_X + 1.8 + (rng() - 0.5) * 1.2,
+    y,
+  });
+
+  let driftX = (rng() - 0.5) * 3.5;
+
+  for (let i = 1; i < count; i++) {
     const progress = i / denominator;
     const baselineX = DESKTOP_START_X + progress * xRange;
 
-    if (i > 0) {
-      y += 72 + rng() * 58 + (rng() < 0.24 ? 24 + rng() * 18 : 0);
+    driftX += (rng() - 0.5) * 3.6;
+    driftX = clamp(driftX, -7, 7);
+
+    let x = baselineX + driftX + (rng() - 0.5) * 3.2;
+
+    // Local switchbacks to avoid a too-linear route.
+    if (rng() < 0.4) {
+      x -= 3 + rng() * 4;
     }
 
-    driftX += (rng() - 0.5) * 9;
-    driftX = clamp(driftX, -15, 15);
+    const previousX = positions[i - 1].x;
+    x = clamp(x, previousX - (3 + rng() * 4), previousX + (12 + rng() * 4));
+    x = clamp(x, DESKTOP_START_X, DESKTOP_END_X);
 
-    let x = baselineX + driftX + (rng() - 0.5) * 5;
-
-    // Short local backtracks like a hiking trail switchback.
-    if (i > 1 && rng() < 0.34) {
-      x -= 5 + rng() * 10;
+    let deltaY = (rng() - 0.5) * 110;
+    if (rng() < 0.28) {
+      deltaY += (rng() < 0.5 ? -1 : 1) * (40 + rng() * 45);
     }
 
-    x = clamp(x, baselineX - 12, baselineX + 18);
-    x = clamp(x, DESKTOP_MIN_X, DESKTOP_MAX_X);
+    y += deltaY;
+    y += (DESKTOP_CENTER_Y - y) * 0.22;
+    y = clamp(y, DESKTOP_MIN_Y, DESKTOP_MAX_Y);
 
-    if (i > 0) {
-      const maxBacktrack = rng() < 0.45 ? 10 : 5;
-      x = Math.max(x, positions[i - 1].x - maxBacktrack);
-    }
-
-    positions.push({
-      index: i,
-      x,
-      y,
-    });
-  }
-
-  const rawSpan = positions[positions.length - 1].y - DESKTOP_TOP_PADDING;
-  const scale = rawSpan > 0 ? targetSpan / rawSpan : 1;
-  for (const position of positions) {
-    position.y =
-      DESKTOP_TOP_PADDING + (position.y - DESKTOP_TOP_PADDING) * scale;
+    positions.push({ index: i, x, y });
   }
 
   return positions;
@@ -139,7 +127,12 @@ export function computeTotalHeight(count: number, layout: MapLayout): number {
     );
   }
 
-  return DESKTOP_TOP_PADDING + desktopPathSpan(count) + DESKTOP_BOTTOM_PADDING;
+  return DESKTOP_HEIGHT;
+}
+
+export function computeTotalWidth(count: number, layout: MapLayout): number {
+  if (layout === "mobile") return 0;
+  return DESKTOP_BASE_WIDTH + Math.max(count - 1, 0) * DESKTOP_WIDTH_PER_NODE;
 }
 
 export function buildSvgPath(
