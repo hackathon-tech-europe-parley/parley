@@ -1,9 +1,13 @@
 import { fal } from "@fal-ai/client";
 import { FAL_IMAGE_MODEL } from "../env";
+import { createLogger } from "../logger";
 
+const log = createLogger("ai:fal");
 const imageModel = FAL_IMAGE_MODEL;
 
 export async function generateSceneImage(prompt: string): Promise<string> {
+  log.info("generating scene image");
+  const start = Date.now();
   const result = await fal.subscribe(imageModel, {
     input: {
       prompt,
@@ -17,5 +21,6 @@ export async function generateSceneImage(prompt: string): Promise<string> {
     throw new Error("Failed to generate image");
   }
 
+  log.info({ durationMs: Date.now() - start }, "scene image generated");
   return image.url;
 }

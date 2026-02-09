@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { customScenarioSchema, generateScenarioSchema } from "@/lib/types";
 import { generateCustomScenario } from "@/lib/ai";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("api:generate-scenario");
 
 export async function POST(request: Request) {
   try {
@@ -20,10 +23,12 @@ export async function POST(request: Request) {
       );
     }
 
+    log.info("generating custom scenario");
     const scenario = await generateCustomScenario(parsed.data.prompt);
+    log.info("custom scenario generated");
     return NextResponse.json(customScenarioSchema.parse(scenario));
   } catch (error) {
-    console.error("Failed to generate scenario:", error);
+    log.error({ err: error }, "failed to generate scenario");
     return NextResponse.json(
       { error: "Failed to generate scenario" },
       { status: 500 },
