@@ -1,3 +1,5 @@
+import { curveCatmullRom, line } from "d3-shape";
+import { svgPathProperties } from "svg-path-properties";
 import type { ScenarioNodeState } from "@/core/progress";
 
 export interface NodePosition {
@@ -21,16 +23,103 @@ const MOBILE_BOTTOM_PADDING = 80;
 
 const DESKTOP_TOP_PADDING = 90;
 const DESKTOP_BOTTOM_PADDING = 130;
-const DESKTOP_ROW_SPACING = 220;
-const DESKTOP_MIN_X = 12;
-const DESKTOP_MAX_X = 88;
-const DESKTOP_ROW_WAVE = 34;
-const DESKTOP_X_JITTER = 2.6;
+const DESKTOP_MIN_X = 8;
+const DESKTOP_MAX_X = 92;
+const DESKTOP_SPAN_PER_NODE = 54;
+const DESKTOP_MIN_SPAN = 420;
+const DESKTOP_MAX_SPAN = 700;
+const DESKTOP_MIN_ANCHORS = 6;
+const DESKTOP_MAX_ANCHORS = 12;
 
-function desktopColumns(count: number): number {
-  if (count <= 4) return 2;
-  if (count <= 8) return 3;
-  return 4;
+interface ControlPoint {
+  x: number;
+  y: number;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function seededNoise(index: number, seed: number): number {
+  const value = Math.sin(index * 12.9898 + seed * 78.233) * 43758.5453;
+  return value - Math.floor(value);
+}
+
+function desktopPathSpan(count: number): number {
+  if (count <= 1) return DESKTOP_MIN_SPAN;
+  return clamp(
+    (count - 1) * DESKTOP_SPAN_PER_NODE,
+    DESKTOP_MIN_SPAN,
+    DESKTOP_MAX_SPAN,
+  );
+}
+
+function desktopAnchorCount(count: number): number {
+  return Math.round(
+    clamp(count * 0.8, DESKTOP_MIN_ANCHORS, DESKTOP_MAX_ANCHORS),
+  );
+}
+
+function buildDesktopControlPoints(count: number): ControlPoint[] {
+  const span = desktopPathSpan(count);
+  const anchorCount = desktopAnchorCount(count);
+  const points: ControlPoint[] = [];
+
+  for (let i = 0; i < anchorCount; i++) {
+    const t = i / (anchorCount - 1);
+    const x = clamp(
+      50 +
+        Math.sin(t * Math.PI * 3 + 0.65) * 34 +
+        Math.sin(t * Math.PI * 6.2 + 1.45) * 12 +
+        (seededNoise(i, 11) - 0.5) * 7,
+      DESKTOP_MIN_X,
+      DESKTOP_MAX_X,
+    );
+
+    points.push({
+      x,
+      y: DESKTOP_TOP_PADDING + t * span,
+    });
+  }
+
+  points[0].x = 52;
+  points[points.length - 1].x = 48;
+  return points;
+}
+
+function buildDesktopCurve(points: ControlPoint[]): string | null {
+  if (points.length < 2) return null;
+  return (
+    line<ControlPoint>()
+      .x((point) => point.x)
+      .y((point) => point.y)
+      .curve(curveCatmullRom.alpha(1))(points) ?? null
+  );
+}
+
+function computeDesktopPositions(count: number): NodePosition[] {
+  const curve = buildDesktopCurve(buildDesktopControlPoints(count));
+  if (!curve) return [];
+
+  const properties = new svgPathProperties(curve);
+  const totalLength = properties.getTotalLength();
+  const denominator = Math.max(count - 1, 1);
+  const positions: NodePosition[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const point = properties.getPointAtLength((i / denominator) * totalLength);
+    const previousY = positions[i - 1]?.y;
+    const y =
+      previousY === undefined ? point.y : Math.max(point.y, previousY + 4);
+
+    positions.push({
+      index: i,
+      x: clamp(point.x, DESKTOP_MIN_X, DESKTOP_MAX_X),
+      y,
+    });
+  }
+
+  return positions;
 }
 
 export function computeNodePositions(
@@ -52,28 +141,7 @@ export function computeNodePositions(
     return positions;
   }
 
-  const columns = desktopColumns(count);
-  const xRange = DESKTOP_MAX_X - DESKTOP_MIN_X;
-  const denominator = Math.max(columns - 1, 1);
-
-  for (let i = 0; i < count; i++) {
-    const row = Math.floor(i / columns);
-    const col = i % columns;
-    const reverseRow = row % 2 === 1;
-    const visualCol = reverseRow ? columns - 1 - col : col;
-    const colProgress = visualCol / denominator;
-    const yWave =
-      Math.sin(colProgress * Math.PI + row * 0.72) * DESKTOP_ROW_WAVE;
-    const xJitter = Math.sin(row * 1.18 + visualCol * 0.9) * DESKTOP_X_JITTER;
-
-    positions.push({
-      index: i,
-      x: DESKTOP_MIN_X + colProgress * xRange + xJitter,
-      y: DESKTOP_TOP_PADDING + row * DESKTOP_ROW_SPACING + yWave,
-    });
-  }
-
-  return positions;
+  return computeDesktopPositions(count);
 }
 
 export function computeTotalHeight(count: number, layout: MapLayout): number {
@@ -87,13 +155,7 @@ export function computeTotalHeight(count: number, layout: MapLayout): number {
     );
   }
 
-  const rows = Math.ceil(count / desktopColumns(count));
-  return (
-    DESKTOP_TOP_PADDING +
-    (rows - 1) * DESKTOP_ROW_SPACING +
-    DESKTOP_ROW_WAVE +
-    DESKTOP_BOTTOM_PADDING
-  );
+  return DESKTOP_TOP_PADDING + desktopPathSpan(count) + DESKTOP_BOTTOM_PADDING;
 }
 
 export function buildSvgPath(
@@ -107,16 +169,22 @@ export function buildSvgPath(
   const ty = to.y;
   const dy = ty - fy;
   const dx = tx - fx;
+  const segmentLength = Math.hypot(dx, dy);
+  if (segmentLength < 1) return `M ${fx} ${fy} L ${tx} ${ty}`;
 
-  if (Math.abs(dy) < 72) {
-    const bow = Math.max(22, Math.min(52, Math.abs(dx) * 0.24));
-    const bowDirection = from.index % 2 === 0 ? 1 : -1;
-    const c1y = fy + bow * bowDirection;
-    const c2y = ty + bow * bowDirection;
-    return `M ${fx} ${fy} C ${fx} ${c1y} ${tx} ${c2y} ${tx} ${ty}`;
-  }
+  const normalX = -dy / segmentLength;
+  const normalY = dx / segmentLength;
+  const bow = clamp(segmentLength * 0.13, 14, 42);
+  const bowDirection = from.index % 2 === 0 ? 1 : -1;
+  const bowX = normalX * bow * bowDirection;
+  const bowY = normalY * bow * bowDirection;
 
-  return `M ${fx} ${fy} C ${fx} ${fy + dy * 0.4} ${tx} ${fy + dy * 0.6} ${tx} ${ty}`;
+  const c1x = fx + dx * 0.28 + bowX;
+  const c1y = fy + dy * 0.28 + bowY;
+  const c2x = fx + dx * 0.72 + bowX;
+  const c2y = fy + dy * 0.72 + bowY;
+
+  return `M ${fx} ${fy} C ${c1x} ${c1y} ${c2x} ${c2y} ${tx} ${ty}`;
 }
 
 export function classifySegments(
