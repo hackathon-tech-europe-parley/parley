@@ -1,5 +1,3 @@
-import { curveCatmullRom, line } from "d3-shape";
-import { svgPathProperties } from "svg-path-properties";
 import type { ScenarioNodeState } from "@/core/progress";
 
 export interface NodePosition {
@@ -25,18 +23,13 @@ const MOBILE_BOTTOM_PADDING = 80;
 
 const DESKTOP_TOP_PADDING = 90;
 const DESKTOP_BOTTOM_PADDING = 130;
-const DESKTOP_MIN_X = 10;
-const DESKTOP_MAX_X = 90;
-const DESKTOP_SPAN_PER_NODE = 64;
-const DESKTOP_MIN_SPAN = 430;
-const DESKTOP_MAX_SPAN = 820;
-const DESKTOP_MIN_ANCHORS = 11;
-const DESKTOP_MAX_ANCHORS = 21;
-
-interface ControlPoint {
-  x: number;
-  y: number;
-}
+const DESKTOP_MIN_X = 8;
+const DESKTOP_MAX_X = 92;
+const DESKTOP_START_X = 10;
+const DESKTOP_END_X = 90;
+const DESKTOP_SPAN_PER_NODE = 112;
+const DESKTOP_MIN_SPAN = 760;
+const DESKTOP_MAX_SPAN = 1500;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -51,14 +44,6 @@ function desktopPathSpan(count: number): number {
   );
 }
 
-function desktopAnchorCount(count: number): number {
-  const raw = Math.round(count * 1.35) + 3;
-  const clamped = Math.round(
-    clamp(raw, DESKTOP_MIN_ANCHORS, DESKTOP_MAX_ANCHORS),
-  );
-  return clamped % 2 === 0 ? clamped + 1 : clamped;
-}
-
 function createRng(seed: number): () => number {
   let state = seed | 0;
   return () => {
@@ -69,97 +54,53 @@ function createRng(seed: number): () => number {
   };
 }
 
-function buildTrailXs(anchorCount: number, rng: () => number): number[] {
-  const xs = new Array<number>(anchorCount);
-  xs[0] = 52;
-  xs[anchorCount - 1] = 48;
-
-  const fill = (left: number, right: number, amplitude: number) => {
-    if (right - left <= 1) return;
-    const mid = Math.floor((left + right) / 2);
-    const base = (xs[left] + xs[right]) / 2;
-    xs[mid] = clamp(
-      base + (rng() - 0.5) * amplitude,
-      DESKTOP_MIN_X,
-      DESKTOP_MAX_X,
-    );
-    fill(left, mid, amplitude * 0.74);
-    fill(mid, right, amplitude * 0.74);
-  };
-
-  fill(0, anchorCount - 1, 140);
-
-  // One light smoothing pass keeps roughness while avoiding sharp spikes.
-  const smoothed = [...xs];
-  for (let i = 1; i < anchorCount - 1; i++) {
-    smoothed[i] = clamp(
-      xs[i] * 0.66 + (xs[i - 1] + xs[i + 1]) * 0.17 + (rng() - 0.5) * 4.2,
-      DESKTOP_MIN_X,
-      DESKTOP_MAX_X,
-    );
-  }
-  smoothed[0] = 52;
-  smoothed[anchorCount - 1] = 48;
-
-  return smoothed;
-}
-
-function buildDesktopControlPoints(count: number): ControlPoint[] {
-  const span = desktopPathSpan(count);
-  const anchorCount = desktopAnchorCount(count);
-  const rng = createRng(0x7f4a7c15 + count * 131);
-  const xs = buildTrailXs(anchorCount, rng);
-
-  const yWeights = Array.from(
-    { length: anchorCount - 1 },
-    () => 0.75 + rng() * 0.9,
-  );
-  const totalWeight = yWeights.reduce((sum, value) => sum + value, 0);
-
-  const points: ControlPoint[] = [];
-  let accumulated = 0;
-  for (let i = 0; i < anchorCount; i++) {
-    if (i > 0) accumulated += yWeights[i - 1];
-    const t = totalWeight === 0 ? 0 : accumulated / totalWeight;
-    points.push({
-      x: xs[i],
-      y: DESKTOP_TOP_PADDING + t * span,
-    });
-  }
-
-  return points;
-}
-
-function buildDesktopCurve(points: ControlPoint[]): string | null {
-  if (points.length < 2) return null;
-  return (
-    line<ControlPoint>()
-      .x((point) => point.x)
-      .y((point) => point.y)
-      .curve(curveCatmullRom.alpha(0.68))(points) ?? null
-  );
-}
-
 function computeDesktopPositions(count: number): NodePosition[] {
-  const curve = buildDesktopCurve(buildDesktopControlPoints(count));
-  if (!curve) return [];
-
-  const properties = new svgPathProperties(curve);
-  const totalLength = properties.getTotalLength();
+  const rng = createRng(0x9e3779b9 + count * 313);
   const denominator = Math.max(count - 1, 1);
+  const xRange = DESKTOP_END_X - DESKTOP_START_X;
+  const targetSpan = desktopPathSpan(count);
   const positions: NodePosition[] = [];
+  let y = DESKTOP_TOP_PADDING;
+  let driftX = (rng() - 0.5) * 6;
 
   for (let i = 0; i < count; i++) {
-    const point = properties.getPointAtLength((i / denominator) * totalLength);
-    const previousY = positions[i - 1]?.y;
-    const y =
-      previousY === undefined ? point.y : Math.max(point.y, previousY + 4);
+    const progress = i / denominator;
+    const baselineX = DESKTOP_START_X + progress * xRange;
+
+    if (i > 0) {
+      y += 72 + rng() * 58 + (rng() < 0.24 ? 24 + rng() * 18 : 0);
+    }
+
+    driftX += (rng() - 0.5) * 9;
+    driftX = clamp(driftX, -15, 15);
+
+    let x = baselineX + driftX + (rng() - 0.5) * 5;
+
+    // Short local backtracks like a hiking trail switchback.
+    if (i > 1 && rng() < 0.34) {
+      x -= 5 + rng() * 10;
+    }
+
+    x = clamp(x, baselineX - 12, baselineX + 18);
+    x = clamp(x, DESKTOP_MIN_X, DESKTOP_MAX_X);
+
+    if (i > 0) {
+      const maxBacktrack = rng() < 0.45 ? 10 : 5;
+      x = Math.max(x, positions[i - 1].x - maxBacktrack);
+    }
 
     positions.push({
       index: i,
-      x: clamp(point.x, DESKTOP_MIN_X, DESKTOP_MAX_X),
+      x,
       y,
     });
+  }
+
+  const rawSpan = positions[positions.length - 1].y - DESKTOP_TOP_PADDING;
+  const scale = rawSpan > 0 ? targetSpan / rawSpan : 1;
+  for (const position of positions) {
+    position.y =
+      DESKTOP_TOP_PADDING + (position.y - DESKTOP_TOP_PADDING) * scale;
   }
 
   return positions;
