@@ -152,7 +152,10 @@
     "metricRelevance": "Relevancia",
     "metricCooperation": "Cooperación",
     "metricPoliteness": "Cortesía",
-    "metricClarity": "Claridad"
+    "metricClarity": "Claridad",
+    "expandPanel": "Mostrar detalles",
+    "collapsePanel": "Ocultar detalles",
+    "moreOptions": "Más opciones"
   },
   "Debrief": {
     "goalAchieved": "Objetivo Logrado",
@@ -160,7 +163,19 @@
     "quitEarly": "Abandonado Temprano",
     "withNpc": "con {npcName}",
     "keyPhrases": "Frases Clave",
-    "returnToMap": "Volver al mapa"
+    "returnToMap": "Volver al mapa",
+    "performanceBreakdown": "Desglose de rendimiento",
+    "cooperation": "Cooperación",
+    "relevance": "Relevancia",
+    "politeness": "Cortesía",
+    "clarity": "Claridad",
+    "taskIntent": "Intención de tarea",
+    "turnsCount": "{count} turnos",
+    "objectiveScore": "Puntuación del objetivo",
+    "go": "APROBADO",
+    "noGo": "NO APROBADO",
+    "confidence": "confianza",
+    "blockers": "Obstáculos"
   },
   "Map": {
     "heading": "Tu recorrido",

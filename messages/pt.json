@@ -152,7 +152,10 @@
     "metricRelevance": "Relevância",
     "metricCooperation": "Cooperação",
     "metricPoliteness": "Cortesia",
-    "metricClarity": "Clareza"
+    "metricClarity": "Clareza",
+    "expandPanel": "Mostrar detalhes",
+    "collapsePanel": "Ocultar detalhes",
+    "moreOptions": "Mais opções"
   },
   "Debrief": {
     "goalAchieved": "Objetivo Alcançado",
@@ -160,7 +163,19 @@
     "quitEarly": "Saiu Cedo",
     "withNpc": "com {npcName}",
     "keyPhrases": "Frases-Chave",
-    "returnToMap": "Voltar ao mapa"
+    "returnToMap": "Voltar ao mapa",
+    "performanceBreakdown": "Análise de desempenho",
+    "cooperation": "Cooperação",
+    "relevance": "Relevância",
+    "politeness": "Cortesia",
+    "clarity": "Clareza",
+    "taskIntent": "Intenção da tarefa",
+    "turnsCount": "{count} turnos",
+    "objectiveScore": "Pontuação do objetivo",
+    "go": "APROVADO",
+    "noGo": "NÃO APROVADO",
+    "confidence": "confiança",
+    "blockers": "Obstáculos"
   },
   "Map": {
     "heading": "Sua jornada",

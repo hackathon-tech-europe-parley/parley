@@ -152,7 +152,10 @@
     "metricRelevance": "Relevance",
     "metricCooperation": "Cooperation",
     "metricPoliteness": "Politeness",
-    "metricClarity": "Clarity"
+    "metricClarity": "Clarity",
+    "expandPanel": "Show details",
+    "collapsePanel": "Hide details",
+    "moreOptions": "More options"
   },
   "Debrief": {
     "goalAchieved": "Goal Achieved",
@@ -160,7 +163,19 @@
     "quitEarly": "Quit Early",
     "withNpc": "with {npcName}",
     "keyPhrases": "Key Phrases",
-    "returnToMap": "Return to Map"
+    "returnToMap": "Return to Map",
+    "performanceBreakdown": "Performance Breakdown",
+    "cooperation": "Cooperation",
+    "relevance": "Relevance",
+    "politeness": "Politeness",
+    "clarity": "Clarity",
+    "taskIntent": "Task intent",
+    "turnsCount": "{count} turns",
+    "objectiveScore": "Objective Score",
+    "go": "GO",
+    "noGo": "NO-GO",
+    "confidence": "confidence",
+    "blockers": "Blockers"
   },
   "Map": {
     "heading": "Your Journey",
