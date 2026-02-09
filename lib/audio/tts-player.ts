@@ -52,6 +52,7 @@ export class TTSPlayer {
     languageCode?: string,
     npcGender?: string,
     speed?: number,
+    mood?: string,
   ): Promise<void> {
     if (this._muted) return;
 
@@ -73,6 +74,7 @@ export class TTSPlayer {
       languageCode,
       npcGender,
       speed,
+      mood,
     );
 
     try {
@@ -88,22 +90,28 @@ export class TTSPlayer {
     languageCode?: string,
     npcGender?: string,
     speed?: number,
+    mood?: string,
   ): Promise<void> {
-    // Include speed in cache key to cache different speeds separately
-    const speedCacheKey =
-      speed !== undefined ? `${cacheKey}-speed-${speed}` : cacheKey;
+    // Include speed and mood in cache key to cache different variants separately
+    const variantKey = [
+      cacheKey,
+      speed !== undefined ? `speed-${speed}` : null,
+      mood ? `mood-${mood}` : null,
+    ]
+      .filter(Boolean)
+      .join("-");
 
-    let url = this.cache.get(speedCacheKey);
+    let url = this.cache.get(variantKey);
     if (!url) {
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, languageCode, npcGender, speed }),
+        body: JSON.stringify({ text, languageCode, npcGender, speed, mood }),
       });
       if (!res.ok) throw new Error("TTS fetch failed");
       const blob = await res.blob();
       url = URL.createObjectURL(blob);
-      this.cache.set(speedCacheKey, url);
+      this.cache.set(variantKey, url);
     }
 
     // Reuse existing audio element or create a new one
@@ -246,24 +254,29 @@ export class TTSPlayer {
     languageCode?: string,
     npcGender?: string,
     speed?: number,
+    mood?: string,
   ): Promise<void> {
     if (this._muted) return Promise.resolve();
-    // Include speed in cache key to cache different speeds separately
-    const speedCacheKey =
-      speed !== undefined ? `${cacheKey}-speed-${speed}` : cacheKey;
-    if (this.cache.has(speedCacheKey)) return Promise.resolve();
+    const variantKey = [
+      cacheKey,
+      speed !== undefined ? `speed-${speed}` : null,
+      mood ? `mood-${mood}` : null,
+    ]
+      .filter(Boolean)
+      .join("-");
+    if (this.cache.has(variantKey)) return Promise.resolve();
     return fetch("/api/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, languageCode, npcGender, speed }),
+      body: JSON.stringify({ text, languageCode, npcGender, speed, mood }),
     })
       .then((res) => {
         if (!res.ok) return;
         return res.blob();
       })
       .then((blob) => {
-        if (blob && !this.cache.has(speedCacheKey)) {
-          this.cache.set(speedCacheKey, URL.createObjectURL(blob));
+        if (blob && !this.cache.has(variantKey)) {
+          this.cache.set(variantKey, URL.createObjectURL(blob));
         }
       })
       .catch(() => {

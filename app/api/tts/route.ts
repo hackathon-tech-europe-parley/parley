@@ -25,6 +25,7 @@ export async function POST(request: Request) {
         languageCode: parsed.data.languageCode,
         gender: parsed.data.npcGender,
         speed: parsed.data.speed,
+        mood: parsed.data.mood,
         textLength: parsed.data.text.length,
       },
       "TTS request",
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
       parsed.data.languageCode,
       parsed.data.npcGender,
       parsed.data.speed,
+      parsed.data.mood,
     );
     log.info(
       { durationMs: Date.now() - start, responseBytes: wav.byteLength },

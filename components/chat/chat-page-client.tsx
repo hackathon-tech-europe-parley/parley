@@ -159,6 +159,7 @@ export function ChatPageClient() {
       .catch((fetchError) => setError(fetchError.message));
   }, [conversationId]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional triggers for auto-scroll
   useEffect(() => {
     messagesEnd.current?.scrollIntoView({ behavior: "smooth" });
   }, [state?.history, sending, endStatus]);
@@ -178,6 +179,7 @@ export function ChatPageClient() {
       langCode?: string,
       gender?: NpcGender,
       specialPersonType?: string,
+      mood?: string,
     ) => {
       if (!ttsPlayerRef.current || ttsPlayerRef.current.muted) {
         return;
@@ -194,7 +196,7 @@ export function ChatPageClient() {
         ttsGender = mainNpcGender === "masculine" ? "feminine" : "masculine";
       }
       ttsPlayerRef.current
-        .play(text, `msg-${messageIndex}`, langCode, ttsGender, ttsSpeed)
+        .play(text, `msg-${messageIndex}`, langCode, ttsGender, ttsSpeed, mood)
         .then(() => setTtsPlaying(null))
         .catch((playError) => {
           console.error("TTS autoplay failed:", playError);
@@ -233,6 +235,7 @@ export function ChatPageClient() {
           state.languageCode,
           state.npcGender,
           specialPersonType,
+          firstNpc.mood ?? state.mood,
         );
         lastProcessedIndex.current = 0;
       }
@@ -265,13 +268,15 @@ export function ChatPageClient() {
             state.languageCode,
             state.npcGender,
             specialPersonType,
+            message.mood ?? state.mood,
           );
         }
       }
       lastProcessedIndex.current = currentLastIndex;
     }
-  }, [state?.history.length, state, autoPlayTts]);
+  }, [state, autoPlayTts]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: sendMessage is stable via useState/useRef
   useEffect(() => {
     if (pendingTranscription) {
       setPendingTranscription(null);
@@ -320,6 +325,7 @@ export function ChatPageClient() {
       state?.languageCode,
       state?.npcGender,
       specialPersonType,
+      message?.mood ?? state?.mood,
     );
   }
 
@@ -480,6 +486,7 @@ export function ChatPageClient() {
               state.languageCode,
               state.npcGender,
               ttsSpeed,
+              npcData.mood,
             ),
           );
           if (policeData.policeIntroAudioUrl) {
@@ -545,6 +552,7 @@ export function ChatPageClient() {
               state.languageCode,
               state.npcGender,
               ttsSpeed,
+              npcData.mood,
             );
           } catch {
             /* TTS failed, continue sequence */
@@ -620,6 +628,7 @@ export function ChatPageClient() {
               state.languageCode,
               policeGender,
               ttsSpeed,
+              policeData.mood,
             );
           } catch {
             /* TTS failed, continue */
@@ -681,6 +690,7 @@ export function ChatPageClient() {
               state.languageCode,
               ttsGender,
               ttsSpeed,
+              data.mood,
             ),
           );
         }
