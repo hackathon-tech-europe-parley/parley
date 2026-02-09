@@ -3,9 +3,9 @@ import {
   CONVERSATION_LEVELS,
   CONVERSATION_ROLES,
   GOAL_STATUSES,
+  type GoalProgress,
   LANGUAGE_CODES,
   NPC_GENDERS,
-  type GoalProgress,
 } from "./constants";
 
 export const languageCodeSchema = z.enum(LANGUAGE_CODES);

@@ -20,11 +20,15 @@ const pinoOpts: pino.LoggerOptions = {
 // pino-pretty's transport option uses worker threads which fail under Next.js bundler
 // (thread-stream can't resolve the worker module path). Use it as a direct destination instead.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const prettyStream = !isProduction ? (require("pino-pretty") as Function)({ colorize: true }) : undefined;
+const prettyStream = !isProduction
+  ? (
+      require("pino-pretty") as (
+        opts: Record<string, unknown>,
+      ) => pino.DestinationStream
+    )({ colorize: true })
+  : undefined;
 
-const logger = prettyStream
-  ? pino(pinoOpts, prettyStream)
-  : pino(pinoOpts);
+const logger = prettyStream ? pino(pinoOpts, prettyStream) : pino(pinoOpts);
 
 export function createLogger(module: string) {
   return logger.child({ module });

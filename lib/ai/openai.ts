@@ -1,17 +1,24 @@
 import OpenAI from "openai";
+import { OPENAI_MODEL } from "../env";
+import { createLogger } from "../logger";
 import {
-  createNpcResponseFromLlmSchema,
-  customScenarioFromLlmSchema,
-  debriefFromLlmSchema,
-  normalizeToMoodState,
-  npcProfileFromLlmSchema,
   type Conversation,
   type CustomScenario,
+  createNpcResponseFromLlmSchema,
+  customScenarioFromLlmSchema,
   type Debrief,
+  debriefFromLlmSchema,
   type NpcEvaluation,
   type NpcProfile,
   type NpcResponse,
+  normalizeToMoodState,
+  npcProfileFromLlmSchema,
 } from "../types";
+import {
+  extractPartialNpcMessage,
+  parseJsonSafely,
+  resolveGoalProgress,
+} from "./openai-parsing";
 import {
   buildDebriefSystemPrompt,
   buildDebriefUserPrompt,
@@ -22,13 +29,6 @@ import {
   buildSpecialPersonSystemPrompt,
   CUSTOM_SCENARIO_SYSTEM_PROMPT,
 } from "./openai-prompts";
-import {
-  extractPartialNpcMessage,
-  parseJsonSafely,
-  resolveGoalProgress,
-} from "./openai-parsing";
-import { OPENAI_MODEL } from "../env";
-import { createLogger } from "../logger";
 
 const log = createLogger("ai:openai");
 const openai = new OpenAI();
@@ -59,7 +59,11 @@ function toSpecialPersonCompletionMessages(
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     {
       role: "system",
-      content: buildSpecialPersonSystemPrompt(conversation, specialPersonType, specialPersonName),
+      content: buildSpecialPersonSystemPrompt(
+        conversation,
+        specialPersonType,
+        specialPersonName,
+      ),
     },
   ];
 
@@ -111,7 +115,14 @@ export async function generateNpcProfile(
   }
 
   const profile = npcProfileFromLlmSchema.parse(parseJsonSafely(content));
-  log.info({ durationMs: Date.now() - start, name: profile.name, gender: profile.gender }, "NPC profile generated");
+  log.info(
+    {
+      durationMs: Date.now() - start,
+      name: profile.name,
+      gender: profile.gender,
+    },
+    "NPC profile generated",
+  );
   return profile;
 }
 
@@ -138,12 +149,21 @@ export async function generateNpcOpening(
     throw new Error("Failed to generate NPC opening");
   }
 
-  const parsed = createNpcResponseFromLlmSchema(1).parse(parseJsonSafely(content));
+  const parsed = createNpcResponseFromLlmSchema(1).parse(
+    parseJsonSafely(content),
+  );
 
-  const openingMood = conversation.level === "impossible" ? "skeptical" :
-    conversation.level === "beginner" ? "friendly" : "neutral";
+  const openingMood =
+    conversation.level === "impossible"
+      ? "skeptical"
+      : conversation.level === "beginner"
+        ? "friendly"
+        : "neutral";
 
-  log.info({ durationMs: Date.now() - start, mood: openingMood }, "NPC opening generated");
+  log.info(
+    { durationMs: Date.now() - start, mood: openingMood },
+    "NPC opening generated",
+  );
   return {
     ...parsed,
     mood: openingMood,
@@ -168,9 +188,9 @@ export async function generateNpcResponse(
     throw new Error("Failed to generate NPC response");
   }
 
-  const parsed = createNpcResponseFromLlmSchema(conversation.goalProgress).parse(
-    parseJsonSafely(content),
-  );
+  const parsed = createNpcResponseFromLlmSchema(
+    conversation.goalProgress,
+  ).parse(parseJsonSafely(content));
 
   const normalizedMood = normalizeToMoodState(parsed.mood);
 
@@ -181,7 +201,15 @@ export async function generateNpcResponse(
     conversation.goalProgress,
   );
 
-  log.info({ durationMs: Date.now() - start, mood: normalizedMood, goalStatus, goalProgress }, "NPC response generated");
+  log.info(
+    {
+      durationMs: Date.now() - start,
+      mood: normalizedMood,
+      goalStatus,
+      goalProgress,
+    },
+    "NPC response generated",
+  );
   return {
     ...parsed,
     mood: normalizedMood,
@@ -193,8 +221,7 @@ export async function generateNpcResponse(
 export async function* generateNpcResponseStream(
   conversation: Conversation,
 ): AsyncGenerator<
-  | { type: "token"; text: string }
-  | { type: "complete"; data: NpcResponse }
+  { type: "token"; text: string } | { type: "complete"; data: NpcResponse }
 > {
   log.info({ turn: conversation.turnCount }, "streaming NPC response");
   const start = Date.now();
@@ -227,9 +254,9 @@ export async function* generateNpcResponseStream(
     }
   }
 
-  const parsed = createNpcResponseFromLlmSchema(conversation.goalProgress).parse(
-    parseJsonSafely(accumulated),
-  );
+  const parsed = createNpcResponseFromLlmSchema(
+    conversation.goalProgress,
+  ).parse(parseJsonSafely(accumulated));
 
   const normalizedMood = normalizeToMoodState(parsed.mood);
 
@@ -240,7 +267,15 @@ export async function* generateNpcResponseStream(
     conversation.goalProgress,
   );
 
-  log.info({ durationMs: Date.now() - start, mood: normalizedMood, goalStatus, goalProgress }, "NPC response stream complete");
+  log.info(
+    {
+      durationMs: Date.now() - start,
+      mood: normalizedMood,
+      goalStatus,
+      goalProgress,
+    },
+    "NPC response stream complete",
+  );
   yield {
     type: "complete",
     data: {
@@ -287,15 +322,21 @@ export async function* generateSpecialPersonResponseStream(
   specialPersonType: string,
   specialPersonName: string,
 ): AsyncGenerator<
-  | { type: "token"; text: string }
-  | { type: "complete"; data: NpcResponse }
+  { type: "token"; text: string } | { type: "complete"; data: NpcResponse }
 > {
-  log.info({ specialPersonType, specialPersonName }, "streaming special person response");
+  log.info(
+    { specialPersonType, specialPersonName },
+    "streaming special person response",
+  );
   const start = Date.now();
   const stream = await openai.chat.completions.create({
     model,
     response_format: { type: "json_object" },
-    messages: toSpecialPersonCompletionMessages(conversation, specialPersonType, specialPersonName),
+    messages: toSpecialPersonCompletionMessages(
+      conversation,
+      specialPersonType,
+      specialPersonName,
+    ),
     stream: true,
   });
 
@@ -320,9 +361,9 @@ export async function* generateSpecialPersonResponseStream(
     }
   }
 
-  const parsed = createNpcResponseFromLlmSchema(conversation.goalProgress).parse(
-    parseJsonSafely(accumulated),
-  );
+  const parsed = createNpcResponseFromLlmSchema(
+    conversation.goalProgress,
+  ).parse(parseJsonSafely(accumulated));
 
   const normalizedMood = normalizeToMoodState(parsed.mood);
 
@@ -333,7 +374,10 @@ export async function* generateSpecialPersonResponseStream(
     conversation.goalProgress,
   );
 
-  log.info({ durationMs: Date.now() - start, mood: normalizedMood, goalStatus }, "special person response stream complete");
+  log.info(
+    { durationMs: Date.now() - start, mood: normalizedMood, goalStatus },
+    "special person response stream complete",
+  );
   yield {
     type: "complete",
     data: {
@@ -352,7 +396,9 @@ export async function generateDebrief(
   log.info({ finalStatus }, "generating debrief");
   const start = Date.now();
   const historyText = conversation.history
-    .map((m) => `${m.role === "user" ? "User" : conversation.npcName}: ${m.text}`)
+    .map(
+      (m) => `${m.role === "user" ? "User" : conversation.npcName}: ${m.text}`,
+    )
     .join("\n");
 
   const response = await openai.chat.completions.create({
@@ -378,7 +424,13 @@ export async function generateDebrief(
   const parsed = debriefFromLlmSchema.parse(parseJsonSafely(content));
   const metrics = buildDebriefMetrics(conversation, finalStatus);
 
-  log.info({ durationMs: Date.now() - start, keyPhraseCount: parsed.keyPhrases.length }, "debrief generated");
+  log.info(
+    {
+      durationMs: Date.now() - start,
+      keyPhraseCount: parsed.keyPhrases.length,
+    },
+    "debrief generated",
+  );
   return {
     narrative: parsed.narrative,
     keyPhrases: parsed.keyPhrases,
@@ -406,7 +458,8 @@ function buildDebriefMetrics(
     },
     objective: {
       score: clampUnit(
-        lastObjective?.objectiveScore ?? progressToObjectiveScore(conversation.goalProgress),
+        lastObjective?.objectiveScore ??
+          progressToObjectiveScore(conversation.goalProgress),
       ),
       confidence: clampUnit(lastObjective?.confidence ?? 0.5),
       met: finalStatus === "achieved" || Boolean(lastObjective?.objectiveMet),

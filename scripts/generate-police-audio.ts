@@ -1,9 +1,11 @@
 import { createRequire } from "node:module";
+
 const require = createRequire(import.meta.url);
 const { loadEnvConfig } = require("@next/env") as typeof import("@next/env");
 loadEnvConfig(process.cwd());
-import { POLICE_INTRO_MESSAGES } from "../lib/game/npc-assets";
+
 import { VOICE_MAP } from "../lib/audio/gradium";
+import { POLICE_INTRO_MESSAGES } from "../lib/game/npc-assets";
 import { setPoliceAudio } from "../lib/storage/police-audio";
 
 const POLICE_TYPES = ["policeman", "policewoman"] as const;
@@ -15,7 +17,10 @@ const GENDER_FOR_TYPE = {
   policewoman: "feminine",
 } as const;
 
-async function generateTTS(text: string, voiceId: string): Promise<ArrayBuffer> {
+async function generateTTS(
+  text: string,
+  voiceId: string,
+): Promise<ArrayBuffer> {
   const apiKey = process.env.GRADIUM_API_KEY;
   if (!apiKey) {
     throw new Error("Missing GRADIUM_API_KEY environment variable");
@@ -44,14 +49,16 @@ async function generateTTS(text: string, voiceId: string): Promise<ArrayBuffer> 
 }
 
 async function main() {
-  console.log(`Generating police intro audio for ${LANGUAGES.length} languages x ${POLICE_TYPES.length} types...`);
+  console.log(
+    `Generating police intro audio for ${LANGUAGES.length} languages x ${POLICE_TYPES.length} types...`,
+  );
 
   for (const lang of LANGUAGES) {
     for (const type of POLICE_TYPES) {
       const key = `${type}_${lang}`;
       const text = POLICE_INTRO_MESSAGES[lang];
       const gender = GENDER_FOR_TYPE[type];
-      const voiceId = VOICE_MAP[lang]?.[gender] ?? VOICE_MAP["en"][gender];
+      const voiceId = VOICE_MAP[lang]?.[gender] ?? VOICE_MAP.en[gender];
 
       console.log(`Generating ${key} (voice: ${voiceId})...`);
 
@@ -59,7 +66,9 @@ async function main() {
       const base64 = Buffer.from(wav).toString("base64");
       await setPoliceAudio(key, base64);
 
-      console.log(`  Stored ${key} (${Math.round(base64.length / 1024)} KB base64)`);
+      console.log(
+        `  Stored ${key} (${Math.round(base64.length / 1024)} KB base64)`,
+      );
     }
   }
 

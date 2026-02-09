@@ -6,9 +6,11 @@ Parley is a standalone Next.js 15 webapp for situational language learning throu
 
 ## Commands
 
-- `npm run dev` — Start dev server (Turbopack)
-- `npm run build` — Production build
-- `npm run start` — Start production server
+- `bun run dev` — Start dev server (Turbopack)
+- `bun run build` — Production build
+- `bun run start` — Start production server
+- `bun run lint` — Lint and format check (Biome)
+- `bun run lint:fix` — Auto-fix lint and formatting issues
 
 ## Architecture
 
@@ -56,7 +58,7 @@ Next.js 15 App Router with two pages:
 
 ## Tech Stack
 
-Next.js 15, Tailwind CSS v4, Zod, OpenAI SDK, FAL SDK, TypeScript strict mode.
+Next.js 15, Tailwind CSS v4, Biome (lint + format), Zod, OpenAI SDK, FAL SDK, TypeScript strict mode.
 
 ## Conventions
 

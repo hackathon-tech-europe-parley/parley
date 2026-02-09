@@ -20,11 +20,31 @@ export function ChatDebriefView({
   const metrics = debriefState.debrief.metrics;
   const evaluationRows = metrics
     ? [
-        { id: "cooperation", label: "Cooperation", value: metrics.evaluationAverages.cooperation },
-        { id: "relevance", label: "Relevance", value: metrics.evaluationAverages.relevance },
-        { id: "politeness", label: "Politeness", value: metrics.evaluationAverages.politeness },
-        { id: "clarity", label: "Clarity", value: metrics.evaluationAverages.clarity },
-        { id: "taskIntent", label: "Task intent", value: metrics.evaluationAverages.taskIntent },
+        {
+          id: "cooperation",
+          label: "Cooperation",
+          value: metrics.evaluationAverages.cooperation,
+        },
+        {
+          id: "relevance",
+          label: "Relevance",
+          value: metrics.evaluationAverages.relevance,
+        },
+        {
+          id: "politeness",
+          label: "Politeness",
+          value: metrics.evaluationAverages.politeness,
+        },
+        {
+          id: "clarity",
+          label: "Clarity",
+          value: metrics.evaluationAverages.clarity,
+        },
+        {
+          id: "taskIntent",
+          label: "Task intent",
+          value: metrics.evaluationAverages.taskIntent,
+        },
       ]
     : [];
 
@@ -37,10 +57,23 @@ export function ChatDebriefView({
           onClick={onClose}
           className="btn-press absolute right-3 top-3 z-10 rounded-full p-1.5 text-slate-400 transition-all hover:bg-slate-800 hover:text-white sm:right-4 sm:top-4"
         >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <title>Close</title>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
         </button>
 
-        {/* Scene image */}
+        {/* biome-ignore lint/performance/noImgElement: Dynamic FAL image URL */}
         <img
           src={debriefState.sceneImageUrl}
           alt="Scene"
@@ -83,8 +116,13 @@ export function ChatDebriefView({
               </h3>
               <ul className="stagger-children space-y-2">
                 {debriefState.debrief.keyPhrases.map((kp, i) => (
-                  <li key={i} className="flex flex-col gap-0.5 rounded-lg bg-slate-800/40 px-3 py-2 text-sm sm:flex-row sm:gap-3">
-                    <span className="font-medium text-blue-400">{kp.phrase}</span>
+                  <li
+                    key={i}
+                    className="flex flex-col gap-0.5 rounded-lg bg-slate-800/40 px-3 py-2 text-sm sm:flex-row sm:gap-3"
+                  >
+                    <span className="font-medium text-blue-400">
+                      {kp.phrase}
+                    </span>
                     <span className="text-slate-500">{kp.translation}</span>
                   </li>
                 ))}
@@ -125,12 +163,20 @@ export function ChatDebriefView({
 
               <div className="rounded-lg border border-slate-700/50 bg-slate-900/60 p-3 text-xs">
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="font-semibold uppercase tracking-wide text-slate-400">Objective Score</span>
+                  <span className="font-semibold uppercase tracking-wide text-slate-400">
+                    Objective Score
+                  </span>
                   <span className="font-[family-name:var(--font-mono)] text-slate-200">
                     {Math.round(metrics.objective.score * 100)}%
                   </span>
                 </div>
-                <p className={metrics.objective.met ? "text-emerald-400" : "text-amber-300"}>
+                <p
+                  className={
+                    metrics.objective.met
+                      ? "text-emerald-400"
+                      : "text-amber-300"
+                  }
+                >
                   {metrics.objective.met ? "GO" : "NO-GO"}
                   {" · "}
                   confidence {Math.round(metrics.objective.confidence * 100)}%

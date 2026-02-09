@@ -20,27 +20,51 @@ body::before {
 
 /* ─── Entrance animations ─── */
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slide-down {
-  from { opacity: 0; transform: translateY(-12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes scale-in {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .animate-in {
-  animation: fade-in 0.4s ease-out, slide-up 0.4s ease-out;
+  animation:
+    fade-in 0.4s ease-out,
+    slide-up 0.4s ease-out;
 }
 
 /* Stagger children utility — apply to parent, children get delays */
@@ -48,51 +72,112 @@ body::before {
   opacity: 0;
   animation: slide-up 0.4s ease-out forwards;
 }
-.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
-.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
-.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
-.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
-.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
-.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
-.stagger-children > *:nth-child(7) { animation-delay: 300ms; }
-.stagger-children > *:nth-child(8) { animation-delay: 350ms; }
-.stagger-children > *:nth-child(9) { animation-delay: 400ms; }
-.stagger-children > *:nth-child(10) { animation-delay: 450ms; }
-.stagger-children > *:nth-child(11) { animation-delay: 500ms; }
-.stagger-children > *:nth-child(12) { animation-delay: 550ms; }
+.stagger-children > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.stagger-children > *:nth-child(2) {
+  animation-delay: 50ms;
+}
+.stagger-children > *:nth-child(3) {
+  animation-delay: 100ms;
+}
+.stagger-children > *:nth-child(4) {
+  animation-delay: 150ms;
+}
+.stagger-children > *:nth-child(5) {
+  animation-delay: 200ms;
+}
+.stagger-children > *:nth-child(6) {
+  animation-delay: 250ms;
+}
+.stagger-children > *:nth-child(7) {
+  animation-delay: 300ms;
+}
+.stagger-children > *:nth-child(8) {
+  animation-delay: 350ms;
+}
+.stagger-children > *:nth-child(9) {
+  animation-delay: 400ms;
+}
+.stagger-children > *:nth-child(10) {
+  animation-delay: 450ms;
+}
+.stagger-children > *:nth-child(11) {
+  animation-delay: 500ms;
+}
+.stagger-children > *:nth-child(12) {
+  animation-delay: 550ms;
+}
 
 /* Message entrance — slides from side */
 @keyframes msg-in-left {
-  from { opacity: 0; transform: translateX(-12px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes msg-in-right {
-  from { opacity: 0; transform: translateX(12px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
-.msg-npc { animation: msg-in-left 0.3s ease-out; }
-.msg-user { animation: msg-in-right 0.3s ease-out; }
+.msg-npc {
+  animation: msg-in-left 0.3s ease-out;
+}
+.msg-user {
+  animation: msg-in-right 0.3s ease-out;
+}
 
 /* ─── Modal animations ─── */
 @keyframes backdrop-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes modal-slide-up {
-  from { opacity: 0; transform: translateY(24px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-.animate-backdrop { animation: backdrop-in 0.25s ease-out; }
-.animate-modal { animation: modal-slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-backdrop {
+  animation: backdrop-in 0.25s ease-out;
+}
+.animate-modal {
+  animation: modal-slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
 /* ─── Decorative animations ─── */
 @keyframes mood-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(1.3); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.3);
+  }
 }
 
 .mood-dot {
@@ -100,8 +185,12 @@ body::before {
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .shimmer {
@@ -116,8 +205,13 @@ body::before {
 }
 
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.15); }
-  50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
 }
 
 .glow-pulse {
@@ -125,8 +219,13 @@ body::before {
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
 }
 
 .float {
@@ -135,14 +234,13 @@ body::before {
 
 /* Subtle scan-line effect for HUD panels */
 .hud-panel {
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 3px,
-      rgba(148, 163, 184, 0.015) 3px,
-      rgba(148, 163, 184, 0.015) 4px
-    );
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(148, 163, 184, 0.015) 3px,
+    rgba(148, 163, 184, 0.015) 4px
+  );
 }
 
 /* ─── Glass card effect ─── */
@@ -169,7 +267,9 @@ body::before {
     rgba(59, 130, 246, 0.15)
   );
   z-index: -1;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   mask-composite: exclude;
   padding: 1px;
 }
@@ -181,8 +281,12 @@ body::before {
 
 /* ─── Progress bar animation ─── */
 @keyframes progress-fill {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .progress-animated {
@@ -192,8 +296,16 @@ body::before {
 
 /* ─── Typing dots ─── */
 @keyframes typing-dot {
-  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
-  30% { opacity: 1; transform: translateY(-4px); }
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
 }
 
 .typing-dot {
@@ -207,10 +319,24 @@ body::before {
 
 /* ─── Jail bars drop + fade sequence ─── */
 @keyframes jail-bars-sequence {
-  0%  { transform: translateY(-100%); opacity: 1; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
-  40% { transform: translateY(0); opacity: 1; }    /* Drop over 2s */
-  80% { transform: translateY(0); opacity: 1; animation-timing-function: ease-in; }    /* Stay 2s */
-  100% { transform: translateY(0); opacity: 0; }   /* Fade over 1s */
+  0% {
+    transform: translateY(-100%);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  40% {
+    transform: translateY(0);
+    opacity: 1;
+  } /* Drop over 2s */
+  80% {
+    transform: translateY(0);
+    opacity: 1;
+    animation-timing-function: ease-in;
+  } /* Stay 2s */
+  100% {
+    transform: translateY(0);
+    opacity: 0;
+  } /* Fade over 1s */
 }
 
 .animate-jail-bars-drop {
