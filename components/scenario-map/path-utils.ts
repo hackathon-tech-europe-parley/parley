@@ -12,32 +12,81 @@ export interface PathSegment {
   status: "completed" | "active" | "locked";
 }
 
-export const NODE_SPACING = 140;
-export const NODE_SPACING_MOBILE = 120;
-export const AMPLITUDE = 25;
-export const AMPLITUDE_MOBILE = 18;
-export const TOP_PADDING = 40;
+export type MapLayout = "mobile" | "desktop";
+
+const MOBILE_NODE_SPACING = 120;
+const MOBILE_AMPLITUDE = 18;
+const MOBILE_TOP_PADDING = 40;
+const MOBILE_BOTTOM_PADDING = 80;
+
+const DESKTOP_TOP_PADDING = 90;
+const DESKTOP_BOTTOM_PADDING = 130;
+const DESKTOP_ROW_SPACING = 220;
+const DESKTOP_MIN_X = 12;
+const DESKTOP_MAX_X = 88;
+
+function desktopColumns(count: number): number {
+  if (count <= 4) return 2;
+  if (count <= 8) return 3;
+  return 4;
+}
 
 export function computeNodePositions(
   count: number,
-  isMobile: boolean,
+  layout: MapLayout,
 ): NodePosition[] {
-  const spacing = isMobile ? NODE_SPACING_MOBILE : NODE_SPACING;
-  const amp = isMobile ? AMPLITUDE_MOBILE : AMPLITUDE;
+  if (count <= 0) return [];
+
   const positions: NodePosition[] = [];
+
+  if (layout === "mobile") {
+    for (let i = 0; i < count; i++) {
+      positions.push({
+        index: i,
+        x: 50 + Math.sin(i * (Math.PI / 2.5)) * MOBILE_AMPLITUDE,
+        y: MOBILE_TOP_PADDING + i * MOBILE_NODE_SPACING,
+      });
+    }
+    return positions;
+  }
+
+  const columns = desktopColumns(count);
+  const xRange = DESKTOP_MAX_X - DESKTOP_MIN_X;
+  const denominator = Math.max(columns - 1, 1);
+
   for (let i = 0; i < count; i++) {
+    const row = Math.floor(i / columns);
+    const col = i % columns;
+    const reverseRow = row % 2 === 1;
+    const visualCol = reverseRow ? columns - 1 - col : col;
+
     positions.push({
       index: i,
-      x: 50 + Math.sin(i * (Math.PI / 2.5)) * amp,
-      y: TOP_PADDING + i * spacing,
+      x: DESKTOP_MIN_X + (visualCol / denominator) * xRange,
+      y: DESKTOP_TOP_PADDING + row * DESKTOP_ROW_SPACING,
     });
   }
+
   return positions;
 }
 
-export function computeTotalHeight(count: number, isMobile: boolean): number {
-  const spacing = isMobile ? NODE_SPACING_MOBILE : NODE_SPACING;
-  return TOP_PADDING + (count - 1) * spacing + 80;
+export function computeTotalHeight(count: number, layout: MapLayout): number {
+  if (count <= 0) return 0;
+
+  if (layout === "mobile") {
+    return (
+      MOBILE_TOP_PADDING +
+      (count - 1) * MOBILE_NODE_SPACING +
+      MOBILE_BOTTOM_PADDING
+    );
+  }
+
+  const rows = Math.ceil(count / desktopColumns(count));
+  return (
+    DESKTOP_TOP_PADDING +
+    (rows - 1) * DESKTOP_ROW_SPACING +
+    DESKTOP_BOTTOM_PADDING
+  );
 }
 
 export function buildSvgPath(

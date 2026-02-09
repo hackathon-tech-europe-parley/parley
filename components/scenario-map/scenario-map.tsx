@@ -8,6 +8,7 @@ import {
   classifySegments,
   computeNodePositions,
   computeTotalHeight,
+  type MapLayout,
 } from "./path-utils";
 import { ScenarioNode } from "./scenario-node";
 
@@ -38,16 +39,17 @@ export function ScenarioMap({
     return () => observer.disconnect();
   }, []);
 
-  const isMobile = containerWidth > 0 && containerWidth <= 480;
+  const layout: MapLayout =
+    containerWidth > 0 && containerWidth < 700 ? "mobile" : "desktop";
 
   const positions = useMemo(
-    () => computeNodePositions(scenarios.length, isMobile),
-    [scenarios.length, isMobile],
+    () => computeNodePositions(scenarios.length, layout),
+    [scenarios.length, layout],
   );
 
   const totalHeight = useMemo(
-    () => computeTotalHeight(scenarios.length, isMobile),
-    [scenarios.length, isMobile],
+    () => computeTotalHeight(scenarios.length, layout),
+    [scenarios.length, layout],
   );
 
   const scenarioKeys = useMemo(() => scenarios.map((s) => s.key), [scenarios]);
@@ -76,7 +78,7 @@ export function ScenarioMap({
     <div className="flex flex-col items-center">
       <div
         ref={containerRef}
-        className="relative mx-auto w-full max-w-md"
+        className="relative mx-auto w-full"
         style={{ height: totalHeight }}
       >
         {containerWidth > 0 && (
