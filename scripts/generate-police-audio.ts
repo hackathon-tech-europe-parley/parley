@@ -4,9 +4,9 @@ const require = createRequire(import.meta.url);
 const { loadEnvConfig } = require("@next/env") as typeof import("@next/env");
 loadEnvConfig(process.cwd());
 
-import { VOICE_MAP } from "../lib/audio/gradium";
-import { POLICE_INTRO_MESSAGES } from "../lib/game/npc-assets";
-import { setPoliceAudio } from "../lib/storage/police-audio";
+import { POLICE_INTRO_MESSAGES } from "../core/npc/assets";
+import { setPoliceAudio } from "../infra/storage/police-audio";
+import { VOICE_MAP } from "../infra/tts/gradium";
 
 const POLICE_TYPES = ["policeman", "policewoman"] as const;
 const LANGUAGES = Object.keys(POLICE_INTRO_MESSAGES);

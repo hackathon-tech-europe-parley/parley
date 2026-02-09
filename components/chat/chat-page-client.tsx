@@ -3,37 +3,22 @@
 import confetti from "canvas-confetti";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useRouter } from "@/i18n/navigation";
-import { AudioRecorder } from "@/lib/audio/audio-recorder";
-import { TTSPlayer } from "@/lib/audio/tts-player";
-import { consumeSSE } from "@/lib/sse-client";
+import { useEffect, useRef, useState } from "react";
 import {
-  conversationCacheSchema,
-  conversationSnapshotSchema,
   idParamSchema,
   type MessageStreamCompletePayload,
   messageStreamCompletePayloadSchema,
   type NpcGender,
   quitConversationResponseSchema,
-  sttResponseSchema,
-} from "@/lib/types";
+} from "@/core/types";
+import { Link, useRouter } from "@/i18n/navigation";
 import { ChatConversationView } from "./chat-conversation-view";
 import { ChatDebriefView } from "./chat-debrief-view";
-import {
-  type ConversationState,
-  type DebriefState,
-  fromCachedConversation,
-} from "./chat-types";
-
-// Default TTS speed proportional to difficulty level:
-// beginner=1.0, intermediate≈1.33, advanced≈1.67, impossible=2.0
-const LEVEL_DEFAULT_SPEED: Record<string, number> = {
-  beginner: 1.0,
-  intermediate: 1.3,
-  advanced: 1.7,
-  impossible: 2.0,
-};
+import type { DebriefState } from "./chat-types";
+import { useAudioRecording } from "./hooks/use-audio-recording";
+import { useConversationHydration } from "./hooks/use-conversation-hydration";
+import { useTtsAutoPlay } from "./hooks/use-tts-auto-play";
+import { consumeSSE } from "./lib/sse-client";
 
 function preloadImage(url: string): Promise<void> {
   return new Promise((resolve) => {
@@ -56,29 +41,38 @@ export function ChatPageClient() {
   const tLangs = useTranslations("Languages");
   const tScenarios = useTranslations("Scenarios");
 
-  const [state, setState] = useState<ConversationState | null>(null);
+  const { state, setState, endStatus, setEndStatus, error, setError } =
+    useConversationHydration(conversationId);
+
   const [debriefState, setDebriefState] = useState<DebriefState | null>(null);
-  const [endStatus, setEndStatus] = useState<DebriefState | null>(null);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [quitting, setQuitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [recording, setRecording] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
-  const [pendingTranscription, setPendingTranscription] = useState<
-    string | null
-  >(null);
-  const [ttsPlaying, setTtsPlaying] = useState<number | null>(null);
-  const [npcMuted, setNpcMuted] = useState(false);
-  const [ttsSpeed, setTtsSpeed] = useState(1.0);
   const [showJailBars, setShowJailBars] = useState(false);
-  const hasSetLevelSpeed = useRef(false);
 
   const messagesEnd = useRef<HTMLDivElement>(null);
-  const recorderRef = useRef<AudioRecorder | null>(null);
-  const ttsPlayerRef = useRef<TTSPlayer | null>(null);
-  const hasAutoPlayed = useRef(false);
-  const lastProcessedIndex = useRef(-1);
+
+  const {
+    ttsPlayerRef,
+    ttsPlaying,
+    setTtsPlaying,
+    ttsSpeed,
+    npcMuted,
+    lastProcessedIndex,
+    handleReplay,
+    handleSpeedChange,
+    handleMuteToggle,
+  } = useTtsAutoPlay(state);
+
+  const { recording, transcribing, handleMicToggle } = useAudioRecording(
+    state?.languageCode,
+    ttsPlayerRef,
+    setTtsPlaying,
+    setError,
+    (text: string) => {
+      void sendMessage(text);
+    },
+  );
 
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow;
@@ -93,196 +87,10 @@ export function ChatPageClient() {
     };
   }, []);
 
-  // Set TTS speed based on difficulty level when state first loads
-  useEffect(() => {
-    if (state && !hasSetLevelSpeed.current) {
-      hasSetLevelSpeed.current = true;
-      const levelSpeed = LEVEL_DEFAULT_SPEED[state.level] ?? 1.0;
-      setTtsSpeed(levelSpeed);
-    }
-  }, [state]);
-
-  useEffect(() => {
-    if (!conversationId) {
-      setError("Invalid conversation id");
-      return;
-    }
-
-    const cached = sessionStorage.getItem(`parley:${conversationId}`);
-    if (cached) {
-      sessionStorage.removeItem(`parley:${conversationId}`);
-      try {
-        const parsedRaw = JSON.parse(cached) as unknown;
-        const parsed = conversationCacheSchema.safeParse(parsedRaw);
-        if (parsed.success) {
-          setState(fromCachedConversation(parsed.data));
-          return;
-        }
-      } catch {
-        // Fall through to API hydration.
-      }
-    }
-
-    fetch(`/api/conversation/${conversationId}`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Conversation not found");
-        }
-        return response.json();
-      })
-      .then((data: unknown) => {
-        const parsed = conversationSnapshotSchema.safeParse(data);
-        if (!parsed.success) {
-          throw new Error("Malformed conversation payload");
-        }
-        const snapshot = parsed.data;
-        setState({
-          ...snapshot,
-          evaluationHistory: snapshot.evaluationHistory ?? [],
-          objectiveHistory: snapshot.objectiveHistory ?? [],
-        });
-        if (
-          snapshot.goalStatus &&
-          snapshot.goalStatus !== "ongoing" &&
-          snapshot.debrief
-        ) {
-          setEndStatus({
-            debrief: snapshot.debrief,
-            sceneImageUrl: snapshot.sceneImageUrl,
-            npcName: snapshot.npcName,
-            goalStatus: snapshot.goalStatus,
-          });
-        } else {
-          setEndStatus(null);
-        }
-      })
-      .catch((fetchError) => setError(fetchError.message));
-  }, [conversationId]);
-
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional triggers for auto-scroll
   useEffect(() => {
     messagesEnd.current?.scrollIntoView({ behavior: "smooth" });
   }, [state?.history, sending, endStatus]);
-
-  useEffect(() => {
-    ttsPlayerRef.current = new TTSPlayer();
-    return () => {
-      ttsPlayerRef.current?.dispose();
-      ttsPlayerRef.current = null;
-    };
-  }, []);
-
-  const autoPlayTts = useCallback(
-    (
-      text: string,
-      messageIndex: number,
-      langCode?: string,
-      gender?: NpcGender,
-      specialPersonType?: string,
-      mood?: string,
-    ) => {
-      if (!ttsPlayerRef.current || ttsPlayerRef.current.muted) {
-        return;
-      }
-      setTtsPlaying(messageIndex);
-      // Determine TTS gender: use opposite of main NPC gender for police officer
-      let ttsGender: NpcGender = gender || "feminine";
-      if (specialPersonType) {
-        // Police officer should have opposite voice of main character
-        // If main NPC is feminine, police officer is masculine (policeman)
-        // If main NPC is masculine, police officer is feminine (policewoman)
-        // Use the main NPC's gender (passed as 'gender' parameter) to determine opposite
-        const mainNpcGender = gender || "feminine";
-        ttsGender = mainNpcGender === "masculine" ? "feminine" : "masculine";
-      }
-      ttsPlayerRef.current
-        .play(text, `msg-${messageIndex}`, langCode, ttsGender, ttsSpeed, mood)
-        .then(() => setTtsPlaying(null))
-        .catch((playError) => {
-          console.error("TTS autoplay failed:", playError);
-          setTtsPlaying(null);
-        });
-    },
-    [ttsSpeed],
-  );
-
-  useEffect(() => {
-    if (state && lastProcessedIndex.current === -1) {
-      lastProcessedIndex.current = state.history.length - 1;
-    }
-  }, [state]);
-
-  useEffect(() => {
-    if (state && state.history.length > 0 && !hasAutoPlayed.current) {
-      if (state.history.length !== 1) {
-        return;
-      }
-      hasAutoPlayed.current = true;
-      const firstNpc = state.history[0];
-      if (firstNpc?.role === "npc") {
-        // Check if this is a special person message by comparing speakerName
-        const isSpecialPerson =
-          firstNpc.speakerName &&
-          (firstNpc.speakerName === state.specialPerson?.name ||
-            (firstNpc.speakerName === "Officer" &&
-              firstNpc.speakerName !== state.npcName));
-        const specialPersonType = isSpecialPerson
-          ? state.specialPerson?.type || "policeman"
-          : undefined;
-        autoPlayTts(
-          firstNpc.text,
-          0,
-          state.languageCode,
-          state.npcGender,
-          specialPersonType,
-          firstNpc.mood ?? state.mood,
-        );
-        lastProcessedIndex.current = 0;
-      }
-    }
-  }, [state, autoPlayTts]);
-
-  useEffect(() => {
-    if (!state || !state.history.length) {
-      return;
-    }
-
-    const currentLastIndex = state.history.length - 1;
-    if (currentLastIndex > lastProcessedIndex.current) {
-      for (let i = lastProcessedIndex.current + 1; i <= currentLastIndex; i++) {
-        const message = state.history[i];
-        if (message?.role === "npc") {
-          // Check if this is a special person message by comparing speakerName
-          // This works even if state.specialPerson isn't set yet
-          const isSpecialPerson =
-            message.speakerName &&
-            (message.speakerName === state.specialPerson?.name ||
-              (message.speakerName === "Officer" &&
-                message.speakerName !== state.npcName));
-          const specialPersonType = isSpecialPerson
-            ? state.specialPerson?.type || "policeman"
-            : undefined;
-          autoPlayTts(
-            message.text,
-            i,
-            state.languageCode,
-            state.npcGender,
-            specialPersonType,
-            message.mood ?? state.mood,
-          );
-        }
-      }
-      lastProcessedIndex.current = currentLastIndex;
-    }
-  }, [state, autoPlayTts]);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: sendMessage is stable via useState/useRef
-  useEffect(() => {
-    if (pendingTranscription) {
-      setPendingTranscription(null);
-      void sendMessage(pendingTranscription);
-    }
-  }, [pendingTranscription]);
 
   // Fire confetti burst when goal is achieved
   useEffect(() => {
@@ -308,103 +116,16 @@ export function ChatPageClient() {
     frame();
   }, [endStatus?.goalStatus]);
 
-  function handleReplay(messageIndex: number, text: string) {
-    const message = state?.history[messageIndex];
-    // Check if this is a special person message by comparing speakerName
-    const isSpecialPerson =
-      message?.speakerName &&
-      (message.speakerName === state?.specialPerson?.name ||
-        (message.speakerName === "Officer" &&
-          message.speakerName !== state?.npcName));
-    const specialPersonType = isSpecialPerson
-      ? state?.specialPerson?.type || "policeman"
-      : undefined;
-    autoPlayTts(
-      text,
-      messageIndex,
-      state?.languageCode,
-      state?.npcGender,
-      specialPersonType,
-      message?.mood ?? state?.mood,
-    );
-  }
-
-  function handleSpeedChange(speed: number) {
-    setTtsSpeed(speed);
-  }
-
-  function handleMuteToggle() {
-    const next = !npcMuted;
-    setNpcMuted(next);
-    if (ttsPlayerRef.current) {
-      ttsPlayerRef.current.muted = next;
-    }
-    if (next) setTtsPlaying(null);
-  }
-
   function handleEndStatusClick() {
     if (!endStatus) return;
     if (endStatus.goalStatus === "achieved") {
-      router.push("/");
+      router.push(
+        state?.languageCode
+          ? { pathname: "/", query: { lang: state.languageCode } }
+          : "/",
+      );
     } else {
       setDebriefState(endStatus);
-    }
-  }
-
-  async function handleMicToggle() {
-    if (recording) {
-      setRecording(false);
-      setTranscribing(true);
-      try {
-        const recorder = recorderRef.current;
-        if (!recorder) return;
-        const audioBase64 = await recorder.stop();
-        const res = await fetch("/api/stt", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            audio: audioBase64,
-            languageCode: state?.languageCode,
-          }),
-        });
-        if (!res.ok) {
-          throw new Error("Transcription failed");
-        }
-        const data = sttResponseSchema.safeParse(await res.json());
-        if (!data.success) {
-          throw new Error("Malformed transcription payload");
-        }
-        if (data.data.text) {
-          setPendingTranscription(data.data.text);
-        }
-      } catch (toggleError) {
-        setError(
-          toggleError instanceof Error
-            ? toggleError.message
-            : "Transcription failed",
-        );
-      } finally {
-        setTranscribing(false);
-      }
-      return;
-    }
-
-    // Start recording — stop any NPC audio to avoid overlap
-    ttsPlayerRef.current?.stop();
-    setTtsPlaying(null);
-    try {
-      if (!recorderRef.current) {
-        recorderRef.current = new AudioRecorder();
-      }
-      await recorderRef.current.start();
-      setRecording(true);
-      setError(null);
-    } catch (toggleError) {
-      setError(
-        toggleError instanceof Error
-          ? toggleError.message
-          : "Microphone access denied",
-      );
     }
   }
 
@@ -886,6 +607,7 @@ export function ChatPageClient() {
       {debriefState && (
         <ChatDebriefView
           debriefState={debriefState}
+          languageCode={state?.languageCode}
           tDebrief={tDebrief}
           onClose={() => setDebriefState(null)}
         />

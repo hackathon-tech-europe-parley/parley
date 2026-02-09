@@ -160,6 +160,20 @@
     "quitEarly": "Quit Early",
     "withNpc": "with {npcName}",
     "keyPhrases": "Key Phrases",
-    "newScenario": "New Scenario"
+    "returnToMap": "Return to Map"
+  },
+  "Map": {
+    "heading": "Your Journey",
+    "subheading": "Choose a language and conquer every scenario",
+    "pickLanguage": "What language do you want to practice?",
+    "pickLanguageSubtitle": "Pick the language you want to learn",
+    "completed": "Completed",
+    "failed": "Failed",
+    "available": "Available",
+    "locked": "Locked",
+    "score": "Score",
+    "turns": "turns",
+    "startRoleplay": "Start Roleplay",
+    "settingUp": "Setting up scenario..."
   }
 }

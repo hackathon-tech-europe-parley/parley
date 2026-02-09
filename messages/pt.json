@@ -160,6 +160,20 @@
     "quitEarly": "Saiu Cedo",
     "withNpc": "com {npcName}",
     "keyPhrases": "Frases-Chave",
-    "newScenario": "Novo Cenário"
+    "returnToMap": "Voltar ao mapa"
+  },
+  "Map": {
+    "heading": "Sua jornada",
+    "subheading": "Escolha um idioma e conquiste cada cenário",
+    "pickLanguage": "Qual idioma você quer praticar?",
+    "pickLanguageSubtitle": "Escolha o idioma que você quer aprender",
+    "completed": "Concluído",
+    "failed": "Falhado",
+    "available": "Disponível",
+    "locked": "Bloqueado",
+    "score": "Pontuação",
+    "turns": "turnos",
+    "startRoleplay": "Iniciar roleplay",
+    "settingUp": "Configurando cenário..."
   }
 }

@@ -1,4 +1,4 @@
-import type { LanguageCode } from "@/lib/types";
+import type { LanguageCode } from "@/core/types";
 
 export type Level = "beginner" | "intermediate" | "advanced" | "impossible";
 

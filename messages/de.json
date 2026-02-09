@@ -160,6 +160,20 @@
     "quitEarly": "Vorzeitig beendet",
     "withNpc": "mit {npcName}",
     "keyPhrases": "Wichtige Ausdrücke",
-    "newScenario": "Neues Szenario"
+    "returnToMap": "Zurück zur Karte"
+  },
+  "Map": {
+    "heading": "Deine Reise",
+    "subheading": "Wähle eine Sprache und meistere jedes Szenario",
+    "pickLanguage": "Welche Sprache möchtest du üben?",
+    "pickLanguageSubtitle": "Wähle die Sprache, die du lernen möchtest",
+    "completed": "Abgeschlossen",
+    "failed": "Gescheitert",
+    "available": "Verfügbar",
+    "locked": "Gesperrt",
+    "score": "Punktzahl",
+    "turns": "Züge",
+    "startRoleplay": "Rollenspiel starten",
+    "settingUp": "Szenario wird eingerichtet..."
   }
 }

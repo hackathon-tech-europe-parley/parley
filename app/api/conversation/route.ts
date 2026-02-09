@@ -1,21 +1,21 @@
 import { NextResponse } from "next/server";
+import { createLogger, withConversationId } from "@/core/logger";
 import {
   generateNpcOpening,
   generateNpcProfile,
-  generateSceneImage,
-} from "@/lib/ai";
-import { getNpcFaceAssetUrl } from "@/lib/game";
-import { createLogger, withConversationId } from "@/lib/logger";
+  getNpcFaceAssetUrl,
+} from "@/core/npc";
+import type { Conversation } from "@/core/types";
+import {
+  createConversationResponseSchema,
+  createConversationSchema,
+} from "@/core/types";
+import { generateSceneImage } from "@/infra/image";
 import {
   generateId,
   setConversation,
   setReplySuggestions,
-} from "@/lib/storage";
-import type { Conversation } from "@/lib/types";
-import {
-  createConversationResponseSchema,
-  createConversationSchema,
-} from "@/lib/types";
+} from "@/infra/storage";
 
 const log = createLogger("api:conversation");
 

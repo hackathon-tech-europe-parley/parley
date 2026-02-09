@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { createLogger, withConversationId } from "@/lib/logger";
-import { getConversation, getReplySuggestions } from "@/lib/storage";
+import { createLogger, withConversationId } from "@/core/logger";
 import {
   type ConversationSnapshot,
   conversationSnapshotSchema,
   idParamSchema,
-} from "@/lib/types";
+} from "@/core/types";
+import { getConversation, getReplySuggestions } from "@/infra/storage";
 
 const log = createLogger("api:conversation:get");
 

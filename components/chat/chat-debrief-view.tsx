@@ -1,3 +1,4 @@
+import type { LanguageCode } from "@/core/types";
 import { Link } from "@/i18n/navigation";
 import type { DebriefState } from "./chat-types";
 
@@ -8,12 +9,14 @@ type TranslateFn = (
 
 interface ChatDebriefViewProps {
   debriefState: DebriefState;
+  languageCode?: LanguageCode;
   tDebrief: TranslateFn;
   onClose: () => void;
 }
 
 export function ChatDebriefView({
   debriefState,
+  languageCode,
   tDebrief,
   onClose,
 }: ChatDebriefViewProps) {
@@ -189,13 +192,37 @@ export function ChatDebriefView({
               </div>
             </div>
           )}
+        </div>
 
-          {/* CTA */}
+        {/* Sticky CTA footer */}
+        <div className="sticky bottom-0 border-t border-slate-700/40 bg-slate-900/95 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
           <Link
-            href="/"
-            className="btn-press block w-full rounded-xl bg-gradient-to-r from-blue-500 to-blue-700 px-4 py-2.5 text-center text-sm font-medium text-white shadow-lg shadow-blue-600/20 transition-all hover:from-blue-500 hover:to-blue-600 hover:shadow-blue-500/30 sm:px-6 sm:py-3 sm:text-base"
+            href={
+              languageCode
+                ? { pathname: "/", query: { lang: languageCode } }
+                : "/"
+            }
+            className={`btn-press flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all sm:text-base ${
+              debriefState.goalStatus === "achieved"
+                ? "bg-gradient-to-r from-emerald-500 to-emerald-700 shadow-emerald-600/20 hover:from-emerald-400 hover:to-emerald-600"
+                : "bg-gradient-to-r from-blue-500 to-blue-700 shadow-blue-600/20 hover:from-blue-400 hover:to-blue-600"
+            }`}
           >
-            {tDebrief("newScenario")}
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <title>Back</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
+            </svg>
+            {tDebrief("returnToMap")}
           </Link>
         </div>
       </div>

@@ -1,24 +1,17 @@
-import {
-  generateDebrief,
-  generateNpcResponseStream,
-  generateSceneImage,
-  generateSpecialPersonResponseStream,
-} from "@/lib/ai";
+import { generateDebrief } from "@/core/debrief";
+import { createLogger, withConversationId } from "@/core/logger";
 import {
   applyNpcPolicy,
+  generateNpcResponseStream,
+  generateSpecialPersonResponseStream,
   getNpcFaceAssetUrl,
   getPoliceCallingLine,
   getPoliceIntroMessage,
   getPoliceOfficerName,
   getPoliceOfficerType,
   getSpecialPersonFaceAssetUrl,
-} from "@/lib/game";
-import { createLogger, withConversationId } from "@/lib/logger";
-import {
-  getConversation,
-  setConversation,
-  setReplySuggestions,
-} from "@/lib/storage";
+} from "@/core/npc";
+import { buildProgressEntry } from "@/core/progress";
 import {
   type GoalStatus,
   idParamSchema,
@@ -26,7 +19,15 @@ import {
   messageStreamErrorPayloadSchema,
   messageStreamTokenPayloadSchema,
   sendMessageSchema,
-} from "@/lib/types";
+} from "@/core/types";
+import { generateSceneImage } from "@/infra/image";
+import { getSessionId } from "@/infra/session";
+import {
+  addProgressEntry,
+  getConversation,
+  setConversation,
+  setReplySuggestions,
+} from "@/infra/storage";
 
 const log = createLogger("api:message");
 
@@ -387,6 +388,14 @@ export async function POST(
 
                 await setConversation(id, conversation);
 
+                // Save progress on police-called failure
+                const policeSessionId = await getSessionId();
+                if (policeSessionId) {
+                  await addProgressEntry(
+                    buildProgressEntry(policeSessionId, conversation),
+                  );
+                }
+
                 const langCode = conversation.languageCode ?? "en";
                 const policeIntroAudioUrl = `/api/police-audio?type=${specialPersonType}&lang=${langCode}`;
 
@@ -459,6 +468,14 @@ export async function POST(
                 conversation.sceneImageUrl = finalImageUrl;
                 conversation.messagesSinceImageRegen = 0;
                 await setConversation(id, conversation);
+
+                // Save progress on conversation end
+                const endSessionId = await getSessionId();
+                if (endSessionId) {
+                  await addProgressEntry(
+                    buildProgressEntry(endSessionId, conversation),
+                  );
+                }
 
                 const completePayload =
                   messageStreamCompletePayloadSchema.parse({
