@@ -440,7 +440,7 @@ export function ChatConversationView({
         <div className="styled-scrollbar relative z-10 min-h-0 flex-1 space-y-3 overflow-y-auto bg-transparent p-3 sm:space-y-4 sm:p-4 md:p-6">
           {state.history.map((msg, i) => (
             <div
-              key={i}
+              key={`msg-${i}-${msg.role}`}
               className={`flex items-start gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end msg-user" : "justify-start msg-npc"}`}
             >
               {msg.role === "npc" &&
@@ -576,7 +576,7 @@ export function ChatConversationView({
               {state.replySuggestions.map((choice, i) => (
                 <button
                   type="button"
-                  key={i}
+                  key={choice}
                   onClick={() => onChoiceSelect(choice)}
                   className="btn-press w-full rounded-lg border border-amber-500/20 bg-slate-800/60 px-4 py-2.5 text-left text-sm text-slate-100 shadow-md backdrop-blur-sm transition-all hover:border-amber-400/40 hover:bg-slate-700/70 hover:text-white hover:shadow-amber-500/10 sm:px-5 sm:py-3 sm:text-[15px]"
                 >

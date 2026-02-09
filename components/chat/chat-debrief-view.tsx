@@ -115,9 +115,9 @@ export function ChatDebriefView({
                 {tDebrief("keyPhrases")}
               </h3>
               <ul className="stagger-children space-y-2">
-                {debriefState.debrief.keyPhrases.map((kp, i) => (
+                {debriefState.debrief.keyPhrases.map((kp) => (
                   <li
-                    key={i}
+                    key={kp.phrase}
                     className="flex flex-col gap-0.5 rounded-lg bg-slate-800/40 px-3 py-2 text-sm sm:flex-row sm:gap-3"
                   >
                     <span className="font-medium text-blue-400">
