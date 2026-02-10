@@ -17,15 +17,9 @@ export function LanguageSwitcher() {
   const pathname = usePathname();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const selected =
-    LOCALE_OPTIONS.find((option) => option.code === locale) ??
-    LOCALE_OPTIONS[0];
 
   return (
     <div className="relative">
-      <div className="pointer-events-none absolute inset-y-0 left-2.5 flex items-center text-base">
-        <span aria-hidden="true">{selected.flag}</span>
-      </div>
       <select
         value={locale}
         aria-label="Select language"
@@ -35,7 +29,7 @@ export function LanguageSwitcher() {
             router.replace(pathname, { locale: e.target.value });
           });
         }}
-        className="h-9 appearance-none rounded-md border border-slate-700/80 bg-slate-900/80 pl-8 pr-8 text-sm font-medium text-slate-100 shadow-sm hover:bg-slate-800/90 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-500/30 disabled:cursor-not-allowed disabled:opacity-70"
+        className="h-9 appearance-none rounded-md border border-slate-700/80 bg-slate-900/80 pl-3 pr-8 text-sm font-medium text-slate-100 shadow-sm hover:bg-slate-800/90 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-500/30 disabled:cursor-not-allowed disabled:opacity-70"
       >
         {LOCALE_OPTIONS.map(({ code, label, flag }) => (
           <option key={code} value={code}>
