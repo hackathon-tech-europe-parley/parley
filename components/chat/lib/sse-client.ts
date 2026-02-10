@@ -1,5 +1,5 @@
 import { match } from "ts-pattern";
-import type { ZodType, ZodTypeDef } from "zod";
+import type { ZodType } from "zod";
 import {
   messageStreamErrorPayloadSchema,
   messageStreamTokenPayloadSchema,
@@ -14,7 +14,7 @@ export interface SSEHandlers<T = unknown> {
 export async function consumeSSE<T = unknown>(
   response: Response,
   handlers: SSEHandlers<T>,
-  completeSchema?: ZodType<T, ZodTypeDef, unknown>,
+  completeSchema?: ZodType<T, unknown>,
 ): Promise<void> {
   const body = response.body;
   if (!body) {

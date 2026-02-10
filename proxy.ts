@@ -7,7 +7,7 @@ const intlMiddleware = createMiddleware(routing);
 const COOKIE_NAME = "parley_session";
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
-export default function middleware(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   const response = intlMiddleware(request);
 
   if (!request.cookies.get(COOKIE_NAME)) {
