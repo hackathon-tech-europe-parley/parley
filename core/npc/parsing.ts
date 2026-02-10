@@ -1,3 +1,4 @@
+import { match } from "ts-pattern";
 import type { GoalProgress, GoalStatus } from "@/core/types";
 
 function parseGoalProgress(
@@ -30,11 +31,9 @@ export function resolveGoalProgress(
   rawProgress: unknown,
   fallback: GoalProgress,
 ): GoalProgress {
-  if (status === "achieved") {
-    return 5;
-  }
-  if (status === "failed") {
-    return 1;
-  }
-  return parseGoalProgress(rawProgress, fallback);
+  return match(status)
+    .with("achieved", () => 5 as GoalProgress)
+    .with("failed", () => 1 as GoalProgress)
+    .with("ongoing", () => parseGoalProgress(rawProgress, fallback))
+    .exhaustive();
 }

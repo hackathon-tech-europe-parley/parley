@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
+import { match } from "ts-pattern";
 import type { NodeStatus, ScenarioNodeState } from "@/core/progress";
 import type { ScenarioDef } from "../setup-form.constants";
 import type { NodePosition } from "./path-utils";
@@ -16,16 +17,12 @@ interface ScenarioNodeProps {
 }
 
 function statusColor(status: NodeStatus): string {
-  switch (status) {
-    case "completed":
-      return "bg-emerald-500";
-    case "failed":
-      return "bg-red-500";
-    case "available":
-      return "bg-blue-500";
-    case "locked":
-      return "bg-slate-700";
-  }
+  return match(status)
+    .with("completed", () => "bg-emerald-500")
+    .with("failed", () => "bg-red-500")
+    .with("available", () => "bg-blue-500")
+    .with("locked", () => "bg-slate-700")
+    .exhaustive();
 }
 
 const nodeVariants = {
