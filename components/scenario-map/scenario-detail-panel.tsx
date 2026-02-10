@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { match } from "ts-pattern";
 import type { NodeStatus, ScenarioNodeState } from "@/core/progress";
 import type { ConversationLevel, LanguageCode } from "@/core/types";
 import { apiErrorSchema, createConversationResponseSchema } from "@/core/types";
@@ -17,32 +18,24 @@ interface ScenarioDetailPanelProps {
 }
 
 function statusIcon(status: NodeStatus): string {
-  switch (status) {
-    case "completed":
-      return "\u2705";
-    case "failed":
-      return "\u274C";
-    case "available":
-      return "\u{1F7E2}";
-    case "locked":
-      return "\u{1F512}";
-  }
+  return match(status)
+    .with("completed", () => "\u2705")
+    .with("failed", () => "\u274C")
+    .with("available", () => "\u{1F7E2}")
+    .with("locked", () => "\u{1F512}")
+    .exhaustive();
 }
 
 function statusLabel(
   status: NodeStatus,
   t: ReturnType<typeof useTranslations>,
 ): string {
-  switch (status) {
-    case "completed":
-      return t("completed");
-    case "failed":
-      return t("failed");
-    case "available":
-      return t("available");
-    case "locked":
-      return t("locked");
-  }
+  return match(status)
+    .with("completed", () => t("completed"))
+    .with("failed", () => t("failed"))
+    .with("available", () => t("available"))
+    .with("locked", () => t("locked"))
+    .exhaustive();
 }
 
 export function ScenarioDetailPanel({

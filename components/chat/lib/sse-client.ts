@@ -1,3 +1,4 @@
+import { match } from "ts-pattern";
 import type { ZodType, ZodTypeDef } from "zod";
 import {
   messageStreamErrorPayloadSchema,
@@ -38,17 +39,25 @@ export async function consumeSSE<T = unknown>(
       for (const line of lines) {
         if (line.startsWith("event: ")) {
           currentEvent = line.slice(7).trim();
-        } else if (line.startsWith("data: ")) {
-          const data = line.slice(6);
-          try {
-            const parsed = JSON.parse(data);
-            if (currentEvent === "token") {
+          continue;
+        }
+
+        if (!line.startsWith("data: ")) {
+          continue;
+        }
+
+        const data = line.slice(6);
+        try {
+          const parsed = JSON.parse(data);
+          match(currentEvent)
+            .with("token", () => {
               const tokenPayload =
                 messageStreamTokenPayloadSchema.safeParse(parsed);
               if (tokenPayload.success) {
                 handlers.onToken(tokenPayload.data.text);
               }
-            } else if (currentEvent === "complete") {
+            })
+            .with("complete", () => {
               if (completeSchema) {
                 const parsedComplete = completeSchema.safeParse(parsed);
                 if (parsedComplete.success) {
@@ -59,7 +68,8 @@ export async function consumeSSE<T = unknown>(
               } else {
                 handlers.onComplete(parsed as T);
               }
-            } else if (currentEvent === "error") {
+            })
+            .with("error", () => {
               const errorPayload =
                 messageStreamErrorPayloadSchema.safeParse(parsed);
               if (errorPayload.success) {
@@ -67,12 +77,14 @@ export async function consumeSSE<T = unknown>(
               } else {
                 handlers.onError("Unknown stream error");
               }
-            }
-          } catch {
-            // Ignore malformed JSON
-          }
-          currentEvent = "";
+            })
+            .otherwise(() => {
+              // Ignore unknown event types.
+            });
+        } catch {
+          // Ignore malformed JSON
         }
+        currentEvent = "";
       }
     }
   } finally {

@@ -1,3 +1,4 @@
+import { match } from "ts-pattern";
 import { generateDebrief } from "@/core/debrief";
 import { createLogger, withConversationId } from "@/core/logger";
 import {
@@ -557,26 +558,16 @@ function buildScenePrompt(
 }
 
 function describeMoodTone(mood: string): string {
-  switch (mood) {
-    case "happy":
-      return "uplifting and optimistic";
-    case "friendly":
-      return "welcoming and calm";
-    case "neutral":
-      return "balanced and realistic";
-    case "skeptical":
-      return "wary and uncertain";
-    case "annoyed":
-      return "frustrated and tense";
-    case "angry":
-      return "hostile and intense";
-    case "sad":
-      return "somber and subdued";
-    case "surprised":
-      return "suddenly tense and alert";
-    default:
-      return "balanced and realistic";
-  }
+  return match(mood)
+    .with("happy", () => "uplifting and optimistic")
+    .with("friendly", () => "welcoming and calm")
+    .with("neutral", () => "balanced and realistic")
+    .with("skeptical", () => "wary and uncertain")
+    .with("annoyed", () => "frustrated and tense")
+    .with("angry", () => "hostile and intense")
+    .with("sad", () => "somber and subdued")
+    .with("surprised", () => "suddenly tense and alert")
+    .otherwise(() => "balanced and realistic");
 }
 
 async function generateSceneImageSafely(
