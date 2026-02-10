@@ -79,19 +79,17 @@ export default async function LocaleLayout({ children, params }: Props) {
                   target="_blank"
                   rel="noreferrer noopener"
                   aria-label="View repository on GitHub"
-                  className="btn-press group inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700/80 bg-gradient-to-b from-slate-900/95 to-slate-950 text-slate-300 shadow-[inset_0_1px_0_rgba(148,163,184,0.08),0_8px_20px_rgba(2,6,23,0.35)] transition-all hover:-translate-y-0.5 hover:border-sky-400/60 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 sm:w-auto sm:gap-2 sm:px-3"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-700/80 bg-slate-900/80 text-slate-200 shadow-sm hover:bg-slate-800/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500/40"
                 >
+                  <span className="sr-only">GitHub repository</span>
                   <svg
                     viewBox="0 0 24 24"
                     aria-hidden="true"
-                    className="h-4 w-4"
+                    className="h-4.5 w-4.5"
                     fill="currentColor"
                   >
                     <path d="M12 .5A12 12 0 0 0 8.2 23.9c.6.1.8-.2.8-.6v-2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.7-1.3-1.7-1-.8.1-.8.1-.8 1.1.1 1.7 1.2 1.7 1.2 1 .1 1.8-.7 2.2-1.1.1-.7.4-1.1.7-1.3-2.6-.3-5.3-1.3-5.3-5.7 0-1.2.4-2.1 1.1-2.9-.2-.3-.5-1.5.1-3.1 0 0 .9-.3 3 .1a10.2 10.2 0 0 1 5.5 0c2.1-.4 3-.1 3-.1.6 1.6.2 2.8.1 3.1.7.8 1.1 1.7 1.1 2.9 0 4.4-2.7 5.4-5.3 5.7.4.3.8 1 .8 2v3c0 .4.2.7.8.6A12 12 0 0 0 12 .5Z" />
                   </svg>
-                  <span className="hidden text-sm font-medium sm:inline">
-                    GitHub
-                  </span>
                 </a>
               </nav>
             </div>
