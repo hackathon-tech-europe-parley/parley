@@ -1,3 +1,4 @@
+import { match } from "ts-pattern";
 import { type GoalProgress, normalizeToMoodState } from "@/core/types";
 
 // Reverse mapping from English language names to codes.
@@ -56,78 +57,62 @@ interface MoodTheme {
 export function getMoodTheme(mood: string): MoodTheme {
   const moodState = normalizeToMoodState(mood);
 
-  switch (moodState) {
-    case "happy":
-      return {
-        bg: "bg-emerald-950/50",
-        border: "border-emerald-700/50",
-        text: "text-emerald-300",
-        dot: "bg-emerald-400",
-        glow: "shadow-emerald-500/20",
-      };
-    case "friendly":
-      return {
-        bg: "bg-green-950/50",
-        border: "border-green-700/50",
-        text: "text-green-300",
-        dot: "bg-green-400",
-        glow: "shadow-green-500/20",
-      };
-    case "neutral":
-      return {
-        bg: "bg-blue-950/30",
-        border: "border-blue-800/30",
-        text: "text-blue-300",
-        dot: "bg-blue-400",
-        glow: "shadow-blue-500/15",
-      };
-    case "skeptical":
-      return {
-        bg: "bg-violet-950/40",
-        border: "border-violet-800/40",
-        text: "text-violet-300",
-        dot: "bg-violet-400",
-        glow: "shadow-violet-500/20",
-      };
-    case "annoyed":
-      return {
-        bg: "bg-amber-950/40",
-        border: "border-amber-800/40",
-        text: "text-amber-300",
-        dot: "bg-amber-400",
-        glow: "shadow-amber-500/20",
-      };
-    case "angry":
-      return {
-        bg: "bg-red-950/50",
-        border: "border-red-800/50",
-        text: "text-red-300",
-        dot: "bg-red-400",
-        glow: "shadow-red-500/30",
-      };
-    case "sad":
-      return {
-        bg: "bg-indigo-950/40",
-        border: "border-indigo-800/40",
-        text: "text-indigo-300",
-        dot: "bg-indigo-400",
-        glow: "shadow-indigo-500/20",
-      };
-    case "surprised":
-      return {
-        bg: "bg-yellow-950/40",
-        border: "border-yellow-800/40",
-        text: "text-yellow-300",
-        dot: "bg-yellow-400",
-        glow: "shadow-yellow-500/20",
-      };
-    default:
-      return {
-        bg: "bg-blue-950/30",
-        border: "border-blue-800/30",
-        text: "text-blue-300",
-        dot: "bg-blue-400",
-        glow: "shadow-blue-500/15",
-      };
-  }
+  return match(moodState)
+    .with("happy", () => ({
+      bg: "bg-emerald-950/50",
+      border: "border-emerald-700/50",
+      text: "text-emerald-300",
+      dot: "bg-emerald-400",
+      glow: "shadow-emerald-500/20",
+    }))
+    .with("friendly", () => ({
+      bg: "bg-green-950/50",
+      border: "border-green-700/50",
+      text: "text-green-300",
+      dot: "bg-green-400",
+      glow: "shadow-green-500/20",
+    }))
+    .with("neutral", () => ({
+      bg: "bg-blue-950/30",
+      border: "border-blue-800/30",
+      text: "text-blue-300",
+      dot: "bg-blue-400",
+      glow: "shadow-blue-500/15",
+    }))
+    .with("skeptical", () => ({
+      bg: "bg-violet-950/40",
+      border: "border-violet-800/40",
+      text: "text-violet-300",
+      dot: "bg-violet-400",
+      glow: "shadow-violet-500/20",
+    }))
+    .with("annoyed", () => ({
+      bg: "bg-amber-950/40",
+      border: "border-amber-800/40",
+      text: "text-amber-300",
+      dot: "bg-amber-400",
+      glow: "shadow-amber-500/20",
+    }))
+    .with("angry", () => ({
+      bg: "bg-red-950/50",
+      border: "border-red-800/50",
+      text: "text-red-300",
+      dot: "bg-red-400",
+      glow: "shadow-red-500/30",
+    }))
+    .with("sad", () => ({
+      bg: "bg-indigo-950/40",
+      border: "border-indigo-800/40",
+      text: "text-indigo-300",
+      dot: "bg-indigo-400",
+      glow: "shadow-indigo-500/20",
+    }))
+    .with("surprised", () => ({
+      bg: "bg-yellow-950/40",
+      border: "border-yellow-800/40",
+      text: "text-yellow-300",
+      dot: "bg-yellow-400",
+      glow: "shadow-yellow-500/20",
+    }))
+    .exhaustive();
 }
