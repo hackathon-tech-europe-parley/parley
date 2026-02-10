@@ -1,35 +1,39 @@
+import { match } from "ts-pattern";
 import type { Conversation } from "@/core/types";
 import { getLevelPromptConfig } from "./level-prompts";
 
 function getInPersonContext(conversation: Conversation): string {
-  switch (conversation.scenarioKey) {
-    case "taxi":
-      return "You are face-to-face in your taxi right after pickup.";
-    case "cafe":
-      return "You are face-to-face at the cafe counter.";
-    case "lost":
-      return "You just met the user on the street in a busy city center.";
-    case "market":
-      return "You are face-to-face at your stand in a lively street market.";
-    case "hotel":
-      return "You are face-to-face at the hotel reception desk.";
-    case "doctor":
-      return "You are face-to-face in the clinic consultation space.";
-    case "friends":
-      return "You are face-to-face at a local street event.";
-    case "interview":
-      return "You are face-to-face in an interview room.";
-    case "restaurant":
-      return "You are face-to-face at the restaurant table/service area.";
-    case "apartment":
-      return "You are face-to-face during an apartment visit.";
-    case "train":
-      return "You are face-to-face at the station platform or information area.";
-    case "pharmacy":
-      return "You are face-to-face at the pharmacy counter.";
-    default:
-      return "You are face-to-face with the user in the current scene location.";
-  }
+  return match(conversation.scenarioKey)
+    .with("taxi", () => "You are face-to-face in your taxi right after pickup.")
+    .with("cafe", () => "You are face-to-face at the cafe counter.")
+    .with(
+      "lost",
+      () => "You just met the user on the street in a busy city center.",
+    )
+    .with(
+      "market",
+      () => "You are face-to-face at your stand in a lively street market.",
+    )
+    .with("hotel", () => "You are face-to-face at the hotel reception desk.")
+    .with(
+      "doctor",
+      () => "You are face-to-face in the clinic consultation space.",
+    )
+    .with("friends", () => "You are face-to-face at a local street event.")
+    .with("interview", () => "You are face-to-face in an interview room.")
+    .with(
+      "restaurant",
+      () => "You are face-to-face at the restaurant table/service area.",
+    )
+    .with("apartment", () => "You are face-to-face during an apartment visit.")
+    .with(
+      "train",
+      () => "You are face-to-face at the station platform or information area.",
+    )
+    .with("pharmacy", () => "You are face-to-face at the pharmacy counter.")
+    .otherwise(
+      () => "You are face-to-face with the user in the current scene location.",
+    );
 }
 
 export function buildNpcProfileSystemPrompt(language: string): string {

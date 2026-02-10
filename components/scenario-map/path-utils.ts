@@ -1,3 +1,4 @@
+import { match } from "ts-pattern";
 import type { ScenarioNodeState } from "@/core/progress";
 
 export interface NodePosition {
@@ -72,14 +73,10 @@ export function classifySegments(
     const nextAllLocked =
       nextState?.levels.every((l) => l.status === "locked") ?? true;
 
-    let status: PathSegment["status"];
-    if (beginnerCompleted) {
-      status = "completed";
-    } else if (!nextAllLocked) {
-      status = "active";
-    } else {
-      status = "locked";
-    }
+    const status = match({ beginnerCompleted, nextAllLocked })
+      .with({ beginnerCompleted: true }, () => "completed" as const)
+      .with({ nextAllLocked: false }, () => "active" as const)
+      .otherwise(() => "locked" as const);
 
     segments.push({ from: positions[i], to: positions[i + 1], status });
   }

@@ -1,3 +1,4 @@
+import { match } from "ts-pattern";
 import { createLogger } from "@/core/logger";
 import type {
   Conversation,
@@ -740,31 +741,48 @@ function soundsStrongEnough(
 }
 
 function angryFallbackByLanguage(lang: SupportedToneLanguage): string {
-  switch (lang) {
-    case "fr":
-      return "Ca suffit. Tu me parles correctement, sinon tu te debrouilles seul, champion. Si tu veux de l'aide, pose une vraie question.";
-    case "de":
-      return "Genug. Sprich respektvoll mit mir, sonst kommst du allein klar, Champion. Wenn du Hilfe willst, frag ordentlich.";
-    case "es":
-      return "Basta. Hablame con respeto o te las arreglas solo, campeon. Si quieres ayuda, pregunta bien.";
-    case "pt":
-      return "Chega. Fale comigo com respeito ou se vira sozinho, campeao. Se quiser ajuda, pergunte direito.";
-    default:
-      return "Enough. Speak respectfully, or handle it yourself, genius. If you want help, ask properly.";
-  }
+  return match(lang)
+    .with(
+      "fr",
+      () =>
+        "Ca suffit. Tu me parles correctement, sinon tu te debrouilles seul, champion. Si tu veux de l'aide, pose une vraie question.",
+    )
+    .with(
+      "de",
+      () =>
+        "Genug. Sprich respektvoll mit mir, sonst kommst du allein klar, Champion. Wenn du Hilfe willst, frag ordentlich.",
+    )
+    .with(
+      "es",
+      () =>
+        "Basta. Hablame con respeto o te las arreglas solo, campeon. Si quieres ayuda, pregunta bien.",
+    )
+    .with(
+      "pt",
+      () =>
+        "Chega. Fale comigo com respeito ou se vira sozinho, campeao. Se quiser ajuda, pergunte direito.",
+    )
+    .with(
+      "en",
+      () =>
+        "Enough. Speak respectfully, or handle it yourself, genius. If you want help, ask properly.",
+    )
+    .exhaustive();
 }
 
 function annoyedFallbackByLanguage(lang: SupportedToneLanguage): string {
-  switch (lang) {
-    case "fr":
-      return "On se calme. Parle correctement et je peux t'aider, sinon on perd notre temps.";
-    case "de":
-      return "Beruhig dich. Sprich ordentlich, dann kann ich dir helfen.";
-    case "es":
-      return "Calmate. Habla con respeto y te puedo ayudar.";
-    case "pt":
-      return "Calma. Fale com respeito e eu posso ajudar.";
-    default:
-      return "Calm down. Speak respectfully and I can help.";
-  }
+  return match(lang)
+    .with(
+      "fr",
+      () =>
+        "On se calme. Parle correctement et je peux t'aider, sinon on perd notre temps.",
+    )
+    .with(
+      "de",
+      () => "Beruhig dich. Sprich ordentlich, dann kann ich dir helfen.",
+    )
+    .with("es", () => "Calmate. Habla con respeto y te puedo ayudar.")
+    .with("pt", () => "Calma. Fale com respeito e eu posso ajudar.")
+    .with("en", () => "Calm down. Speak respectfully and I can help.")
+    .exhaustive();
 }

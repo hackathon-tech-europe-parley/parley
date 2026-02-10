@@ -5,6 +5,7 @@ import {
   generateNpcProfile,
   getNpcFaceAssetUrl,
 } from "@/core/npc";
+import { buildSceneImagePrompt } from "@/core/scene";
 import type { Conversation } from "@/core/types";
 import {
   createConversationResponseSchema,
@@ -41,7 +42,12 @@ export async function POST(request: Request) {
     return await withConversationId(conversationId, async () => {
       log.info({ language, level, scenarioKey }, "creating conversation");
 
-      const imagePrompt = `Photorealistic background scene: ${scenario}. No people, just the environment and setting. First-person perspective.`;
+      const imagePrompt = buildSceneImagePrompt({
+        scenario,
+        language,
+        languageCode,
+        scenarioKey,
+      });
 
       const [sceneImageUrl, npcProfile] = await Promise.all([
         generateSceneImage(imagePrompt),
