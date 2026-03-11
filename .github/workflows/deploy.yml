@@ -1,0 +1,71 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          docker build -t parley:latest .
+
+      - name: Save Docker image
+        run: |
+          docker save parley:latest | gzip > parley.tar.gz
+
+      - name: Copy image to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 51.68.32.221
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: parley.tar.gz
+          target: /tmp
+
+      - name: Deploy on server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: 51.68.32.221
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Load the image
+            docker load < /tmp/parley.tar.gz
+            rm /tmp/parley.tar.gz
+
+            # Ensure app directory exists
+            mkdir -p /opt/parley
+
+            # Write docker-compose
+            cat > /opt/parley/docker-compose.yml << 'COMPOSE'
+            services:
+              app:
+                image: parley:latest
+                container_name: parley
+                restart: unless-stopped
+                env_file: .env
+                labels:
+                  - traefik.enable=true
+                  - traefik.http.routers.parley.rule=Host(`parley.tripot.dev`)
+                  - traefik.http.routers.parley.tls.certresolver=le
+                  - traefik.http.services.parley.loadbalancer.server.port=3000
+                networks:
+                  - web
+
+            networks:
+              web:
+                external: true
+            COMPOSE
+
+            # Deploy
+            cd /opt/parley
+            docker compose up -d --force-recreate
+            docker image prune -f
