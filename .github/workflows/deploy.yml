@@ -67,5 +67,5 @@ jobs:
 
             # Deploy
             cd /opt/parley
-            docker compose up -d --force-recreate
+            docker compose up -d --force-recreate --wait --wait-timeout 60
             docker image prune -f
